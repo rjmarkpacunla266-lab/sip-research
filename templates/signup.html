@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign Up — SIP Research</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Lora:ital,wght@0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Outfit',sans-serif;
+  background:#0b0d12;color:#d8e0f8;
+  min-height:100vh;display:flex;
+  align-items:center;justify-content:center;padding:20px;
+}
+.card{
+  background:#111520;border:1px solid rgba(100,130,220,.12);
+  border-radius:16px;padding:40px 36px;
+  width:100%;max-width:420px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+.logo{font-family:'Lora',serif;font-size:1.8rem;text-align:center;margin-bottom:6px}
+.logo span{color:#4f8de8}
+.tagline{text-align:center;color:#5a6385;font-size:.85rem;margin-bottom:32px}
+.form-group{margin-bottom:18px}
+label{display:block;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:#5a6385;font-weight:600;margin-bottom:6px}
+input{
+  width:100%;background:#181d2e;border:1px solid rgba(100,130,220,.12);
+  border-radius:10px;color:#d8e0f8;font-family:'Outfit',sans-serif;
+  font-size:.95rem;padding:12px 14px;outline:none;transition:border-color .2s,box-shadow .2s;
+}
+input:focus{border-color:#4f8de8;box-shadow:0 0 0 3px rgba(79,141,232,.12)}
+input::placeholder{color:#3a4060}
+.btn{
+  width:100%;padding:13px;background:#4f8de8;border:none;
+  border-radius:10px;color:#fff;font-family:'Outfit',sans-serif;
+  font-size:1rem;font-weight:600;cursor:pointer;
+  transition:background .2s,box-shadow .2s;margin-top:6px;
+}
+.btn:hover{background:#3d7fd8;box-shadow:0 0 20px rgba(79,141,232,.3)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.error{background:rgba(240,106,106,.08);border:1px solid rgba(240,106,106,.2);border-radius:8px;color:#f06a6a;font-size:.83rem;padding:10px 14px;margin-bottom:16px;display:none}
+.success{background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.2);border-radius:8px;color:#3ecf8e;font-size:.83rem;padding:10px 14px;margin-bottom:16px;display:none}
+.bottom{text-align:center;margin-top:22px;font-size:.85rem;color:#5a6385}
+.bottom a{color:#4f8de8;text-decoration:none}
+.bottom a:hover{text-decoration:underline}
+.perks{
+  background:#181d2e;border:1px solid rgba(100,130,220,.1);
+  border-radius:10px;padding:14px 16px;margin-bottom:24px;
+}
+.perk{display:flex;align-items:center;gap:8px;font-size:.83rem;color:#5a6385;margin-bottom:6px}
+.perk:last-child{margin-bottom:0}
+.perk .icon{font-size:.9rem}
+.beta-badge{display:inline-block;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:#9d6ef5;font-size:.68rem;padding:2px 8px;border-radius:20px;margin-left:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="card">
+
+  <div class="logo"><span>SIP</span> Research <span class="beta-badge">BETA</span></div>
+  <div class="tagline">Create your free account</div>
+
+  <!-- What you get -->
+  <div class="perks">
+    <div class="perk"><span class="icon">🔍</span> 10 free searches to start</div>
+    <div class="perk"><span class="icon">📚</span> APA and MLA references</div>
+    <div class="perk"><span class="icon">🔓</span> Open access paper links</div>
+    <div class="perk"><span class="icon">📊</span> Export to CSV and BibTeX</div>
+  </div>
+
+  <div class="error" id="errorMsg"></div>
+  <div class="success" id="successMsg"></div>
+
+  <div class="form-group">
+    <label>Email Address</label>
+    <input type="email" id="email" placeholder="youremail@gmail.com" autocomplete="email"/>
+  </div>
+
+  <div class="form-group">
+    <label>Password</label>
+    <input type="password" id="password" placeholder="At least 6 characters" autocomplete="new-password"/>
+  </div>
+
+  <div class="form-group">
+    <label>Confirm Password</label>
+    <input type="password" id="password2" placeholder="Repeat your password" autocomplete="new-password"/>
+  </div>
+
+  <button class="btn" id="signupBtn" onclick="doSignup()">Create Free Account</button>
+
+  <div class="bottom" style="margin-top:22px">
+    Already have an account? <a href="/login">Sign in</a>
+  </div>
+
+</div>
+
+<script>
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSignup();
+});
+
+async function doSignup() {
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const password2= document.getElementById('password2').value.trim();
+  const btn      = document.getElementById('signupBtn');
+  const errorEl  = document.getElementById('errorMsg');
+  const successEl= document.getElementById('successMsg');
+
+  errorEl.style.display   = 'none';
+  successEl.style.display = 'none';
+
+  // Validate
+  if (!email || !password || !password2) {
+    errorEl.textContent   = 'Please fill in all fields';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (!email.includes('@')) {
+    errorEl.textContent   = 'Please enter a valid email address';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (password.length < 6) {
+    errorEl.textContent   = 'Password must be at least 6 characters';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (password !== password2) {
+    errorEl.textContent   = 'Passwords do not match';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled    = true;
+  btn.textContent = 'Creating account…';
+
+  try {
+    const resp = await fetch('/signup', {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({email, password})
+    });
+    const data = await resp.json();
+
+    if (data.success) {
+      successEl.textContent   = 'Account created! Redirecting…';
+      successEl.style.display = 'block';
+      setTimeout(() => window.location.href = data.redirect || '/', 800);
+    } else {
+      errorEl.textContent   = data.error || 'Signup failed';
+      errorEl.style.display = 'block';
+      btn.disabled    = false;
+      btn.textContent = 'Create Free Account';
+    }
+  } catch(e) {
+    errorEl.textContent   = 'Connection error. Try again.';
+    errorEl.style.display = 'block';
+    btn.disabled    = false;
+    btn.textContent = 'Create Free Account';
+  }
+}
+</script>
+</body>
+</html>

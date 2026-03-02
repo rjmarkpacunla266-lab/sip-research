@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+.cache/
+output.json
+output.csv
+output.bib
+output.md
+output.ris
+search_history.json
