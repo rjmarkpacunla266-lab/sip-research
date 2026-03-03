@@ -377,13 +377,5 @@ def health():
 
 # ─── RUN ────────────────────────────────────────────────────────────
 if __name__ == '__main__':
-    print("""
-╔══════════════════════════════════════════╗
-║     SIP Research — Starting Server      ║
-╠══════════════════════════════════════════╣
-║  Open browser: http://localhost:5000     ║
-║  Press CTRL+C to stop                   ║
-╚══════════════════════════════════════════╝
-    """)
-  port = int(os.environ.get('PORT', 8080))
-  app.run(host='0.0.0.0', port=port, debug=False)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False)
