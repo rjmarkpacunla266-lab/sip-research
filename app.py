@@ -73,8 +73,16 @@ def sb_patch(table, filters, data):
     return resp.ok
 
 # ─── SETTINGS ───────────────────────────────────────────────────────
-FREE_SEARCHES = int(os.getenv("FREE_SEARCHES", 10))
-PAID_SEARCHES = int(os.getenv("PAID_SEARCHES", 20))
+def get_int_env(name, default):
+    value = os.getenv(name)
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+FREE_SEARCHES = get_int_env("FREE_SEARCHES", 10)
+PAID_SEARCHES = get_int_env("PAID_SEARCHES", 20)
 OPENALEX_URL  = "https://api.openalex.org/works"
 
 # ─── LOGIN REQUIRED ─────────────────────────────────────────────────
