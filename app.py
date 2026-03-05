@@ -95,9 +95,6 @@ def login_required(f):
     return decorated
 
 # ─── PASSWORD FUNCTIONS ─────────────────────────────────────────────
-# Using hashlib — works on Termux without Rust
-# sha256 + random salt for security
-
 def hash_password(password):
     """Hash a password with a random salt. Never store plain passwords."""
     salt = secrets.token_hex(16)
@@ -175,7 +172,7 @@ def format_paper(paper):
     journal  = source.get("display_name", "")
     doi      = paper.get("doi", "")
 
-    # Build APA reference (auto-generated — may be incomplete)
+    # Build APA authors
     apa_authors = []
     for a in paper.get("authorships", [])[:3]:
         name = (a.get("author") or {}).get("display_name", "")
@@ -187,7 +184,31 @@ def format_paper(paper):
                 apa_authors.append(name)
     if len(paper.get("authorships", [])) > 3:
         apa_authors.append("et al.")
-    apa = f"{', '.join(apa_authors) or 'Unknown'} ({year}). {title}. {journal}. {doi}"
+
+    # Build volume, issue, pages
+    volume     = biblio.get("volume", "")
+    issue      = biblio.get("issue", "")
+    first_page = biblio.get("first_page", "")
+    last_page  = biblio.get("last_page", "")
+    pages      = f"{first_page}\u2013{last_page}" if first_page and last_page else ""
+
+    vol_issue = ""
+    if volume and issue:
+        vol_issue = f", {volume}({issue})"
+    elif volume:
+        vol_issue = f", {volume}"
+
+    # Track missing APA fields
+    missing = []
+    if not volume:  missing.append("volume")
+    if not issue:   missing.append("issue")
+    if not pages:   missing.append("page range")
+    if not doi:     missing.append("DOI")
+
+    # Build full APA reference
+    pages_part = f", {pages}" if pages else ""
+    doi_part   = f" {doi}" if doi else ""
+    apa = f"{', '.join(apa_authors) or 'Unknown'} ({year}). {title}. {journal}{vol_issue}{pages_part}.{doi_part}"
 
     return {
         "title":         title,
@@ -201,9 +222,11 @@ def format_paper(paper):
         "doi":           doi,
         "concepts":      concepts,
         "openalex_id":   paper.get("id", ""),
-        "volume":        biblio.get("volume", ""),
-        "issue":         biblio.get("issue", ""),
+        "volume":        volume,
+        "issue":         issue,
+        "pages":         pages,
         "apa_reference": apa,
+        "apa_missing":   missing,
         "data_source":   "OpenAlex (openalex.org)",
         "ref_warning":   "Auto-generated — verify before academic use",
     }
@@ -233,11 +256,9 @@ def signup():
         if '@' not in email:
             return jsonify({"error": "Enter a valid email address"}), 400
 
-        # Check if email already exists
         if get_user_by_email(email):
             return jsonify({"error": "Email already registered. Please login."}), 400
 
-        # Create user
         hashed = hash_password(password)
         result = sb_post("users", {
             "email":         email,
@@ -274,11 +295,8 @@ def login():
             return jsonify({"error": "Email and password required"}), 400
 
         user = get_user_by_email(email)
-        if not user:
-            return jsonify({"error": "No account found with that email"}), 404
-
-        if not check_password(password, user['password_hash']):
-            return jsonify({"error": "Wrong password. Try again."}), 401
+        if not user or not check_password(password, user['password_hash']):
+            return jsonify({"error": "Invalid email or password"}), 401
 
         session['user_id']    = user['id']
         session['user_email'] = user['email']
@@ -313,8 +331,10 @@ def get_me():
 @app.route('/api/search')
 @login_required
 def search():
-    query = request.args.get('q', '').strip()
-    page  = int(request.args.get('page', 1))
+    query     = request.args.get('q', '').strip()
+    page      = int(request.args.get('page', 1))
+    year_from = request.args.get('year_from', '')
+    year_to   = request.args.get('year_to', '')
 
     if not query:
         return jsonify({"error": "Please enter a search query"}), 400
@@ -323,23 +343,29 @@ def search():
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    # Check search limit
     if not can_search(user):
         return jsonify({
             "error":   "limit_reached",
             "message": "You have used all your free searches. Pay $1 for 20 more!",
         }), 403
 
-    # Search OpenAlex
+    # Build OpenAlex params
     params = {
         "search":   query,
         "per-page": 25,
         "page":     page,
         "sort":     "cited_by_count:desc",
     }
+
+    # Year filter
+    if year_from and year_to:
+        params["filter"] = f"publication_year:{year_from}-{year_to}"
+    elif year_from:
+        params["filter"] = f"publication_year:{year_from}-"
+
     try:
-        resp  = requests.get(OPENALEX_URL, params=params, timeout=15)
-        data  = resp.json()
+        resp   = requests.get(OPENALEX_URL, params=params, timeout=15)
+        data   = resp.json()
         papers = data.get("results", [])
         total  = data.get("meta", {}).get("count", 0)
     except Exception as e:
@@ -347,11 +373,9 @@ def search():
 
     formatted = [format_paper(p) for p in papers]
 
-    # Increment search count
     new_count = user['search_count'] + 1
     sb_patch("users", f"id=eq.{user['id']}", {"search_count": new_count})
 
-    # Log search
     sb_post("search_logs", {
         "user_id":    user['id'],
         "query":      query,

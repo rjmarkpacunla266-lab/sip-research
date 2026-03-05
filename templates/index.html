@@ -176,8 +176,18 @@ code{font-family:var(--mono);font-size:.85em;background:var(--surf2);padding:1px
       autocomplete="off"/>
     <button class="btn primary" onclick="doSearch()">Search</button>
   </div>
-  <div style="font-size:.75rem;color:var(--muted);margin-top:6px;padding-left:4px">
-    Data from OpenAlex · ~250M academic papers · Press Enter to search
+  <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted)">
+      <label style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em">Year from</label>
+      <input type="number" id="yearFrom" placeholder="e.g. 2015" min="1800" max="2026"
+        style="width:100px;padding:6px 10px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:.78rem;outline:none"/>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted)">
+      <label style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em">To</label>
+      <input type="number" id="yearTo" placeholder="e.g. 2024" min="1800" max="2026"
+        style="width:100px;padding:6px 10px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:.78rem;outline:none"/>
+    </div>
+    <span style="font-size:.72rem;color:var(--muted)">· ~250M papers · Press Enter to search</span>
   </div>
 </div>
 
@@ -276,7 +286,12 @@ async function doSearch(page = 1) {
   showLoading();
 
   try {
-    const resp = await fetch(`/api/search?q=${encodeURIComponent(query)}&page=${page}`);
+    const yearFrom = document.getElementById('yearFrom').value.trim();
+    const yearTo   = document.getElementById('yearTo').value.trim();
+    let url = `/api/search?q=${encodeURIComponent(query)}&page=${page}`;
+    if (yearFrom) url += `&year_from=${yearFrom}`;
+    if (yearTo)   url += `&year_to=${yearTo}`;
+    const resp = await fetch(url);
     const data = await resp.json();
 
     // Handle search limit reached
@@ -363,7 +378,7 @@ function renderResults(data) {
         ${concepts ? `<div class="chips" style="margin-top:8px">${concepts}</div>` : ''}
       </div>
       <div class="card-foot hidden">
-        <span class="ref-warn">⚠️ Auto-ref</span>
+        <span class="ref-warn">${item.apa_missing && item.apa_missing.length ? '⚠️ Missing: ' + item.apa_missing.join(', ') : '⚠️ Auto-ref'}</span>
         <span class="apa-text" title="${esc(item.apa_reference||'')}">${esc(item.apa_reference||'')}</span>
         <button class="btn xs" onclick="copyAPA(${i}, event)">📋 APA</button>
         ${item.doi ? `<a href="${esc(item.doi)}" target="_blank" class="btn xs">DOI</a>` : ''}
@@ -410,7 +425,7 @@ function openDetail(idx, e) {
       <tr><td>Source</td><td>OpenAlex (openalex.org)</td></tr>
     </table>
     ${item.abstract ? `<div class="text-block" style="margin:12px 0;font-size:.85rem">${esc(item.abstract)}</div>` : ''}
-    <div class="warn-box">⚠️ References below are AUTO-GENERATED. Volume, issue, pages often missing. Always verify before academic submission.</div>
+    <div class="warn-box">⚠️ References below are AUTO-GENERATED.${item.apa_missing && item.apa_missing.length ? ' Missing: <strong>' + item.apa_missing.join(', ') + '</strong>.' : ''} Always verify before academic submission.</div>
     <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:12px">APA Reference (auto-generated)</div>
     <div class="ref-box">${esc(item.apa_reference||'Not available')}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">

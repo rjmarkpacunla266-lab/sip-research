@@ -205,7 +205,7 @@ async function doLogin() {
       successEl.style.display = 'block';
       setTimeout(() => window.location.href = data.redirect || '/', 800);
     } else {
-      errorEl.textContent   = data.error || 'Login failed';
+      errorEl.textContent   = (data.error === 'No account found with that email') ? 'Invalid email or password' : (data.error || 'Login failed');
       errorEl.style.display = 'block';
       btn.disabled    = false;
       btn.textContent = 'Sign In';
