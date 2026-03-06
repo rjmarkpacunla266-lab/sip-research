@@ -8,6 +8,7 @@
 ║  - User signup and login                                         ║
 ║  - Search requests (calls OpenAlex API)                          ║
 ║  - Search counter (10 free, then paywall)                        ║
+║  - IP rate limiting (max 3 accounts per IP per day)              ║
 ║  - Serving the website to users                                  ║
 ║                                                                  ║
 ║  HOW TO RUN:                                                      ║
@@ -19,12 +20,12 @@
 
 # ─── IMPORTS ────────────────────────────────────────────────────────
 import os
-import json
 import hashlib
 import secrets
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
+
 
 from flask import (
     Flask, render_template, request,
@@ -80,10 +81,31 @@ def get_int_env(name, default):
     except (TypeError, ValueError):
         return default
 
+FREE_SEARCHES    = get_int_env("FREE_SEARCHES", 10)
+PAID_SEARCHES    = get_int_env("PAID_SEARCHES", 20)
+MAX_ACCOUNTS_PER_IP = get_int_env("MAX_ACCOUNTS_PER_IP", 3)
+OPENALEX_URL     = "https://api.openalex.org/works"
 
-FREE_SEARCHES = get_int_env("FREE_SEARCHES", 10)
-PAID_SEARCHES = get_int_env("PAID_SEARCHES", 20)
-OPENALEX_URL  = "https://api.openalex.org/works"
+# ─── IP RATE LIMITING ────────────────────────────────────────────────
+# Now stored in Supabase so it survives redeploys.
+# Requires a table: ip_signups (id int8 pk, ip text, created_at timestamp)
+
+def get_client_ip():
+    """Get real IP even behind proxy/Railway."""
+    return request.headers.get("X-Forwarded-For", request.remote_addr).split(",")[0].strip()
+
+def is_ip_allowed_to_signup(ip):
+    """Check if IP has made less than MAX_ACCOUNTS_PER_IP signups today."""
+    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    result = sb_get("ip_signups", f"ip=eq.{ip}&created_at=gte.{today_start}")
+    return len(result) < MAX_ACCOUNTS_PER_IP
+
+def record_ip_signup(ip):
+    """Record a signup from this IP into Supabase."""
+    sb_post("ip_signups", {
+        "ip":         ip,
+        "created_at": datetime.now().isoformat()
+    })
 
 # ─── LOGIN REQUIRED ─────────────────────────────────────────────────
 def login_required(f):
@@ -96,7 +118,7 @@ def login_required(f):
 
 # ─── PASSWORD FUNCTIONS ─────────────────────────────────────────────
 def hash_password(password):
-    """Hash a password with a random salt. Never store plain passwords."""
+    """Hash a password with a random salt."""
     salt = secrets.token_hex(16)
     h    = hashlib.sha256((password + salt).encode()).hexdigest()
     return f"{salt}:{h}"
@@ -110,31 +132,24 @@ def check_password(password, hashed):
         return False
 
 # ─── USER HELPERS ────────────────────────────────────────────────────
-
 def get_user(user_id):
-    """Get user by ID from Supabase."""
     result = sb_get("users", f"id=eq.{user_id}&select=*")
     return result[0] if result else None
 
 def get_user_by_email(email):
-    """Get user by email from Supabase."""
     result = sb_get("users", f"email=eq.{email}&select=*")
     return result[0] if result else None
 
 def can_search(user):
-    """Check if user has searches remaining."""
     total = FREE_SEARCHES + (user.get('paid_searches', 0))
     return user.get('search_count', 0) < total
 
 def searches_remaining(user):
-    """How many searches does user have left."""
     total = FREE_SEARCHES + (user.get('paid_searches', 0))
     return max(0, total - user.get('search_count', 0))
 
 # ─── OPENALEX HELPERS ────────────────────────────────────────────────
-
 def reconstruct_abstract(abstract_index):
-    """Rebuild abstract text from OpenAlex inverted index format."""
     if not abstract_index:
         return ""
     words = []
@@ -145,7 +160,6 @@ def reconstruct_abstract(abstract_index):
     return " ".join(w for _, w in words)
 
 def format_paper(paper):
-    """Format raw OpenAlex paper into clean dict for frontend."""
     loc    = (paper.get("primary_location") or {})
     source = (loc.get("source") or {})
     oa     = (paper.get("open_access") or {})
@@ -205,7 +219,6 @@ def format_paper(paper):
     if not pages:   missing.append("page range")
     if not doi:     missing.append("DOI")
 
-    # Build full APA reference
     pages_part = f", {pages}" if pages else ""
     doi_part   = f" {doi}" if doi else ""
     apa = f"{', '.join(apa_authors) or 'Unknown'} ({year}). {title}. {journal}{vol_issue}{pages_part}.{doi_part}"
@@ -256,6 +269,13 @@ def signup():
         if '@' not in email:
             return jsonify({"error": "Enter a valid email address"}), 400
 
+        # ─── IP RATE LIMIT CHECK ────────────────────────────────────
+        ip = get_client_ip()
+        if not is_ip_allowed_to_signup(ip):
+            return jsonify({
+                "error": f"Too many accounts created from your device today. Maximum is {MAX_ACCOUNTS_PER_IP} per day."
+            }), 429
+
         if get_user_by_email(email):
             return jsonify({"error": "Email already registered. Please login."}), 400
 
@@ -271,6 +291,9 @@ def signup():
 
         if not result:
             return jsonify({"error": "Could not create account. Try again."}), 500
+
+        # Record this IP signup
+        record_ip_signup(ip)
 
         new_user = result[0] if isinstance(result, list) else result
         session['user_id']    = new_user['id']
@@ -349,7 +372,6 @@ def search():
             "message": "You have used all your free searches. Pay $1 for 20 more!",
         }), 403
 
-    # Build OpenAlex params
     params = {
         "search":   query,
         "per-page": 25,
@@ -357,7 +379,6 @@ def search():
         "sort":     "cited_by_count:desc",
     }
 
-    # Year filter
     if year_from and year_to:
         params["filter"] = f"publication_year:{year_from}-{year_to}"
     elif year_from:
