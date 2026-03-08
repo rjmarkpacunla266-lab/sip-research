@@ -4,7 +4,7 @@
 <meta name="google-site-verification" content="zEl7F0Ag_iT-zaQBXGURH-EmUTjF6dhy2_fiND_zLtQ" />
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>SIP Research — Academic Search</title>
+<title>Sturch — study research</title>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root{
@@ -147,7 +147,7 @@ code{font-family:var(--mono);font-size:.85em;background:var(--surf2);padding:1px
 
 <!-- Header -->
 <header>
-  <div class="logo"><span>SIP</span> Research <span class="beta">BETA</span></div>
+  <div class="logo"><span>Sturch</span> <span class="beta">BETA</span></div>
   <div class="header-right">
     <span class="user-pill" id="userEmail">Loading…</span>
     <span class="searches-pill" id="searchesPill">— searches left</span>
@@ -233,7 +233,7 @@ code{font-family:var(--mono);font-size:.85em;background:var(--surf2);padding:1px
 
 <script>
 /* ══════════════════════════════════════════════════════
-   SIP Research Dashboard — Frontend JS
+   Sturch Dashboard — Frontend JS
    Talks to Flask backend via fetch() API calls
 ══════════════════════════════════════════════════════ */
 
@@ -470,7 +470,7 @@ function doExport(fmt) {
       meta: { query: currentQuery, generated: new Date().toISOString(), source: 'OpenAlex', warning: 'References auto-generated — verify before academic use' },
       results: data
     }, null, 2);
-    filename = 'sip_export.json'; mime = 'application/json';
+    filename = 'sturch_export.json'; mime = 'application/json';
   } else if (fmt === 'csv') {
     const fields = ['title','authors','year','journal','citations','is_oa','apa_reference','doi','oa_url'];
     const rows = [fields, ...data.map(i => fields.map(k => {
@@ -478,19 +478,19 @@ function doExport(fmt) {
       return `"${v.replace(/"/g,'""')}"`;
     }))];
     content = '# Source: OpenAlex | References auto-generated\n' + rows.map(r=>r.join(',')).join('\n');
-    filename = 'sip_export.csv';
+    filename = 'sturch_export.csv';
   } else if (fmt === 'bibtex') {
-    content = '% SIP Research Export\n% Source: OpenAlex\n% WARNING: Auto-generated\n\n';
+    content = '% Sturch Export\n% Source: OpenAlex\n% WARNING: Auto-generated\n\n';
     content += data.map(i => {
       const pid = (i.openalex_id||'').split('/').pop()||'ref';
       return `@article{${pid},\n  author={${(i.authors||[]).join(' and ')}},\n  year={${i.year||''}},\n  title={${i.title||''}},\n  journal={${i.journal||''}},\n  doi={${i.doi||''}}\n}`;
     }).join('\n\n');
-    filename = 'sip_export.bib';
+    filename = 'sturch_export.bib';
   } else if (fmt === 'txt') {
     content = data.map((i,n) =>
       `[${n+1}] ${i.title}\n${(i.authors||[]).join(', ')}\n${i.year} · ${i.journal}\nCitations: ${i.citations}\nAPA: ${i.apa_reference}\n`
     ).join('\n---\n\n');
-    filename = 'sip_export.txt';
+    filename = 'sturch_export.txt';
   }
 
   if (!content) { toast('Unknown format'); return; }

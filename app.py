@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════════════╗
-║           SIP Research — Flask Backend  app.py                  ║
+║           Sturch — Flask Backend  app.py                  ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║                                                                  ║
 ║  WHAT THIS FILE DOES:                                            ║
@@ -39,7 +39,7 @@ load_dotenv()
 
 # ─── APP SETUP ──────────────────────────────────────────────────────
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "sip-research-secret-key")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "sturch-secret-key")
 CORS(app)
 
 # ─── SUPABASE SETTINGS ──────────────────────────────────────────────
@@ -425,7 +425,7 @@ def upgrade():
 
 @app.route('/health')
 def health():
-    return jsonify({"status": "ok", "app": "SIP Research", "version": "1.0-beta"})
+    return jsonify({"status": "ok", "app": "Sturch", "version": "1.0-beta"})
 
 
 # ─── RUN ────────────────────────────────────────────────────────────
