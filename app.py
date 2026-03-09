@@ -37,6 +37,27 @@ from dotenv import load_dotenv
 # Load secret keys from .env file
 load_dotenv()
 
+
+# ─── EMAIL NORMALIZATION ─────────────────────────────────────────────
+def normalize_email(email):
+    """
+    Normalize Gmail addresses to prevent duplicate account tricks.
+    - Removes dots from username (u.s.e.r = user)
+    - Removes +tags (user+spam = user)
+    - Lowercases everything
+    Example: U.Ser+test@Gmail.com → user@gmail.com
+    """
+    email = email.strip().lower()
+    if '@' not in email:
+        return email
+    local, domain = email.split('@', 1)
+    # Remove +tag
+    local = local.split('+')[0]
+    # Remove dots only for Gmail
+    if domain in ('gmail.com', 'googlemail.com'):
+        local = local.replace('.', '')
+    return f"{local}@{domain}"
+
 # ─── APP SETUP ──────────────────────────────────────────────────────
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "sturch-secret-key")
@@ -259,7 +280,7 @@ def signup():
 
     if request.method == 'POST':
         data     = request.get_json() or request.form
-        email    = (data.get('email') or '').strip().lower()
+        email    = normalize_email(data.get('email') or '')
         password = (data.get('password') or '').strip()
 
         if not email or not password:
@@ -311,7 +332,7 @@ def login():
 
     if request.method == 'POST':
         data     = request.get_json() or request.form
-        email    = (data.get('email') or '').strip().lower()
+        email    = normalize_email(data.get('email') or '')
         password = (data.get('password') or '').strip()
 
         if not email or not password:
