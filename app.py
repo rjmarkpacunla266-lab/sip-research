@@ -1,19 +1,30 @@
 """
 ╔══════════════════════════════════════════════════════════════════╗
-║           Sturch — Flask Backend  app.py                  ║
+║           Sturch — Flask Backend  app.py  v2.0               ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║                                                                  ║
 ║  WHAT THIS FILE DOES:                                            ║
 ║  This is the main server file. It handles:                       ║
 ║  - User signup and login                                         ║
-║  - Search requests (calls OpenAlex API)                          ║
+║  - Search requests (calls MULTIPLE APIs in parallel)             ║
+║      • OpenAlex  — 250M+ academic works                         ║
+║      • Semantic Scholar — 200M+ papers, great for CS/AI         ║
+║      • arXiv — cutting-edge CS, Math, Physics (all open access) ║
+║      • PubMed — gold standard for medicine and biology          ║
+║  - Deduplication of results across sources (by DOI + title)      ║
 ║  - Search counter (10 free, then paywall)                        ║
 ║  - IP rate limiting (max 3 accounts per IP per day)              ║
 ║  - Serving the website to users                                  ║
 ║                                                                  ║
-║  HOW TO RUN:                                                      ║
+║  HOW TO RUN:                                                     ║
 ║  python app.py                                                   ║
 ║  Then open: localhost:5000                                       ║
+║                                                                  ║
+║  NEW IN v2.0:                                                    ║
+║  - 4 APIs searched simultaneously using ThreadPoolExecutor       ║
+║  - Results merged and deduplicated before returning to frontend  ║
+║  - Each result carries a data_source label for the frontend      ║
+║  - No new API keys needed — all sources are free and open        ║
 ║                                                                  ║
 ╚══════════════════════════════════════════════════════════════════╝
 """
@@ -23,9 +34,10 @@ import os
 import hashlib
 import secrets
 import requests
+import xml.etree.ElementTree as ET                # arXiv returns Atom/XML
 from datetime import datetime, timedelta
 from functools import wraps
-
+from concurrent.futures import ThreadPoolExecutor, as_completed  # parallel API calls
 
 from flask import (
     Flask, render_template, request,
@@ -57,6 +69,7 @@ def normalize_email(email):
     if domain in ('gmail.com', 'googlemail.com'):
         local = local.replace('.', '')
     return f"{local}@{domain}"
+
 
 # ─── APP SETUP ──────────────────────────────────────────────────────
 app = Flask(__name__)
@@ -94,6 +107,7 @@ def sb_patch(table, filters, data):
     resp = requests.patch(url, headers=sb_headers(), json=data)
     return resp.ok
 
+
 # ─── SETTINGS ───────────────────────────────────────────────────────
 def get_int_env(name, default):
     value = os.getenv(name)
@@ -102,14 +116,19 @@ def get_int_env(name, default):
     except (TypeError, ValueError):
         return default
 
-FREE_SEARCHES    = get_int_env("FREE_SEARCHES", 10)
-PAID_SEARCHES    = get_int_env("PAID_SEARCHES", 20)
+FREE_SEARCHES       = get_int_env("FREE_SEARCHES", 10)
+PAID_SEARCHES       = get_int_env("PAID_SEARCHES", 20)
 MAX_ACCOUNTS_PER_IP = get_int_env("MAX_ACCOUNTS_PER_IP", 3)
-OPENALEX_URL     = "https://api.openalex.org/works"
+OPENALEX_URL        = "https://api.openalex.org/works"
+
+# How many results to request from each source per search
+# Total max results = RESULTS_PER_SOURCE * 4 sources (before dedup)
+RESULTS_PER_SOURCE = 10
+
 
 # ─── IP RATE LIMITING ────────────────────────────────────────────────
-# Now stored in Supabase so it survives redeploys.
-# Requires a table: ip_signups (id int8 pk, ip text, created_at timestamp)
+# Stored in Supabase so it survives redeploys.
+# Requires table: ip_signups (id int8 pk, ip text, created_at timestamp)
 
 def get_client_ip():
     """Get real IP even behind proxy/Railway."""
@@ -128,6 +147,7 @@ def record_ip_signup(ip):
         "created_at": datetime.now().isoformat()
     })
 
+
 # ─── LOGIN REQUIRED ─────────────────────────────────────────────────
 def login_required(f):
     @wraps(f)
@@ -136,6 +156,7 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated
+
 
 # ─── PASSWORD FUNCTIONS ─────────────────────────────────────────────
 def hash_password(password):
@@ -151,6 +172,7 @@ def check_password(password, hashed):
         return hashlib.sha256((password + salt).encode()).hexdigest() == h
     except Exception:
         return False
+
 
 # ─── USER HELPERS ────────────────────────────────────────────────────
 def get_user(user_id):
@@ -169,8 +191,51 @@ def searches_remaining(user):
     total = FREE_SEARCHES + (user.get('paid_searches', 0))
     return max(0, total - user.get('search_count', 0))
 
+
+# ─── APA REFERENCE BUILDER (shared by all sources) ──────────────────
+def _build_apa(authors, year, title, journal, volume, issue, pages, doi):
+    """
+    Build an APA reference string from parts.
+    Used by all 4 source formatters so the format is consistent.
+    ⚠️  Auto-generated — always verify before academic submission.
+    """
+    apa_authors = []
+    for name in (authors or [])[:3]:
+        parts = name.strip().split()
+        if len(parts) >= 2:
+            apa_authors.append(f"{parts[-1]}, {parts[0][0]}.")
+        elif name.strip():
+            apa_authors.append(name.strip())
+    if len(authors or []) > 3:
+        apa_authors.append("et al.")
+
+    vol_issue = ""
+    if volume and issue:
+        vol_issue = f", {volume}({issue})"
+    elif volume:
+        vol_issue = f", {volume}"
+
+    pages_part = f", {pages}" if pages else ""
+
+    # Normalize DOI to full URL if it isn't already
+    if doi and not doi.startswith("http"):
+        doi_part = f" https://doi.org/{doi}"
+    elif doi:
+        doi_part = f" {doi}"
+    else:
+        doi_part = ""
+
+    return (
+        f"{', '.join(apa_authors) or 'Unknown'} "
+        f"({year or 'n.d.'}). "
+        f"{title}. "
+        f"{journal}{vol_issue}{pages_part}.{doi_part}"
+    )
+
+
 # ─── OPENALEX HELPERS ────────────────────────────────────────────────
 def reconstruct_abstract(abstract_index):
+    """OpenAlex stores abstracts as inverted index — rebuild the plain text."""
     if not abstract_index:
         return ""
     words = []
@@ -181,6 +246,7 @@ def reconstruct_abstract(abstract_index):
     return " ".join(w for _, w in words)
 
 def format_paper(paper):
+    """Format a single OpenAlex paper into Sturch's standard result shape."""
     loc    = (paper.get("primary_location") or {})
     source = (loc.get("source") or {})
     oa     = (paper.get("open_access") or {})
@@ -201,48 +267,22 @@ def format_paper(paper):
         if c.get("display_name")
     ]
 
-    abstract = reconstruct_abstract(paper.get("abstract_inverted_index"))
-    year     = paper.get("publication_year", "n.d.")
-    title    = paper.get("title", "")
-    journal  = source.get("display_name", "")
-    doi      = paper.get("doi", "")
-
-    # Build APA authors
-    apa_authors = []
-    for a in paper.get("authorships", [])[:3]:
-        name = (a.get("author") or {}).get("display_name", "")
-        if name:
-            parts = name.split()
-            if len(parts) >= 2:
-                apa_authors.append(f"{parts[-1]}, {parts[0][0]}.")
-            else:
-                apa_authors.append(name)
-    if len(paper.get("authorships", [])) > 3:
-        apa_authors.append("et al.")
-
-    # Build volume, issue, pages
+    abstract   = reconstruct_abstract(paper.get("abstract_inverted_index"))
+    year       = paper.get("publication_year", "n.d.")
+    title      = paper.get("title", "")
+    journal    = source.get("display_name", "")
+    doi        = paper.get("doi", "")
     volume     = biblio.get("volume", "")
     issue      = biblio.get("issue", "")
     first_page = biblio.get("first_page", "")
     last_page  = biblio.get("last_page", "")
     pages      = f"{first_page}\u2013{last_page}" if first_page and last_page else ""
 
-    vol_issue = ""
-    if volume and issue:
-        vol_issue = f", {volume}({issue})"
-    elif volume:
-        vol_issue = f", {volume}"
-
-    # Track missing APA fields
     missing = []
     if not volume:  missing.append("volume")
     if not issue:   missing.append("issue")
     if not pages:   missing.append("page range")
     if not doi:     missing.append("DOI")
-
-    pages_part = f", {pages}" if pages else ""
-    doi_part   = f" {doi}" if doi else ""
-    apa = f"{', '.join(apa_authors) or 'Unknown'} ({year}). {title}. {journal}{vol_issue}{pages_part}.{doi_part}"
 
     return {
         "title":         title,
@@ -259,11 +299,297 @@ def format_paper(paper):
         "volume":        volume,
         "issue":         issue,
         "pages":         pages,
-        "apa_reference": apa,
+        "apa_reference": _build_apa(authors, year, title, journal, volume, issue, pages, doi),
         "apa_missing":   missing,
         "data_source":   "OpenAlex (openalex.org)",
         "ref_warning":   "Auto-generated — verify before academic use",
     }
+
+
+# ─── SEMANTIC SCHOLAR ────────────────────────────────────────────────
+# Free public API — no key required.
+# Docs: https://api.semanticscholar.org/api-docs/
+# 200M+ papers. Great coverage for CS, AI, and most STEM fields.
+
+def search_semantic_scholar(query, page=1, per_page=RESULTS_PER_SOURCE):
+    """
+    Search Semantic Scholar and return results in Sturch's standard shape.
+    No API key needed — free public endpoint.
+    Rate limit: 100 requests/5min unauthenticated (plenty for our use).
+    """
+    offset = (page - 1) * per_page
+    params = {
+        "query":  query,
+        "limit":  per_page,
+        "offset": offset,
+        # Request only the fields we actually use — keeps response small and fast
+        "fields": (
+            "title,authors,year,abstract,"
+            "citationCount,externalIds,journal,"
+            "isOpenAccess,openAccessPdf"
+        ),
+    }
+    try:
+        resp = requests.get(
+            "https://api.semanticscholar.org/graph/v1/paper/search",
+            params=params,
+            timeout=15,
+            headers={"User-Agent": "Sturch/2.0 (academic research tool)"},
+        )
+        if not resp.ok:
+            return []
+
+        papers = resp.json().get("data", [])
+        results = []
+
+        for p in papers:
+            authors   = [a.get("name", "") for a in p.get("authors", [])]
+            year      = p.get("year")
+            title     = p.get("title", "")
+            abstract  = p.get("abstract", "") or ""
+            citations = p.get("citationCount", 0) or 0
+            doi       = (p.get("externalIds") or {}).get("DOI", "")
+            journal   = (p.get("journal") or {}).get("name", "") or "Semantic Scholar"
+            is_oa     = p.get("isOpenAccess", False)
+            oa_url    = (p.get("openAccessPdf") or {}).get("url", "")
+
+            # Determine missing APA fields
+            missing = []
+            if not doi:   missing.append("DOI")
+            missing += ["volume", "issue", "page range"]  # SS doesn't return these
+
+            results.append({
+                "title":         title,
+                "authors":       authors,
+                "year":          year,
+                "journal":       journal,
+                "abstract":      abstract,
+                "citations":     citations,
+                "is_oa":         is_oa,
+                "oa_url":        oa_url,
+                "doi":           f"https://doi.org/{doi}" if doi else "",
+                "concepts":      [],
+                "openalex_id":   p.get("paperId", ""),  # reusing field as unique ID
+                "volume":        "",
+                "issue":         "",
+                "pages":         "",
+                "apa_reference": _build_apa(authors, year, title, journal, "", "", "", doi),
+                "apa_missing":   missing,
+                "data_source":   "Semantic Scholar (semanticscholar.org)",
+                "ref_warning":   "Auto-generated — verify before academic use",
+            })
+
+        return results
+
+    except Exception:
+        # Never crash the whole search if one source fails
+        return []
+
+
+# ─── ARXIV ───────────────────────────────────────────────────────────
+# Completely free — no key, no signup, no rate limit beyond common sense.
+# Docs: https://info.arxiv.org/help/api/index.html
+# Best for: CS, Math, Physics, Quantitative Biology, Economics.
+# All papers are open access by definition.
+
+def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE):
+    """
+    Search arXiv and return results in Sturch's standard shape.
+    Returns Atom XML — parsed with xml.etree.ElementTree (built-in, no pip needed).
+    """
+    start  = (page - 1) * per_page
+    params = {
+        "search_query": f"all:{query}",
+        "start":        start,
+        "max_results":  per_page,
+        "sortBy":       "relevance",
+        "sortOrder":    "descending",
+    }
+    try:
+        resp = requests.get(
+            "https://export.arxiv.org/api/query",
+            params=params,
+            timeout=15,
+        )
+        if not resp.ok:
+            return []
+
+        # arXiv returns Atom XML — parse it
+        root = ET.fromstring(resp.text)
+        ns   = {"atom": "http://www.w3.org/2005/Atom"}
+        entries = root.findall("atom:entry", ns)
+        results = []
+
+        for entry in entries:
+            title    = (entry.findtext("atom:title",   "", ns) or "").strip().replace("\n", " ")
+            abstract = (entry.findtext("atom:summary", "", ns) or "").strip().replace("\n", " ")
+            authors  = [
+                a.findtext("atom:name", "", ns)
+                for a in entry.findall("atom:author", ns)
+            ]
+            published = entry.findtext("atom:published", "", ns) or ""
+            year      = int(published[:4]) if published and published[:4].isdigit() else None
+
+            # Find DOI and arXiv page link from <link> tags
+            doi_link  = ""
+            page_link = ""
+            for link in entry.findall("atom:link", ns):
+                rel   = link.get("rel", "")
+                ltype = link.get("type", "")
+                href  = link.get("href", "")
+                if link.get("title") == "doi":
+                    doi_link = href
+                elif ltype == "text/html" or rel == "alternate":
+                    page_link = href
+
+            results.append({
+                "title":         title,
+                "authors":       authors,
+                "year":          year,
+                "journal":       "arXiv",
+                "abstract":      abstract,
+                "citations":     0,       # arXiv API doesn't return citation counts
+                "is_oa":         True,    # arXiv is always open access
+                "oa_url":        page_link,
+                "doi":           doi_link,
+                "concepts":      [],
+                "openalex_id":   page_link,  # arXiv URL as unique ID
+                "volume":        "",
+                "issue":         "",
+                "pages":         "",
+                "apa_reference": _build_apa(authors, year, title, "arXiv", "", "", "", doi_link),
+                "apa_missing":   ["volume", "issue", "page range"],
+                "data_source":   "arXiv (arxiv.org)",
+                "ref_warning":   "Auto-generated — verify before academic use",
+            })
+
+        return results
+
+    except Exception:
+        return []
+
+
+# ─── PUBMED ──────────────────────────────────────────────────────────
+# Free NCBI E-utilities API — no key required for basic use.
+# Docs: https://www.ncbi.nlm.nih.gov/books/NBK25501/
+# Best for: Medicine, Biology, Pharmacology, Public Health.
+# Two-step: esearch (get IDs) → esummary (get metadata).
+# Note: esummary does NOT return full abstracts — would need efetch for that.
+
+def search_pubmed(query, page=1, per_page=RESULTS_PER_SOURCE):
+    """
+    Search PubMed via NCBI E-utilities and return results in Sturch's standard shape.
+    No API key needed. Adding email to User-Agent is NCBI best practice.
+    """
+    retstart = (page - 1) * per_page
+
+    # ── Step 1: Get PubMed IDs matching the query ─────────────────
+    search_params = {
+        "db":       "pubmed",
+        "term":     query,
+        "retmax":   per_page,
+        "retstart": retstart,
+        "retmode":  "json",
+        "sort":     "relevance",
+    }
+    try:
+        search_resp = requests.get(
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+            params=search_params,
+            timeout=15,
+            headers={"User-Agent": "Sturch/2.0 (academic research tool)"},
+        )
+        if not search_resp.ok:
+            return []
+
+        ids = search_resp.json().get("esearchresult", {}).get("idlist", [])
+        if not ids:
+            return []
+
+    except Exception:
+        return []
+
+    # ── Step 2: Fetch metadata for those IDs ──────────────────────
+    try:
+        summary_params = {
+            "db":      "pubmed",
+            "id":      ",".join(ids),
+            "retmode": "json",
+        }
+        summary_resp = requests.get(
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+            params=summary_params,
+            timeout=15,
+            headers={"User-Agent": "Sturch/2.0 (academic research tool)"},
+        )
+        if not summary_resp.ok:
+            return []
+
+        summary_data = summary_resp.json().get("result", {})
+        results = []
+
+        for pmid in ids:
+            p = summary_data.get(pmid, {})
+            if not p or not isinstance(p, dict):
+                continue
+
+            title   = p.get("title", "")
+            authors = [a.get("name", "") for a in p.get("authors", [])]
+            journal = p.get("fulljournalname", "") or p.get("source", "")
+            volume  = p.get("volume", "")
+            issue   = p.get("issue", "")
+            pages   = p.get("pages", "")
+
+            # Parse year from pubdate (e.g. "2023 Jan 15" or "2023")
+            pubdate = p.get("pubdate", "")
+            year    = int(pubdate[:4]) if pubdate and pubdate[:4].isdigit() else None
+
+            # Find DOI in articleids list
+            doi = ""
+            for artid in p.get("articleids", []):
+                if artid.get("idtype") == "doi":
+                    doi = artid.get("value", "")
+                    break
+
+            pubmed_url = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
+
+            # Track which APA fields are missing
+            missing = [
+                label for label, val in [
+                    ("volume", volume),
+                    ("issue", issue),
+                    ("page range", pages),
+                    ("DOI", doi),
+                ]
+                if not val
+            ]
+
+            results.append({
+                "title":         title,
+                "authors":       authors,
+                "year":          year,
+                "journal":       journal,
+                "abstract":      "",      # esummary doesn't include abstracts
+                "citations":     0,       # PubMed E-utilities don't return citation counts
+                "is_oa":         False,
+                "oa_url":        pubmed_url,
+                "doi":           f"https://doi.org/{doi}" if doi else "",
+                "concepts":      [],
+                "openalex_id":   f"pmid:{pmid}",  # using as unique ID field
+                "volume":        volume,
+                "issue":         issue,
+                "pages":         pages,
+                "apa_reference": _build_apa(authors, year, title, journal, volume, issue, pages, doi),
+                "apa_missing":   missing,
+                "data_source":   "PubMed (pubmed.ncbi.nlm.nih.gov)",
+                "ref_warning":   "Auto-generated — verify before academic use",
+            })
+
+        return results
+
+    except Exception:
+        return []
+
 
 # ─── ROUTES ──────────────────────────────────────────────────────────
 
@@ -272,6 +598,7 @@ def home():
     if 'user_id' in session:
         return render_template('index.html')
     return redirect(url_for('login'))
+
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -313,7 +640,6 @@ def signup():
         if not result:
             return jsonify({"error": "Could not create account. Try again."}), 500
 
-        # Record this IP signup
         record_ip_signup(ip)
 
         new_user = result[0] if isinstance(result, list) else result
@@ -375,6 +701,19 @@ def get_me():
 @app.route('/api/search')
 @login_required
 def search():
+    """
+    Multi-source search endpoint.
+
+    Queries OpenAlex, Semantic Scholar, arXiv, and PubMed simultaneously
+    using ThreadPoolExecutor. Results are merged, deduplicated (by DOI then
+    by title prefix), and sorted by citation count descending before returning.
+
+    Query params:
+      q          — search query (required)
+      page       — page number (default: 1)
+      year_from  — filter: minimum publication year (OpenAlex only)
+      year_to    — filter: maximum publication year (OpenAlex only)
+    """
     query     = request.args.get('q', '').strip()
     page      = int(request.args.get('page', 1))
     year_from = request.args.get('year_from', '')
@@ -393,46 +732,105 @@ def search():
             "message": "You have used all your free searches. Pay $1 for 20 more!",
         }), 403
 
-    params = {
-        "search":   query,
-        "per-page": 25,
-        "page":     page,
-        "sort":     "cited_by_count:desc",
-    }
+    # ── Define the OpenAlex fetch (needs year filter params) ─────────
+    def fetch_openalex():
+        params = {
+            "search":   query,
+            "per-page": RESULTS_PER_SOURCE,
+            "page":     page,
+            "sort":     "cited_by_count:desc",
+        }
+        if year_from and year_to:
+            params["filter"] = f"publication_year:{year_from}-{year_to}"
+        elif year_from:
+            params["filter"] = f"publication_year:{year_from}-"
+        elif year_to:
+            params["filter"] = f"publication_year:-{year_to}"
 
-    if year_from and year_to:
-        params["filter"] = f"publication_year:{year_from}-{year_to}"
-    elif year_from:
-        params["filter"] = f"publication_year:{year_from}-"
+        try:
+            resp   = requests.get(OPENALEX_URL, params=params, timeout=15)
+            data   = resp.json()
+            papers = data.get("results", [])
+            count  = data.get("meta", {}).get("count", 0)
+            return [format_paper(p) for p in papers], count
+        except Exception:
+            return [], 0
 
-    try:
-        resp   = requests.get(OPENALEX_URL, params=params, timeout=15)
-        data   = resp.json()
-        papers = data.get("results", [])
-        total  = data.get("meta", {}).get("count", 0)
-    except Exception as e:
-        return jsonify({"error": f"Search failed: {e}"}), 500
+    # ── Run all 4 sources in parallel ────────────────────────────────
+    # ThreadPoolExecutor fires all 4 requests at the same time.
+    # Total wait time ≈ slowest single source (not sum of all 4).
+    all_results = []
+    total_count = 0
 
-    formatted = [format_paper(p) for p in papers]
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {
+            executor.submit(fetch_openalex):                          "openalex",
+            executor.submit(search_semantic_scholar, query, page):    "semantic_scholar",
+            executor.submit(search_arxiv,            query, page):    "arxiv",
+            executor.submit(search_pubmed,           query, page):    "pubmed",
+        }
 
+        for future in as_completed(futures):
+            source = futures[future]
+            try:
+                result = future.result()
+                if source == "openalex":
+                    papers, count = result
+                    total_count += count
+                    all_results.extend(papers)
+                else:
+                    all_results.extend(result)
+            except Exception:
+                # If one source crashes, the rest still return normally
+                pass
+
+    # ── Deduplicate across sources ────────────────────────────────────
+    # Priority: same DOI = definitely the same paper.
+    # Fallback: first 60 chars of lowercased title = probably the same paper.
+    seen_dois   = set()
+    seen_titles = set()
+    deduped     = []
+
+    for paper in all_results:
+        doi        = (paper.get("doi") or "").strip().lower()
+        title_key  = (paper.get("title") or "").strip().lower()[:60]
+
+        if doi and doi in seen_dois:
+            continue
+        if title_key and title_key in seen_titles:
+            continue
+
+        if doi:
+            seen_dois.add(doi)
+        if title_key:
+            seen_titles.add(title_key)
+
+        deduped.append(paper)
+
+    # ── Sort merged results by citations (highest first) ─────────────
+    deduped.sort(key=lambda x: x.get("citations", 0) or 0, reverse=True)
+
+    # ── Update search count and log ──────────────────────────────────
     new_count = user['search_count'] + 1
     sb_patch("users", f"id=eq.{user['id']}", {"search_count": new_count})
 
     sb_post("search_logs", {
-        "user_id":    user['id'],
-        "query":      query,
-        "results":    len(formatted),
+        "user_id":     user['id'],
+        "query":       query,
+        "results":     len(deduped),
         "searched_at": datetime.now().isoformat(),
     })
 
     total_allowed = FREE_SEARCHES + user.get('paid_searches', 0)
 
     return jsonify({
-        "results":            formatted,
-        "total":              total,
+        "results":            deduped,
+        "total":              total_count,
         "query":              query,
         "searches_remaining": max(0, total_allowed - new_count),
-        "data_source":        "OpenAlex (openalex.org)",
+        # Tell the frontend which sources were queried
+        "sources_used":       ["OpenAlex", "Semantic Scholar", "arXiv", "PubMed"],
+        "data_source":        "OpenAlex, Semantic Scholar, arXiv, PubMed",
         "ref_disclaimer":     "References auto-generated — verify before academic use",
     })
 
@@ -446,7 +844,12 @@ def upgrade():
 
 @app.route('/health')
 def health():
-    return jsonify({"status": "ok", "app": "Sturch", "version": "1.0-beta"})
+    return jsonify({
+        "status":  "ok",
+        "app":     "Sturch",
+        "version": "2.0-beta",
+        "sources": ["OpenAlex", "Semantic Scholar", "arXiv", "PubMed"],
+    })
 
 
 # ─── RUN ────────────────────────────────────────────────────────────
