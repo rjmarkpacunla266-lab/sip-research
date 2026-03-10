@@ -341,7 +341,7 @@ function renderResults(data) {
 
   document.getElementById('toolbar').classList.remove('hidden');
   document.getElementById('toolbarCount').innerHTML =
-    `<strong>${results.length}</strong> papers from OpenAlex`;
+    `<strong>${results.length}</strong> papers from multiple source`;
 
   container.innerHTML = results.map((item, i) => {
     const n       = i + 1;
@@ -422,7 +422,7 @@ function openDetail(idx, e) {
       <tr><td>Journal</td><td>${esc(item.journal||'—')}</td></tr>
       <tr><td>Citations</td><td>${(item.citations||0).toLocaleString()}</td></tr>
       <tr><td>Open Access</td><td>${item.is_oa?'✅ Yes':'❌ No'}</td></tr>
-      <tr><td>Source</td><td>OpenAlex (openalex.org)</td></tr>
+      <tr><td>Source</td><td>all sources (openalex.org)</td></tr>
     </table>
     ${item.abstract ? `<div class="text-block" style="margin:12px 0;font-size:.85rem">${esc(item.abstract)}</div>` : ''}
     <div class="warn-box">⚠️ References below are AUTO-GENERATED.${item.apa_missing && item.apa_missing.length ? ' Missing: <strong>' + item.apa_missing.join(', ') + '</strong>.' : ''} Always verify before academic submission.</div>
