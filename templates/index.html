@@ -77,6 +77,11 @@ header{display:flex;align-items:center;justify-content:space-between;padding:20p
 .card-meta .journal{font-style:italic}
 .cite-b{font-family:var(--mono);font-size:.7rem;padding:1px 7px;border-radius:20px}
 .oa-b{font-size:.68rem;padding:1px 7px;border-radius:20px;background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.2);color:var(--green)}
+.src-b{font-size:.65rem;padding:1px 7px;border-radius:20px;white-space:nowrap}
+.src-openalex{background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.25);color:#4f8de8}
+.src-semantic{background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.25);color:#9d6ef5}
+.src-arxiv{background:rgba(240,145,75,.1);border:1px solid rgba(240,145,75,.25);color:#f0914b}
+.src-pubmed{background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.25);color:#3ecf8e}
 .chevron{color:var(--muted);transition:transform .25s;flex-shrink:0}
 .card[data-open="true"] .chevron{transform:rotate(180deg)}
 .card-body{padding:0 16px 12px 52px}
@@ -161,7 +166,10 @@ code{font-family:var(--mono);font-size:.85em;background:var(--surf2);padding:1px
   <span>⚠️</span>
   <div>
     <strong>Data & Reference Notice:</strong>
-    All data from <a href="https://openalex.org" target="_blank">OpenAlex</a> (free academic database).
+    Results from <a href="https://openalex.org" target="_blank">OpenAlex</a>,
+    <a href="https://www.semanticscholar.org" target="_blank">Semantic Scholar</a>,
+    <a href="https://arxiv.org" target="_blank">arXiv</a> &amp;
+    <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank">PubMed</a>.
     References are <strong>auto-generated</strong> — always verify before academic submission.
   </div>
   <button class="notice-x" onclick="document.getElementById('noticeBanner').style.display='none'">✕</button>
@@ -187,15 +195,16 @@ code{font-family:var(--mono);font-size:.85em;background:var(--surf2);padding:1px
       <input type="number" id="yearTo" placeholder="e.g. 2024" min="1800" max="2026"
         style="width:100px;padding:6px 10px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:.78rem;outline:none"/>
     </div>
-    <span style="font-size:.72rem;color:var(--muted)">· ~250M papers · Press Enter to search</span>
+    <span style="font-size:.72rem;color:var(--muted)">· OpenAlex · Semantic Scholar · arXiv · PubMed · Press Enter to search</span>
   </div>
 </div>
 
 <!-- Stats bar (shown after search) -->
 <div class="stats-bar hidden" id="statsBar">
   <div class="stat"><div><div class="val" id="s_total">—</div><div class="lbl">Total in OpenAlex</div></div></div>
-  <div class="stat"><div><div class="val" id="s_shown">—</div><div class="lbl">Shown</div></div></div>
+  <div class="stat"><div><div class="val" id="s_shown">—</div><div class="lbl">Results shown</div></div></div>
   <div class="stat"><div><div class="val" id="s_remaining">—</div><div class="lbl">Searches left</div></div></div>
+  <div class="stat"><div><div class="val" id="s_sources">4</div><div class="lbl">Sources searched</div></div></div>
 </div>
 
 <!-- Toolbar -->
@@ -341,14 +350,17 @@ function renderResults(data) {
 
   document.getElementById('toolbar').classList.remove('hidden');
   document.getElementById('toolbarCount').innerHTML =
-    `<strong>${results.length}</strong> papers from multiple source`;
+    `<strong>${results.length}</strong> papers · ${(data.sources_used || ['OpenAlex']).join(', ')}`;
+  const srcEl = document.getElementById('s_sources');
+  if (srcEl && data.sources_used) srcEl.textContent = data.sources_used.length;
 
   container.innerHTML = results.map((item, i) => {
-    const n       = i + 1;
-    const cites   = item.citations || 0;
-    const cColor  = cites > 1000 ? 'var(--gold)' : cites > 100 ? 'var(--accent)' : 'var(--muted)';
-    const authors = (item.authors || []).slice(0,2).join(', ') +
-                    ((item.authors||[]).length > 2 ? ' et al.' : '');
+    const n        = i + 1;
+    const cites    = item.citations || 0;
+    const cColor   = cites > 1000 ? 'var(--gold)' : cites > 100 ? 'var(--accent)' : 'var(--muted)';
+    const authors  = (item.authors || []).slice(0,2).join(', ') +
+                     ((item.authors||[]).length > 2 ? ' et al.' : '');
+    const srcBadge = sourceBadge(item.data_source);
     const oaBadge = item.is_oa ? `<span class="oa-b">Open Access</span>` : '';
     const concepts = (item.concepts||[]).slice(0,4).map(c =>
       `<span class="chip">${esc(c)}</span>`
@@ -369,6 +381,7 @@ function renderResults(data) {
             <span style="font-family:var(--mono);font-size:.72rem">${item.year||'?'}</span>
             <span class="cite-b" style="color:${cColor};border:1px solid ${cColor}40;background:${cColor}10">★ ${cites.toLocaleString()}</span>
             ${oaBadge}
+            ${srcBadge}
           </div>
         </div>
         <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -383,7 +396,7 @@ function renderResults(data) {
         <button class="btn xs" onclick="copyAPA(${i}, event)">📋 APA</button>
         ${item.doi ? `<a href="${esc(item.doi)}" target="_blank" class="btn xs">DOI</a>` : ''}
         ${item.oa_url ? `<a href="${esc(item.oa_url)}" target="_blank" class="btn xs">Full Text</a>` : ''}
-        <button class="btn xs" onclick="openDetail(${i}, event)">Details</button>
+        <button class="btn xs" onclick="openPaperPage(${i}, event)">📄 Full Paper</button>
       </div>
     </div>`;
   }).join('');
@@ -392,6 +405,25 @@ function renderResults(data) {
   container.querySelectorAll('.card').forEach((c,i) => {
     c.style.animationDelay = (i * 20) + 'ms';
   });
+}
+
+// ── Source Badge ───────────────────────────────────────
+function sourceBadge(dataSource) {
+  const s = (dataSource || '').toLowerCase();
+  if (s.includes('semantic')) return `<span class="src-b src-semantic">Semantic Scholar</span>`;
+  if (s.includes('arxiv'))    return `<span class="src-b src-arxiv">arXiv</span>`;
+  if (s.includes('pubmed'))   return `<span class="src-b src-pubmed">PubMed</span>`;
+  return `<span class="src-b src-openalex">OpenAlex</span>`;
+}
+
+// ── Open Paper Page ────────────────────────────────────
+// Saves paper to sessionStorage then navigates to /paper
+function openPaperPage(idx, e) {
+  if (e) e.stopPropagation();
+  const item = currentResults[idx];
+  if (!item) return;
+  sessionStorage.setItem('sturch_paper', JSON.stringify(item));
+  window.location.href = '/paper';
 }
 
 // ── Card Toggle ────────────────────────────────────────
@@ -467,20 +499,20 @@ function doExport(fmt) {
 
   if (fmt === 'json') {
     content  = JSON.stringify({
-      meta: { query: currentQuery, generated: new Date().toISOString(), source: 'OpenAlex', warning: 'References auto-generated — verify before academic use' },
+      meta: { query: currentQuery, generated: new Date().toISOString(), sources: 'OpenAlex, Semantic Scholar, arXiv, PubMed', warning: 'References auto-generated — verify before academic use' },
       results: data
     }, null, 2);
     filename = 'sturch_export.json'; mime = 'application/json';
   } else if (fmt === 'csv') {
-    const fields = ['title','authors','year','journal','citations','is_oa','apa_reference','doi','oa_url'];
+    const fields = ['title','authors','year','journal','citations','is_oa','data_source','apa_reference','doi','oa_url'];
     const rows = [fields, ...data.map(i => fields.map(k => {
       const v = Array.isArray(i[k]) ? i[k].join('; ') : String(i[k]??'');
       return `"${v.replace(/"/g,'""')}"`;
     }))];
-    content = '# Source: OpenAlex | References auto-generated\n' + rows.map(r=>r.join(',')).join('\n');
+    content = '# Sources: OpenAlex, Semantic Scholar, arXiv, PubMed | References auto-generated\n' + rows.map(r=>r.join(',')).join('\n');
     filename = 'sturch_export.csv';
   } else if (fmt === 'bibtex') {
-    content = '% Sturch Export\n% Source: OpenAlex\n% WARNING: Auto-generated\n\n';
+    content = '% Sturch Export\n% Sources: OpenAlex, Semantic Scholar, arXiv, PubMed\n% WARNING: Auto-generated — verify before academic use\n\n';
     content += data.map(i => {
       const pid = (i.openalex_id||'').split('/').pop()||'ref';
       return `@article{${pid},\n  author={${(i.authors||[]).join(' and ')}},\n  year={${i.year||''}},\n  title={${i.title||''}},\n  journal={${i.journal||''}},\n  doi={${i.doi||''}}\n}`;
@@ -520,7 +552,7 @@ function showPaywall() {
 
 // ── States ─────────────────────────────────────────────
 function showLoading() {
-  document.getElementById('results').innerHTML = `<div class="state"><div class="spinner"></div><h3>Searching OpenAlex…</h3><p style="margin-top:6px;font-size:.82rem">Fetching from ~250 million academic papers</p></div>`;
+  document.getElementById('results').innerHTML = `<div class="state"><div class="spinner"></div><h3>Searching 4 sources…</h3><p style="margin-top:6px;font-size:.82rem">OpenAlex · Semantic Scholar · arXiv · PubMed</p></div>`;
   document.getElementById('statsBar').classList.add('hidden');
   document.getElementById('toolbar').classList.add('hidden');
 }

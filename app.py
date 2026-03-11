@@ -35,6 +35,7 @@ import hashlib
 import secrets
 import requests
 import xml.etree.ElementTree as ET                # arXiv returns Atom/XML
+from bs4 import BeautifulSoup                     # parse full paper HTML/XML
 from datetime import datetime, timedelta
 from functools import wraps
 from concurrent.futures import ThreadPoolExecutor, as_completed  # parallel API calls
@@ -849,6 +850,181 @@ def health():
         "app":     "Sturch",
         "version": "2.0-beta",
         "sources": ["OpenAlex", "Semantic Scholar", "arXiv", "PubMed"],
+    })
+
+
+# ─── PAPER READER PAGE ───────────────────────────────────────────────
+@app.route('/paper')
+@login_required
+def paper():
+    """Serve the dedicated paper reading page."""
+    return render_template('paper.html')
+
+
+# ─── FULL PAPER FETCH ────────────────────────────────────────────────
+# Tries to get the full text of a paper from its source.
+# Strategy per source:
+#   arXiv   → convert abstract URL to HTML page (arxiv.org/html/XXXX)
+#   PubMed  → PMC E-utilities full XML text
+#   Others  → try oa_url, scrape readable text, fall back to abstract
+
+def _clean_html(html):
+    """Strip HTML tags and scripts, return clean readable plain text."""
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "nav", "header", "footer", "figure", "aside"]):
+        tag.decompose()
+    return soup.get_text(separator="\n", strip=True)
+
+
+def _fetch_arxiv_full(oa_url):
+    """
+    arXiv has HTML versions at arxiv.org/html/<id>
+    Convert abstract URL → HTML URL and scrape it.
+    Fallback: ar5iv.org mirror.
+    """
+    try:
+        html_url = oa_url.replace("arxiv.org/abs/", "arxiv.org/html/")
+        resp = requests.get(html_url, timeout=20,
+                            headers={"User-Agent": "Sturch/2.0"})
+        if resp.ok:
+            return _clean_html(resp.text)
+        # Fallback to ar5iv mirror
+        ar5iv_url = oa_url.replace("arxiv.org/abs/", "ar5iv.org/html/")
+        resp2 = requests.get(ar5iv_url, timeout=20,
+                             headers={"User-Agent": "Sturch/2.0"})
+        if resp2.ok:
+            return _clean_html(resp2.text)
+    except Exception:
+        pass
+    return None
+
+
+def _fetch_pubmed_full(openalex_id):
+    """
+    Use NCBI PMC E-utilities to get full article text.
+    openalex_id is stored as 'pmid:XXXXX' from our PubMed formatter.
+    Two steps: find PMC ID from PMID → fetch full XML.
+    """
+    try:
+        pmid = openalex_id.replace("pmid:", "").strip()
+        if not pmid.isdigit():
+            return None
+        # Step 1: find PMC ID linked to this PMID
+        link_resp = requests.get(
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi",
+            params={"dbfrom": "pubmed", "db": "pmc", "id": pmid, "retmode": "json"},
+            timeout=15, headers={"User-Agent": "Sturch/2.0"}
+        )
+        if not link_resp.ok:
+            return None
+        pmc_ids = []
+        for ls in link_resp.json().get("linksets", []):
+            for lname in ls.get("linksetdbs", []):
+                if lname.get("linkname") == "pubmed_pmc":
+                    pmc_ids = lname.get("links", [])
+        if not pmc_ids:
+            return None
+        # Step 2: fetch full XML from PMC
+        fetch_resp = requests.get(
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+            params={"db": "pmc", "id": pmc_ids[0], "rettype": "xml", "retmode": "xml"},
+            timeout=20, headers={"User-Agent": "Sturch/2.0"}
+        )
+        if not fetch_resp.ok:
+            return None
+        soup  = BeautifulSoup(fetch_resp.text, "xml")
+        body  = soup.find("body")
+        paras = (body or soup).find_all("p")
+        text  = "\n\n".join(p.get_text(strip=True) for p in paras if p.get_text(strip=True))
+        return text if text else None
+    except Exception:
+        return None
+
+
+def _fetch_oa_url(oa_url):
+    """
+    Generic fallback: fetch open access URL and extract readable text.
+    Skips PDFs — can't parse them without heavy libraries.
+    """
+    try:
+        resp = requests.get(oa_url, timeout=20,
+                            headers={"User-Agent": "Sturch/2.0"},
+                            allow_redirects=True)
+        if not resp.ok:
+            return None
+        if "pdf" in resp.headers.get("Content-Type", "").lower():
+            return None  # skip PDFs
+        return _clean_html(resp.text)
+    except Exception:
+        return None
+
+
+@app.route('/api/fetch-paper')
+@login_required
+def fetch_paper():
+    """
+    Fetch the full text of a paper given its metadata.
+
+    Query params:
+      source      — data_source string (e.g. "arXiv (arxiv.org)")
+      oa_url      — open access URL
+      openalex_id — paper ID (used for PubMed PMID lookup)
+      abstract    — fallback text if full fetch fails
+
+    Returns JSON:
+      { "text": "...", "source": "arxiv_html|pubmed_pmc|oa_url|abstract", "full": true/false, "notice": "..." }
+    """
+    source      = request.args.get("source",      "").lower()
+    oa_url      = request.args.get("oa_url",      "").strip()
+    openalex_id = request.args.get("openalex_id", "").strip()
+    abstract    = request.args.get("abstract",    "").strip()
+
+    full_text    = None
+    fetch_source = "abstract"
+
+    # ── arXiv: reliable HTML versions ────────────────────────────────
+    if "arxiv" in source and oa_url:
+        full_text = _fetch_arxiv_full(oa_url)
+        if full_text:
+            fetch_source = "arxiv_html"
+
+    # ── PubMed: PMC full text ─────────────────────────────────────────
+    elif "pubmed" in source and openalex_id.startswith("pmid:"):
+        full_text = _fetch_pubmed_full(openalex_id)
+        if full_text:
+            fetch_source = "pubmed_pmc"
+        if not full_text and oa_url:
+            full_text = _fetch_oa_url(oa_url)
+            if full_text:
+                fetch_source = "oa_url"
+
+    # ── OpenAlex / Semantic Scholar: try oa_url ───────────────────────
+    elif oa_url:
+        full_text = _fetch_oa_url(oa_url)
+        if full_text:
+            fetch_source = "oa_url"
+
+    # ── Final fallback: abstract ──────────────────────────────────────
+    if not full_text:
+        if abstract:
+            return jsonify({
+                "text":   abstract,
+                "source": "abstract",
+                "full":   False,
+                "notice": "Full text unavailable — showing abstract only."
+            })
+        return jsonify({
+            "text":   "",
+            "source": "none",
+            "full":   False,
+            "notice": "No text available for this paper."
+        }), 404
+
+    return jsonify({
+        "text":   full_text,
+        "source": fetch_source,
+        "full":   True,
+        "notice": ""
     })
 
 
