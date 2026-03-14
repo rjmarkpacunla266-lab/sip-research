@@ -598,7 +598,7 @@ def search_pubmed(query, page=1, per_page=RESULTS_PER_SOURCE):
 def home():
     if 'user_id' in session:
         return render_template('index.html')
-    return redirect(url_for('login'))
+    return render_template('landing.html')  # landing page for visitors
 
 
 @app.route('/signup', methods=['GET', 'POST'])

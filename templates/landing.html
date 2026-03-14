@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="google-site-verification" content="zEl7F0Ag_iT-zaQBXGURH-EmUTjF6dhy2_fiND_zLtQ" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sturch — Your shortcut to academic research</title>
+<meta name="description" content="Find research papers in seconds. Search across OpenAlex, Semantic Scholar, arXiv and PubMed. Free for Filipino STE students."/>
+<link rel="canonical" href="https://sturch-production.up.railway.app/"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Lora:ital,wght@0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
+  --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
+  --gold:#e8b84b;--green:#3ecf8e;--orange:#f0914b;
+  --text:#d8e0f8;--muted:#5a6385;
+  --serif:'Lora',serif;--sans:'Outfit',sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── NAV ─────────────────────────────────────── */
+nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 24px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+  background:rgba(11,13,18,.92);backdrop-filter:blur(14px);
+}
+.logo{font-family:var(--serif);font-size:1.5rem}
+.logo span{color:var(--accent)}
+.beta{font-size:.65rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;margin-left:6px;font-family:monospace}
+.nav-btns{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:10px;font-family:var(--sans);font-size:.88rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .2s;text-decoration:none;white-space:nowrap}
+.btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent}
+.btn.primary:hover{background:#3d7fd8}
+.btn.lg{padding:13px 28px;font-size:1rem;font-weight:600}
+
+/* ── HERO ────────────────────────────────────── */
+.hero{
+  text-align:center;padding:70px 24px 60px;
+  max-width:700px;margin:0 auto;
+}
+.hero-badge{
+  display:inline-block;
+  background:rgba(79,141,232,.08);border:1px solid rgba(79,141,232,.2);
+  color:var(--accent);font-size:.75rem;padding:4px 14px;border-radius:20px;
+  margin-bottom:22px;letter-spacing:.05em;
+}
+.hero h1{
+  font-family:var(--serif);font-size:2.4rem;line-height:1.3;
+  margin-bottom:16px;
+}
+.hero h1 span{color:var(--accent)}
+.hero p{font-size:1rem;color:var(--muted);margin-bottom:32px;max-width:480px;margin-left:auto;margin-right:auto}
+.hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.sources-note{margin-top:20px;font-size:.75rem;color:var(--muted)}
+.sources-note span{color:var(--text)}
+
+/* ── HOW IT WORKS ────────────────────────────── */
+.section{padding:60px 24px;max-width:800px;margin:0 auto}
+.section-label{
+  font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;
+  color:var(--muted);margin-bottom:10px;
+}
+.section h2{font-family:var(--serif);font-size:1.6rem;margin-bottom:36px}
+
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
+.step{
+  background:var(--surf);border:1px solid var(--border);
+  border-radius:14px;padding:24px;position:relative;
+  transition:border-color .2s;
+}
+.step:hover{border-color:var(--accent)}
+.step-num{
+  font-family:monospace;font-size:.72rem;
+  color:var(--accent);background:rgba(79,141,232,.1);
+  border:1px solid rgba(79,141,232,.2);
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:12px;font-weight:600;
+}
+.step h3{font-size:.95rem;font-weight:600;margin-bottom:6px}
+.step p{font-size:.82rem;color:var(--muted);line-height:1.6}
+
+/* ── FEATURES ────────────────────────────────── */
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:8px}
+.feature{
+  background:var(--surf);border:1px solid var(--border);
+  border-radius:12px;padding:20px;
+}
+.feature .icon{font-size:1.4rem;margin-bottom:10px}
+.feature h3{font-size:.9rem;font-weight:600;margin-bottom:4px}
+.feature p{font-size:.78rem;color:var(--muted);line-height:1.5}
+
+/* ── SOURCES ─────────────────────────────────── */
+.sources-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:8px}
+.source-card{
+  background:var(--surf);border:1px solid var(--border);
+  border-radius:12px;padding:16px;text-align:center;
+}
+.source-card .src-badge{font-size:.7rem;padding:2px 10px;border-radius:20px;display:inline-block;margin-bottom:8px}
+.src-openalex{background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.25);color:#4f8de8}
+.src-semantic{background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.25);color:#9d6ef5}
+.src-arxiv{background:rgba(240,145,75,.1);border:1px solid rgba(240,145,75,.25);color:#f0914b}
+.src-pubmed{background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.25);color:#3ecf8e}
+.source-card p{font-size:.75rem;color:var(--muted);line-height:1.5}
+
+/* ── RULES ───────────────────────────────────── */
+.rules-box{
+  background:var(--surf);border:1px solid var(--border);
+  border-radius:14px;padding:28px;margin-top:8px;
+}
+.rule{display:flex;gap:12px;margin-bottom:16px;align-items:flex-start}
+.rule:last-child{margin-bottom:0}
+.rule .dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--accent);margin-top:6px;flex-shrink:0;
+}
+.rule .dot.warn{background:var(--orange)}
+.rule p{font-size:.85rem;color:var(--muted);line-height:1.6}
+.rule p strong{color:var(--text)}
+
+/* ── PRICING ─────────────────────────────────── */
+.pricing-box{
+  background:var(--surf);border:2px solid var(--accent);
+  border-radius:16px;padding:32px;text-align:center;
+  max-width:360px;margin:8px auto 0;
+}
+.price{font-size:3rem;font-weight:700;color:var(--accent);line-height:1}
+.price sup{font-size:1.3rem;vertical-align:top;margin-top:8px}
+.price-desc{color:var(--muted);font-size:.85rem;margin-top:6px;margin-bottom:20px}
+.price-features{text-align:left;margin:16px 0}
+.pf{display:flex;align-items:center;gap:8px;font-size:.83rem;margin-bottom:8px}
+.pf .check{color:var(--green)}
+.beta-note{
+  background:rgba(157,110,245,.08);border:1px solid rgba(157,110,245,.2);
+  border-radius:8px;padding:10px 14px;font-size:.78rem;color:var(--accent2);
+  margin-top:16px;line-height:1.6;
+}
+
+/* ── CTA ─────────────────────────────────────── */
+.cta{
+  text-align:center;padding:70px 24px;
+  background:linear-gradient(180deg,transparent,rgba(79,141,232,.04));
+  border-top:1px solid var(--border);
+}
+.cta h2{font-family:var(--serif);font-size:1.8rem;margin-bottom:10px}
+.cta p{color:var(--muted);font-size:.92rem;margin-bottom:28px}
+
+/* ── FOOTER ──────────────────────────────────── */
+footer{
+  text-align:center;padding:24px;
+  border-top:1px solid var(--border);
+  font-size:.75rem;color:var(--muted);
+}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--accent)}
+
+/* ── DIVIDER ─────────────────────────────────── */
+.divider{height:1px;background:var(--border);margin:0 24px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.fadein{animation:fadeUp .5s ease both}
+.fadein-d1{animation-delay:.1s}
+.fadein-d2{animation-delay:.2s}
+.fadein-d3{animation-delay:.3s}
+
+@media(max-width:600px){
+  .hero h1{font-size:1.7rem}
+  .hero{padding:50px 20px 40px}
+  .section{padding:40px 20px}
+  .btn.lg{padding:12px 22px;font-size:.95rem}
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="logo"><span>Sturch</span><span class="beta">BETA</span></div>
+  <div class="nav-btns">
+    <a href="/login"  class="btn">Sign In</a>
+    <a href="/signup" class="btn primary">Sign Up Free</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge fadein">🎓 Built for Filipino STE Students</div>
+  <h1 class="fadein fadein-d1">Find research papers<br><span>in seconds</span></h1>
+  <p class="fadein fadein-d2">Your shortcut to academic research. Search across millions of papers from 4 sources simultaneously — free.</p>
+  <div class="hero-btns fadein fadein-d3">
+    <a href="/signup" class="btn primary lg">Get Started Free</a>
+    <a href="/login"  class="btn lg">Sign In</a>
+  </div>
+  <div class="sources-note fadein fadein-d3">
+    Searches <span>OpenAlex · Semantic Scholar · arXiv · PubMed</span> simultaneously
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- How it works -->
+<div class="section">
+  <div class="section-label">How it works</div>
+  <h2>3 steps to find your paper</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Type your topic</h3>
+      <p>Enter any research topic — scientific terms, keywords, or a full question. Sturch understands it.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>Get results instantly</h3>
+      <p>Sturch searches 4 major academic databases at the same time and returns the best matching papers.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Copy your reference</h3>
+      <p>APA and MLA references are auto-generated. One tap to copy. Export to CSV or BibTeX anytime.</p>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Features -->
+<div class="section">
+  <div class="section-label">Features</div>
+  <h2>Everything you need for research</h2>
+  <div class="features">
+    <div class="feature">
+      <div class="icon">🔍</div>
+      <h3>4-Source Search</h3>
+      <p>OpenAlex, Semantic Scholar, arXiv and PubMed searched simultaneously.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">📋</div>
+      <h3>APA & MLA References</h3>
+      <p>Auto-generated references ready to copy. Always verify before submitting.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">📄</div>
+      <h3>Full Paper Reader</h3>
+      <p>Read full papers inside Sturch. Search for keywords within the text.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">📥</div>
+      <h3>Export Results</h3>
+      <p>Download your results as CSV or BibTeX for use in any citation tool.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🔓</div>
+      <h3>Open Access Links</h3>
+      <p>Sturch shows open access papers so you can read them for free.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">📱</div>
+      <h3>Mobile Friendly</h3>
+      <p>Works on your phone. No laptop needed to do proper academic research.</p>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Sources -->
+<div class="section">
+  <div class="section-label">Data Sources</div>
+  <h2>Powered by 4 trusted databases</h2>
+  <div class="sources-grid">
+    <div class="source-card">
+      <div class="src-badge src-openalex">OpenAlex</div>
+      <p>250M+ papers across all fields. The largest open academic database.</p>
+    </div>
+    <div class="source-card">
+      <div class="src-badge src-semantic">Semantic Scholar</div>
+      <p>200M+ papers. Strong in Computer Science and AI research.</p>
+    </div>
+    <div class="source-card">
+      <div class="src-badge src-arxiv">arXiv</div>
+      <p>Open access preprints in Physics, Math, CS, Biology and more.</p>
+    </div>
+    <div class="source-card">
+      <div class="src-badge src-pubmed">PubMed</div>
+      <p>35M+ biomedical and life science papers from NCBI.</p>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Rules -->
+<div class="section">
+  <div class="section-label">Rules & Disclaimer</div>
+  <h2>Before you use Sturch</h2>
+  <div class="rules-box">
+    <div class="rule">
+      <div class="dot warn"></div>
+      <p><strong>Don't spam the search button.</strong> Each search uses your points. Spamming wastes your free searches and puts load on the server. Wait for results to load before searching again.</p>
+    </div>
+    <div class="rule">
+      <div class="dot warn"></div>
+      <p><strong>Always verify references before submitting.</strong> APA and MLA references in Sturch are auto-generated. They may contain errors. Double-check before using them in academic work.</p>
+    </div>
+    <div class="rule">
+      <div class="dot"></div>
+      <p><strong>For research assistance only.</strong> Sturch helps you find and cite papers. It does not write your research for you. Use it as a tool, not a shortcut.</p>
+    </div>
+    <div class="rule">
+      <div class="dot"></div>
+      <p><strong>Data is from public academic databases.</strong> Sturch does not own any of the papers. All content belongs to their respective publishers and authors.</p>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Pricing -->
+<div class="section">
+  <div class="section-label">Pricing</div>
+  <h2>Simple and affordable</h2>
+  <div class="pricing-box">
+    <div style="font-size:2rem;margin-bottom:12px">🆓</div>
+    <div class="price">Free</div>
+    <div class="price-desc">to start · 10 searches included</div>
+    <div class="price-features">
+      <div class="pf"><span class="check">✓</span> 10 free searches on signup</div>
+      <div class="pf"><span class="check">✓</span> All 4 sources searched</div>
+      <div class="pf"><span class="check">✓</span> APA + MLA references</div>
+      <div class="pf"><span class="check">✓</span> CSV + BibTeX export</div>
+      <div class="pf"><span class="check">✓</span> Full paper reader</div>
+    </div>
+    <a href="/signup" class="btn primary" style="width:100%;justify-content:center;padding:13px">Get Started Free</a>
+    <div class="beta-note">
+      🚧 <strong>Beta:</strong> Payment system coming soon. During beta, enjoy extended free access!
+    </div>
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="cta">
+  <h2>Ready to start your research?</h2>
+  <p>Join Filipino STE students already using Sturch to find papers faster.</p>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <a href="/signup" class="btn primary lg">Create Free Account</a>
+    <a href="/login"  class="btn lg">Sign In</a>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <p>
+    Sturch — Built by a Filipino STE student, for Filipino STE students. &nbsp;·&nbsp;
+    Data from <a href="https://openalex.org" target="_blank">OpenAlex</a>,
+    <a href="https://www.semanticscholar.org" target="_blank">Semantic Scholar</a>,
+    <a href="https://arxiv.org" target="_blank">arXiv</a> &amp;
+    <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank">PubMed</a>
+  </p>
+  <p style="margin-top:6px">References are auto-generated — always verify before academic submission.</p>
+</footer>
+
+</body>
+</html>
