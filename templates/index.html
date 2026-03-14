@@ -94,6 +94,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:20p
 .apa-text{flex:1;font-size:.75rem;color:var(--muted);font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .card[data-open="true"] .apa-text{white-space:normal;overflow:visible}
 .ref-warn{font-size:.68rem;padding:1px 7px;border-radius:20px;background:rgba(240,145,75,.08);border:1px solid rgba(240,145,75,.2);color:var(--orange);white-space:nowrap}
+.foot-btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 
 /* States */
 .state{text-align:center;padding:70px 20px;color:var(--muted)}
@@ -144,6 +145,10 @@ code{font-family:var(--mono);font-size:.85em;background:var(--surf2);padding:1px
   .stats-bar{flex-direction:column}
   .card-body,.card-foot{padding-left:16px}
   .card-num{display:none}
+  .card-foot{flex-direction:column;align-items:flex-start;gap:6px}
+  .apa-text{width:100%;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  .card[data-open="true"] .apa-text{white-space:normal!important;overflow:visible!important}
+  .foot-btns{width:100%;flex-wrap:wrap}
 }
 </style>
 </head>
@@ -372,7 +377,7 @@ function renderResults(data) {
       <div class="card-head" onclick="toggleCard(${n})">
         <span class="card-num">${n}</span>
         <div class="card-info">
-          <div class="card-title">${esc(item.title||'Untitled')}</div>
+          <div class="card-title">${esc(stripTags(item.title||'Untitled'))}</div>
           <div class="card-meta">
             <span>${esc(authors)}</span>
             <span style="opacity:.4">·</span>
@@ -393,10 +398,12 @@ function renderResults(data) {
       <div class="card-foot hidden">
         <span class="ref-warn">${item.apa_missing && item.apa_missing.length ? '⚠️ Missing: ' + item.apa_missing.join(', ') : '⚠️ Auto-ref'}</span>
         <span class="apa-text" title="${esc(item.apa_reference||'')}">${esc(item.apa_reference||'')}</span>
-        <button class="btn xs" onclick="copyAPA(${i}, event)">📋 APA</button>
-        ${item.doi ? `<a href="${esc(item.doi)}" target="_blank" class="btn xs">DOI</a>` : ''}
-        ${item.oa_url ? `<a href="${esc(item.oa_url)}" target="_blank" class="btn xs">Full Text</a>` : ''}
-        <button class="btn xs" onclick="openPaperPage(${i}, event)">📄 Full Paper</button>
+        <div class="foot-btns">
+          <button class="btn xs" onclick="copyAPA(${i}, event)">📋 APA</button>
+          ${item.doi ? `<a href="${esc(item.doi)}" target="_blank" class="btn xs">DOI</a>` : ''}
+          ${item.oa_url ? `<a href="${esc(item.oa_url)}" target="_blank" class="btn xs">Full Text</a>` : ''}
+          <button class="btn xs" onclick="openPaperPage(${i}, event)">📄 Full Paper</button>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -447,7 +454,7 @@ function openDetail(idx, e) {
 
   const authors = (item.authors||[]).join(', ') || '—';
   document.getElementById('modalContent').innerHTML = `
-    <h2>${esc(item.title||'Untitled')}</h2>
+    <h2>${esc(stripTags(item.title||'Untitled'))}</h2>
     <table>
       <tr><td>Authors</td><td>${esc(authors)}</td></tr>
       <tr><td>Year</td><td>${item.year||'?'}</td></tr>
@@ -563,6 +570,9 @@ function showError(msg) {
 // ── Helpers ────────────────────────────────────────────
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function stripTags(s) {
+  return String(s||'').replace(/<[^>]*>/g, '');
 }
 
 let toastTimer;

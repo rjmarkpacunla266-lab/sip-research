@@ -124,7 +124,7 @@ OPENALEX_URL        = "https://api.openalex.org/works"
 
 # How many results to request from each source per search
 # Total max results = RESULTS_PER_SOURCE * 4 sources (before dedup)
-RESULTS_PER_SOURCE = 10
+RESULTS_PER_SOURCE = 100
 
 
 # ─── IP RATE LIMITING ────────────────────────────────────────────────
