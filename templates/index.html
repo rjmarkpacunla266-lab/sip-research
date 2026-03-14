@@ -261,7 +261,33 @@ const PAGE_SIZE    = 15;
 // Load user info when page opens
 window.addEventListener('load', () => {
   loadUserInfo();
+  restoreLastSearch();
 });
+
+// Restore last search results if user hit back button
+function restoreLastSearch() {
+  const saved = sessionStorage.getItem('sturch_last_results');
+  const query = sessionStorage.getItem('sturch_last_query');
+  if (!saved || !query) return;
+  try {
+    const data = JSON.parse(saved);
+    if (!data.results || !data.results.length) return;
+    // Restore search input and filters
+    document.getElementById('searchInput').value = query;
+    const yearFrom = sessionStorage.getItem('sturch_last_yearFrom');
+    const yearTo   = sessionStorage.getItem('sturch_last_yearTo');
+    if (yearFrom) document.getElementById('yearFrom').value = yearFrom;
+    if (yearTo)   document.getElementById('yearTo').value   = yearTo;
+    // Restore results
+    currentResults = data.results;
+    totalResults   = data.total || 0;
+    currentQuery   = query;
+    renderResults(data);
+    toast('📋 Results restored');
+  } catch(e) {
+    sessionStorage.removeItem('sturch_last_results');
+  }
+}
 
 // Search on Enter key
 document.getElementById('searchInput').addEventListener('keydown', e => {
@@ -333,6 +359,12 @@ async function doSearch(page = 1) {
       document.getElementById('toolbar').classList.add('hidden');
       return;
     }
+
+    // Save to sessionStorage so back button restores results
+    sessionStorage.setItem('sturch_last_results', JSON.stringify(data));
+    sessionStorage.setItem('sturch_last_query', query);
+    sessionStorage.setItem('sturch_last_yearFrom', document.getElementById('yearFrom').value.trim());
+    sessionStorage.setItem('sturch_last_yearTo',   document.getElementById('yearTo').value.trim());
 
     renderResults(data);
     loadUserInfo(); // refresh search count
