@@ -54,6 +54,13 @@ header{display:flex;align-items:center;justify-content:space-between;padding:20p
 .search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,141,232,.12)}
 .search-wrap input::placeholder{color:var(--muted)}
 
+/* Tag chips */
+.tags-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:0}
+.tags-wrap:empty{display:none}
+.tag-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:rgba(79,141,232,.12);border:1px solid rgba(79,141,232,.3);color:var(--accent);font-size:.78rem;font-weight:500;animation:fadeUp .15s ease}
+.tag-chip .tag-x{cursor:pointer;opacity:.6;font-size:.9rem;line-height:1;padding:0 2px}
+.tag-chip .tag-x:hover{opacity:1}
+
 /* Stats bar */
 .stats-bar{display:flex;gap:6px;margin:16px 0;flex-wrap:wrap}
 .stat{display:flex;align-items:center;gap:10px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;flex:1;min-width:100px}
@@ -182,10 +189,12 @@ code{font-family:var(--mono);font-size:.85em;background:var(--surf2);padding:1px
 
 <!-- Search -->
 <div class="search-section">
+  <!-- Tag chips row -->
+  <div class="tags-wrap" id="tagsWrap"></div>
   <div class="search-wrap">
     <svg class="si" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <input type="text" id="searchInput"
-      placeholder="Search research papers… (e.g. starch digestion, machine learning)"
+      placeholder="Type a keyword and press Enter to add tag…"
       autocomplete="off"/>
     <button class="btn primary" onclick="doSearch()">Search</button>
   </div>
@@ -200,7 +209,7 @@ code{font-family:var(--mono);font-size:.85em;background:var(--surf2);padding:1px
       <input type="number" id="yearTo" placeholder="e.g. 2024" min="1800" max="2026"
         style="width:100px;padding:6px 10px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:.78rem;outline:none"/>
     </div>
-    <span style="font-size:.72rem;color:var(--muted)">· OpenAlex · Semantic Scholar · arXiv · PubMed · Press Enter to search</span>
+    <span style="font-size:.72rem;color:var(--muted)">· Press Enter to add tag · Press Search to find papers</span>
   </div>
 </div>
 
@@ -273,7 +282,10 @@ function restoreLastSearch() {
     const data = JSON.parse(saved);
     if (!data.results || !data.results.length) return;
     // Restore search input and filters
-    document.getElementById('searchInput').value = query;
+    document.getElementById('searchInput').value = '';
+    const savedTags = sessionStorage.getItem('sturch_last_tags');
+    if (savedTags) { searchTags = JSON.parse(savedTags); renderTags(); }
+    else { searchTags = [query]; renderTags(); }
     const yearFrom = sessionStorage.getItem('sturch_last_yearFrom');
     const yearTo   = sessionStorage.getItem('sturch_last_yearTo');
     if (yearFrom) document.getElementById('yearFrom').value = yearFrom;
@@ -289,9 +301,44 @@ function restoreLastSearch() {
   }
 }
 
-// Search on Enter key
+// ── Tag Search System ──────────────────────────────────
+let searchTags = [];
+
+function addTag(val) {
+  val = val.trim();
+  if (!val) return;
+  // avoid duplicates
+  if (searchTags.includes(val.toLowerCase())) { toast('⚠️ Tag already added'); return; }
+  searchTags.push(val.toLowerCase());
+  renderTags();
+  document.getElementById('searchInput').value = '';
+}
+
+function removeTag(idx) {
+  searchTags.splice(idx, 1);
+  renderTags();
+}
+
+function renderTags() {
+  const wrap = document.getElementById('tagsWrap');
+  wrap.innerHTML = searchTags.map((t, i) =>
+    `<span class="tag-chip">${esc(t)}<span class="tag-x" onclick="removeTag(${i})">×</span></span>`
+  ).join('');
+}
+
+// Enter key → add tag; if no input text and tags exist → search
 document.getElementById('searchInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doSearch();
+  const val = document.getElementById('searchInput').value.trim();
+  if (e.key === 'Enter') {
+    if (val) { e.preventDefault(); addTag(val); }
+    else if (searchTags.length) { doSearch(); }
+    else { toast('⚠️ Please enter a search keyword'); }
+  }
+  // comma also adds tag
+  if (e.key === ',') {
+    e.preventDefault();
+    if (val) addTag(val);
+  }
 });
 
 // ── Load User Info ─────────────────────────────────────
@@ -318,8 +365,13 @@ async function loadUserInfo() {
 
 // ── Search ─────────────────────────────────────────────
 async function doSearch(page = 1) {
-  const query = document.getElementById('searchInput').value.trim();
-  if (!query) { toast('⚠️ Please enter a search query'); return; }
+  // Add any text still in the input as a tag first
+  const inputVal = document.getElementById('searchInput').value.trim();
+  if (inputVal) { addTag(inputVal); return; } // addTag clears input, user presses Search again
+
+  // Build query from tags
+  const query = searchTags.join(' ');
+  if (!query) { toast('⚠️ Please add at least one search tag'); return; }
 
   currentQuery = query;
   currentPage  = page;
@@ -363,6 +415,7 @@ async function doSearch(page = 1) {
     // Save to sessionStorage so back button restores results
     sessionStorage.setItem('sturch_last_results', JSON.stringify(data));
     sessionStorage.setItem('sturch_last_query', query);
+    sessionStorage.setItem('sturch_last_tags', JSON.stringify(searchTags));
     sessionStorage.setItem('sturch_last_yearFrom', document.getElementById('yearFrom').value.trim());
     sessionStorage.setItem('sturch_last_yearTo',   document.getElementById('yearTo').value.trim());
 
