@@ -19,140 +19,201 @@ a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
 .hidden{display:none!important}
 #app{max-width:860px;margin:0 auto;padding:0 18px 100px}
-header{display:flex;align-items:center;justify-content:space-between;padding:18px 0 14px;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap}
-.logo{font-family:var(--serif);font-size:1.4rem}
+
+/* Reading progress bar */
+#readingBar{position:fixed;top:0;left:0;height:3px;background:var(--accent);z-index:500;width:0%;transition:width .1s linear}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 13px;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap}
+.logo{font-family:var(--serif);font-size:1.35rem}
 .logo span{color:var(--accent)}
-.beta{font-size:.65rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;margin-left:6px;font-family:var(--mono)}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);font-family:var(--sans);font-size:.83rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .2s;white-space:nowrap;text-decoration:none}
+.beta{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;margin-left:5px;font-family:var(--mono)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:var(--r);font-family:var(--sans);font-size:.82rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .2s;white-space:nowrap;text-decoration:none}
 .btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
 .btn.primary{background:var(--accent);color:#fff;border-color:transparent}
 .btn.primary:hover{background:#3d7fd8}
-.btn.sm{padding:5px 11px;font-size:.78rem}
-.find-bar{position:sticky;top:0;z-index:100;background:rgba(11,13,18,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border);margin:0 -18px;padding:10px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.find-wrap{position:relative;flex:1;min-width:180px;max-width:420px}
-.find-wrap .fi{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
-.find-wrap input{width:100%;padding:8px 12px 8px 36px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--sans);font-size:.88rem;outline:none;transition:border-color .2s,box-shadow .2s}
-.find-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,141,232,.12)}
+.btn.sm{padding:5px 10px;font-size:.76rem}
+.btn.gold{background:rgba(232,184,75,.1);border-color:rgba(232,184,75,.3);color:var(--gold)}
+
+/* Find bar */
+.find-bar{position:sticky;top:0;z-index:100;background:rgba(11,13,18,.95);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);margin:0 -18px;padding:9px 18px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.find-wrap{position:relative;flex:1;min-width:160px;max-width:380px}
+.find-wrap .fi{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.find-wrap input{width:100%;padding:7px 11px 7px 32px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--sans);font-size:.86rem;outline:none;transition:border-color .2s}
+.find-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,141,232,.1)}
 .find-wrap input::placeholder{color:var(--muted)}
-.find-nav{display:flex;align-items:center;gap:5px}
-.find-count{font-family:var(--mono);font-size:.74rem;color:var(--muted);min-width:88px;text-align:center}
+.find-nav{display:flex;align-items:center;gap:4px}
+.find-count{font-family:var(--mono);font-size:.72rem;color:var(--muted);min-width:80px;text-align:center}
 .find-count.not-found{color:var(--red)}
 .find-count.found{color:var(--green)}
-.nav-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border);background:var(--surf2);color:var(--text);cursor:pointer;font-size:.85rem;transition:all .15s}
-.nav-btn:hover:not([disabled]){border-color:var(--accent);background:var(--surf3)}
+.nav-btn{width:27px;height:27px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border);background:var(--surf2);color:var(--text);cursor:pointer;font-size:.82rem;transition:all .15s}
+.nav-btn:hover:not([disabled]){border-color:var(--accent)}
 .nav-btn[disabled]{opacity:.3;cursor:not-allowed}
-.paper-meta{padding:24px 0 20px;border-bottom:1px solid var(--border)}
-.paper-title{font-family:var(--serif);font-size:1.5rem;line-height:1.45;margin-bottom:14px}
-.meta-row{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:10px;font-size:.82rem;color:var(--muted)}
+
+/* Paper meta */
+.paper-meta{padding:22px 0 18px;border-bottom:1px solid var(--border)}
+.paper-title{font-family:var(--serif);font-size:1.45rem;line-height:1.45;margin-bottom:13px}
+.meta-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;font-size:.8rem;color:var(--muted)}
 .meta-row .journal{font-style:italic;color:var(--text)}
-.badge{font-size:.68rem;padding:2px 8px;border-radius:20px;white-space:nowrap}
-.badge.oa{background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.2);color:var(--green)}
-.badge.src-openalex{background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.25);color:#4f8de8}
-.badge.src-semantic{background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.25);color:#9d6ef5}
-.badge.src-arxiv{background:rgba(240,145,75,.1);border:1px solid rgba(240,145,75,.25);color:#f0914b}
-.badge.src-pubmed{background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.25);color:#3ecf8e}
-.cite-badge{font-family:var(--mono);font-size:.7rem;padding:2px 8px;border-radius:20px}
-.apa-block{background:var(--surf2);border-left:3px solid var(--muted);border-radius:0 6px 6px 0;padding:10px 13px;font-size:.8rem;font-style:italic;color:var(--muted);margin:12px 0;line-height:1.6}
-.warn-inline{font-size:.72rem;color:var(--orange);margin-top:4px}
-.paper-links{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}
-.text-section{padding:24px 0}
-.text-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.badge{font-size:.66rem;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.badge.oa{background:rgba(62,207,142,.07);border:1px solid rgba(62,207,142,.18);color:var(--green)}
+.badge.src-openalex{background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.22);color:#4f8de8}
+.badge.src-semantic{background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.22);color:#9d6ef5}
+.badge.src-arxiv{background:rgba(240,145,75,.1);border:1px solid rgba(240,145,75,.22);color:#f0914b}
+.badge.src-pubmed{background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.22);color:#3ecf8e}
+.cite-badge{font-family:var(--mono);font-size:.68rem;padding:2px 8px;border-radius:20px}
+.read-time{font-size:.72rem;color:var(--muted);font-family:var(--mono);padding:2px 8px;background:var(--surf2);border-radius:20px;border:1px solid var(--border)}
+.apa-block{background:var(--surf2);border-left:3px solid var(--muted);border-radius:0 6px 6px 0;padding:9px 12px;font-size:.78rem;font-style:italic;color:var(--muted);margin:11px 0;line-height:1.6}
+.warn-inline{font-size:.7rem;color:var(--orange);margin-top:3px}
+.paper-links{display:flex;gap:6px;flex-wrap:wrap;margin-top:13px}
+
+/* Text section */
+.text-section{padding:22px 0}
+.text-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:13px;display:flex;align-items:center;gap:8px}
 .text-label::after{content:'';flex:1;height:1px;background:var(--border)}
-.text-source-note{font-size:.75rem;color:var(--muted);margin-bottom:16px;background:var(--surf2);border-radius:6px;padding:8px 12px;border-left:3px solid var(--accent)}
-.text-source-note.warning{border-left-color:var(--orange);color:var(--orange)}
+.source-note{font-size:.73rem;color:var(--muted);margin-bottom:14px;background:var(--surf2);border-radius:6px;padding:8px 11px;border-left:3px solid var(--accent)}
+.source-note.warning{border-left-color:var(--orange);color:var(--orange)}
+.image-notice{font-size:.73rem;color:var(--accent2);margin-bottom:12px;background:rgba(157,110,245,.06);border-radius:6px;padding:8px 11px;border-left:3px solid var(--accent2)}
 #paperText{font-family:var(--serif);font-size:1rem;line-height:1.9;color:#c8d4f0;word-break:break-word}
 #paperText p{margin-bottom:1.1em}
-mark.hit{background:rgba(232,184,75,.25);color:var(--gold);border-radius:2px;padding:0 2px;scroll-margin-top:120px}
+mark.hit{background:rgba(232,184,75,.22);color:var(--gold);border-radius:2px;padding:0 2px;scroll-margin-top:110px}
 mark.hit.active{background:rgba(232,184,75,.6);color:#fff;outline:2px solid var(--gold);outline-offset:1px}
-.state{text-align:center;padding:60px 20px;color:var(--muted)}
-.state .big{font-size:2rem;margin-bottom:12px}
-.state h3{font-family:var(--serif);font-size:1.15rem;color:var(--text);margin-bottom:6px}
-.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
-#toast{position:fixed;bottom:22px;right:22px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;font-size:.85rem;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:300;transform:translateY(50px);opacity:0;transition:all .3s}
+
+/* Related papers */
+.related-section{padding:20px 0;border-top:1px solid var(--border)}
+.related-card{background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;margin-bottom:7px;cursor:pointer;transition:border-color .15s}
+.related-card:hover{border-color:var(--accent)}
+.related-title{font-family:var(--serif);font-size:.88rem;line-height:1.35;margin-bottom:4px}
+.related-meta{font-size:.73rem;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+
+/* States */
+.state{text-align:center;padding:55px 20px;color:var(--muted)}
+.state .big{font-size:1.9rem;margin-bottom:10px}
+.state h3{font-family:var(--serif);font-size:1.1rem;color:var(--text);margin-bottom:5px}
+.spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+
+#toast{position:fixed;bottom:20px;right:20px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:9px 15px;font-size:.83rem;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:300;transform:translateY(50px);opacity:0;transition:all .3s;max-width:280px}
 #toast.show{transform:translateY(0);opacity:1}
+
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .fadein{animation:fadeUp .35s ease both}
-@media(max-width:600px){.paper-title{font-size:1.2rem}}
+@media(max-width:600px){.paper-title{font-size:1.15rem}}
 </style>
 </head>
 <body>
+
+<!-- Reading progress bar -->
+<div id="readingBar"></div>
+
 <div id="app">
 
 <header>
   <div class="logo"><span>Sturch</span><span class="beta">BETA</span></div>
-  <a href="/" class="btn sm">← Back to Search</a>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <a href="/" class="btn sm">← Back</a>
+    <button class="btn sm" id="bkBtn" onclick="toggleBookmark()">🔖 Save</button>
+    <button class="btn sm" onclick="window.print()">🖨 Print</button>
+  </div>
 </header>
 
+<!-- Find bar -->
 <div class="find-bar">
   <div class="find-wrap">
-    <svg class="fi" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <svg class="fi" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
     </svg>
-    <input type="text" id="findInput" placeholder="Find word in this paper…" autocomplete="off" spellcheck="false"/>
+    <input type="text" id="findInput" placeholder="Find word in paper…" autocomplete="off" spellcheck="false"/>
   </div>
   <div class="find-nav">
-    <button class="nav-btn" id="prevBtn" onclick="navMatch(-1)" disabled title="Previous match">▲</button>
-    <button class="nav-btn" id="nextBtn" onclick="navMatch(1)"  disabled title="Next match">▼</button>
+    <button class="nav-btn" id="prevBtn" onclick="navMatch(-1)" disabled>▲</button>
+    <button class="nav-btn" id="nextBtn" onclick="navMatch(1)"  disabled>▼</button>
     <span class="find-count" id="findCount">—</span>
   </div>
   <button class="btn sm" onclick="clearFind()">Clear</button>
 </div>
 
+<!-- Paper Meta -->
 <div class="paper-meta fadein" id="paperMeta">
   <div class="state"><div class="spinner"></div><h3>Loading paper…</h3></div>
 </div>
 
+<!-- Full Text -->
 <div class="text-section fadein hidden" id="textSection">
   <div class="text-label" id="textLabel">Full Paper Text</div>
-  <div class="text-source-note" id="textSourceNote"></div>
+  <div class="source-note" id="sourceNote"></div>
+  <div class="image-notice hidden" id="imageNotice"></div>
   <div id="paperText"></div>
+</div>
+
+<!-- Related Papers -->
+<div class="related-section hidden" id="relatedSection">
+  <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:13px;display:flex;align-items:center;gap:8px">Related Papers<span style="flex:1;height:1px;background:var(--border);display:block"></span></div>
+  <div id="relatedList"></div>
 </div>
 
 </div>
 <div id="toast"></div>
 
 <script>
-let paper=null,matchNodes=[],matchIndex=-1,findTimer=null;
+let paper = null, matchNodes = [], matchIndex = -1, findTimer = null;
+let bookmarkId = null;
 
-window.addEventListener('load',()=>{
-  const raw=sessionStorage.getItem('sturch_paper');
-  if(!raw){renderError('No paper data found. Please go back and click a result again.');return;}
-  try{paper=JSON.parse(raw);}catch(e){renderError('Could not read paper data.');return;}
-  document.title=`Sturch — ${paper.title||'Paper'}`;
+// ── Init ──────────────────────────────────────
+window.addEventListener('load', () => {
+  const raw = sessionStorage.getItem('sturch_paper');
+  if (!raw) { renderError('No paper data found. Please go back and click a result.'); return; }
+  try { paper = JSON.parse(raw); } catch(e) { renderError('Could not read paper data.'); return; }
+  document.title = `Sturch — ${paper.title||'Paper'}`;
   renderMeta(paper);
+  checkBookmark();
   fetchFullText(paper);
+  setupReadingProgress();
 });
 
-document.addEventListener('keydown',e=>{
-  const inp=document.getElementById('findInput');
-  if((e.ctrlKey||e.metaKey)&&e.key==='f'){e.preventDefault();inp.focus();inp.select();}
-  if(e.key==='Enter'&&document.activeElement===inp){navMatch(e.shiftKey?-1:1);}
-  if(e.key==='Escape'){clearFind();}
+// ── Reading progress bar ──────────────────────
+function setupReadingProgress() {
+  window.addEventListener('scroll', () => {
+    const doc = document.documentElement;
+    const scrolled = doc.scrollTop || document.body.scrollTop;
+    const total = doc.scrollHeight - doc.clientHeight;
+    const pct = total > 0 ? Math.min(100, (scrolled / total) * 100) : 0;
+    document.getElementById('readingBar').style.width = pct + '%';
+  });
+}
+
+// ── Keyboard shortcuts ────────────────────────
+document.addEventListener('keydown', e => {
+  const inp = document.getElementById('findInput');
+  if ((e.ctrlKey||e.metaKey) && e.key==='f') { e.preventDefault(); inp.focus(); inp.select(); }
+  if (e.key==='Enter' && document.activeElement===inp) { navMatch(e.shiftKey?-1:1); }
+  if (e.key==='Escape') clearFind();
 });
-document.getElementById('findInput').addEventListener('input',()=>{
-  clearTimeout(findTimer);findTimer=setTimeout(runFind,250);
+document.getElementById('findInput').addEventListener('input', () => {
+  clearTimeout(findTimer); findTimer = setTimeout(runFind, 220);
 });
 
-function renderMeta(p){
-  const authors=(p.authors||[]).join(', ')||'—';
-  const cites=p.citations||0;
-  const cColor=cites>1000?'var(--gold)':cites>100?'var(--accent)':'var(--muted)';
-  const oaBadge=p.is_oa?`<span class="badge oa">Open Access</span>`:'';
-  const srcBadge=getSourceBadge(p.data_source);
-  const missing=p.apa_missing||[];
-  document.getElementById('paperMeta').innerHTML=`
+// ── Render Meta ───────────────────────────────
+function renderMeta(p) {
+  const authors = (p.authors||[]).join(', ') || '—';
+  const cites   = p.citations || 0;
+  const cColor  = cites>1000?'var(--gold)':cites>100?'var(--accent)':'var(--muted)';
+  const missing = p.apa_missing || [];
+  document.getElementById('paperMeta').innerHTML = `
     <div class="paper-title">${esc(p.title||'Untitled')}</div>
     <div class="meta-row">
-      <span>${esc(authors)}</span><span style="opacity:.4">·</span>
-      <span class="journal">${esc(p.journal||'—')}</span><span style="opacity:.4">·</span>
-      <span style="font-family:var(--mono);font-size:.75rem">${p.year||'?'}</span>
+      <span>${esc(authors)}</span>
+      <span style="opacity:.4">·</span>
+      <span class="journal">${esc(p.journal||'—')}</span>
+      <span style="opacity:.4">·</span>
+      <span style="font-family:var(--mono);font-size:.73rem">${p.year||'?'}</span>
     </div>
     <div class="meta-row">
       <span class="cite-badge" style="color:${cColor};border:1px solid ${cColor}40;background:${cColor}10">★ ${cites.toLocaleString()} citations</span>
-      ${oaBadge}${srcBadge}
-      ${p.volume?`<span style="font-family:var(--mono);font-size:.75rem">Vol.${esc(p.volume)}${p.issue?' No.'+esc(p.issue):''}</span>`:''}
-      ${p.pages?`<span style="font-family:var(--mono);font-size:.75rem">pp.${esc(p.pages)}</span>`:''}
+      ${p.is_oa?`<span class="badge oa">Open Access</span>`:''}
+      ${getSourceBadge(p.data_source)}
+      ${p.volume?`<span style="font-family:var(--mono);font-size:.72rem">Vol.${esc(p.volume)}${p.issue?' No.'+esc(p.issue):''}</span>`:''}
+      ${p.pages?`<span style="font-family:var(--mono);font-size:.72rem">pp.${esc(p.pages)}</span>`:''}
+      <span class="read-time" id="readTimeBadge">⏱ calculating…</span>
     </div>
     ${missing.length?`<div class="warn-inline">⚠️ APA may be missing: ${missing.join(', ')}</div>`:''}
     <div class="apa-block">${esc(p.apa_reference||'Not available')}</div>
@@ -160,144 +221,253 @@ function renderMeta(p){
       ${p.doi?`<a href="${esc(p.doi)}" target="_blank" class="btn sm primary">↗ View Paper (DOI)</a>`:''}
       ${p.oa_url?`<a href="${esc(p.oa_url)}" target="_blank" class="btn sm">↗ Original Page</a>`:''}
       <button class="btn sm" onclick="copyAPA()">📋 Copy APA</button>
+      <button class="btn sm" id="relatedBtn" onclick="loadRelated()">🔗 Related Papers (5 pts)</button>
     </div>`;
 }
 
-async function fetchFullText(p){
+function updateReadTime(text) {
+  const words = text.trim().split(/\s+/).length;
+  const mins  = Math.max(1, Math.round(words / 200));
+  const el    = document.getElementById('readTimeBadge');
+  if (el) el.textContent = `⏱ ~${mins} min read`;
+}
+
+// ── Fetch Full Text ───────────────────────────
+async function fetchFullText(p) {
   document.getElementById('textSection').classList.remove('hidden');
-  document.getElementById('textLabel').textContent='Fetching full text…';
-  document.getElementById('paperText').innerHTML=
-    '<div class="state"><div class="spinner"></div><p style="margin-top:8px;font-size:.85rem">Fetching paper content…</p></div>';
-  try{
-    const params=new URLSearchParams({
-      source:p.data_source||'',oa_url:p.oa_url||'',
-      openalex_id:p.openalex_id||'',abstract:p.abstract||''
+  document.getElementById('textLabel').textContent = 'Fetching full text…';
+  document.getElementById('paperText').innerHTML =
+    '<div class="state"><div class="spinner"></div><p style="margin-top:7px;font-size:.83rem">Fetching paper content…</p></div>';
+  try {
+    const params = new URLSearchParams({
+      source: p.data_source||'', oa_url: p.oa_url||'',
+      openalex_id: p.openalex_id||'', abstract: p.abstract||''
     });
-    const resp=await fetch(`/api/fetch-paper?${params}`);
-    const data=await resp.json();
+    const resp = await fetch(`/api/fetch-paper?${params}`);
+    const data = await resp.json();
     renderFullText(data);
-  }catch(e){
-    if(p.abstract){
+  } catch(e) {
+    if (p.abstract) {
       renderFullText({text:p.abstract,source:'abstract',full:false,notice:'Could not reach server — showing abstract only.'});
-    }else{
-      document.getElementById('paperText').innerHTML=
+    } else {
+      document.getElementById('paperText').innerHTML =
         `<div class="state"><div class="big">⚠️</div><h3>Could not load text</h3><p>Check your connection and try again.</p></div>`;
     }
   }
 }
 
-function renderFullText(data){
-  const isFull=data.full;
-  const noteMap={
-    arxiv_html:'✅ Full paper loaded from arXiv HTML',
-    pubmed_pmc:'✅ Full paper loaded from PubMed Central',
-    oa_url:'✅ Full text loaded from open access source',
-    abstract:'⚠️ Full text unavailable — showing abstract only',
-    none:'⚠️ No text available for this paper',
+// ── Render Full Text ──────────────────────────
+function renderFullText(data) {
+  const isFull = data.full;
+  const noteMap = {
+    arxiv_html: '✅ Full paper loaded from arXiv HTML',
+    pubmed_pmc: '✅ Full paper loaded from PubMed Central',
+    oa_url:     '✅ Full text loaded from open access source',
+    abstract:   '⚠️ Full text unavailable — showing abstract only',
+    none:       '⚠️ No text available for this paper',
   };
-  document.getElementById('textLabel').textContent=isFull?'Full Paper Text':'Abstract';
-  const note=data.notice||noteMap[data.source]||(isFull?'✅ Full text loaded':'⚠️ Abstract only');
-  document.getElementById('textSourceNote').textContent=note;
-  document.getElementById('textSourceNote').className='text-source-note'+(!isFull?' warning':'');
-  const text=data.text||'';
-  if(!text){
-    document.getElementById('paperText').innerHTML=
+  document.getElementById('textLabel').textContent = isFull ? 'Full Paper Text' : 'Abstract';
+  const note = data.notice || noteMap[data.source] || (isFull?'✅ Full text loaded':'⚠️ Abstract only');
+  const sn   = document.getElementById('sourceNote');
+  sn.textContent = note;
+  sn.className   = 'source-note' + (!isFull?' warning':'');
+
+  // Image notice
+  const imgEl = document.getElementById('imageNotice');
+  if (data.image_notice && isFull) {
+    imgEl.textContent = data.image_notice;
+    imgEl.classList.remove('hidden');
+  } else {
+    imgEl.classList.add('hidden');
+  }
+
+  const text = data.text || '';
+  if (!text) {
+    document.getElementById('paperText').innerHTML =
       `<div class="state"><div class="big">📭</div><h3>No text available</h3>
-       <p style="margin-top:6px;font-size:.85rem">This paper has no accessible full text or abstract.</p></div>`;
+       <p style="margin-top:5px;font-size:.83rem">This paper has no accessible full text or abstract.</p></div>`;
     return;
   }
-  const paragraphs=text.split(/\n{2,}/).filter(s=>s.trim());
-  document.getElementById('paperText').innerHTML=
-    paragraphs.map(para=>`<p>${esc(para.replace(/\n/g,' '))}</p>`).join('');
+
+  updateReadTime(text);
+  const paragraphs = text.split(/\n{2,}/).filter(s => s.trim());
+  document.getElementById('paperText').innerHTML =
+    paragraphs.map(para => `<p>${esc(para.replace(/\n/g,' '))}</p>`).join('');
   toast(`📄 ${isFull?'Full paper loaded':'Abstract loaded'}`);
 }
 
-function runFind(){
-  const query=document.getElementById('findInput').value.trim();
-  clearHighlights();
-  if(!query){updateFindCount(0,0,false);return;}
-  const container=document.getElementById('paperText');
-  if(!container)return;
-  const regex=new RegExp(escapeRegex(query),'gi');
-  const walker=document.createTreeWalker(container,NodeFilter.SHOW_TEXT);
-  const toReplace=[];
-  let node;
-  while((node=walker.nextNode())){if(regex.test(node.nodeValue))toReplace.push(node);regex.lastIndex=0;}
-  toReplace.forEach(textNode=>{
-    const frag=document.createDocumentFragment();
-    let remain=textNode.nodeValue,match;
-    regex.lastIndex=0;
-    while((match=regex.exec(remain))!==null){
-      if(match.index>0)frag.appendChild(document.createTextNode(remain.slice(0,match.index)));
-      const mark=document.createElement('mark');
-      mark.className='hit';mark.textContent=match[0];frag.appendChild(mark);
-      remain=remain.slice(match.index+match[0].length);regex.lastIndex=0;
+// ── Check Bookmark ────────────────────────────
+async function checkBookmark() {
+  if (!paper) return;
+  const paperId = (paper.openalex_id||paper.doi||(paper.title||'').slice(0,60)).trim();
+  try {
+    const resp = await fetch('/api/bookmarks');
+    const bms  = await resp.json();
+    const bm   = bms.find(b => b.paper_id === paperId);
+    if (bm) {
+      bookmarkId = bm.id;
+      const btn  = document.getElementById('bkBtn');
+      if (btn) { btn.textContent='🔖 Saved'; btn.classList.add('gold'); }
     }
-    if(remain)frag.appendChild(document.createTextNode(remain));
-    textNode.parentNode.replaceChild(frag,textNode);
-  });
-  matchNodes=Array.from(container.querySelectorAll('mark.hit'));
-  if(!matchNodes.length){updateFindCount(0,0,true);return;}
-  matchIndex=0;activateMatch(0);updateFindCount(1,matchNodes.length,false);
-  document.getElementById('prevBtn').disabled=matchNodes.length<=1;
-  document.getElementById('nextBtn').disabled=matchNodes.length<=1;
+  } catch(e) {}
 }
 
-function navMatch(dir){
-  if(!matchNodes.length)return;
-  matchNodes[matchIndex]?.classList.remove('active');
-  matchIndex=(matchIndex+dir+matchNodes.length)%matchNodes.length;
-  activateMatch(matchIndex);
-  updateFindCount(matchIndex+1,matchNodes.length,false);
+// ── Toggle Bookmark ───────────────────────────
+async function toggleBookmark() {
+  if (!paper) return;
+  const paperId = (paper.openalex_id||paper.doi||(paper.title||'').slice(0,60)).trim();
+  const btn     = document.getElementById('bkBtn');
+  if (bookmarkId) {
+    await fetch(`/api/bookmarks/${bookmarkId}`, {method:'DELETE'});
+    bookmarkId = null;
+    if (btn) { btn.textContent='🔖 Save'; btn.classList.remove('gold'); }
+    toast('Bookmark removed');
+  } else {
+    const resp = await fetch('/api/bookmarks', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(paper)
+    });
+    const data = await resp.json();
+    bookmarkId = data.id || 'saved';
+    if (btn) { btn.textContent='🔖 Saved'; btn.classList.add('gold'); }
+    toast('🔖 Paper saved!');
+  }
 }
-function activateMatch(idx){
-  matchNodes.forEach(m=>m.classList.remove('active'));
-  const el=matchNodes[idx];if(!el)return;
-  el.classList.add('active');
-  el.scrollIntoView({behavior:'smooth',block:'center'});
+
+// ── Related Papers ────────────────────────────
+async function loadRelated() {
+  const btn = document.getElementById('relatedBtn');
+  if (!btn) return;
+  btn.textContent = 'Loading…'; btn.disabled = true;
+  const concepts = (paper.concepts||[]).join(',');
+  const params   = new URLSearchParams({title: paper.title||'', concepts});
+  try {
+    const resp = await fetch(`/api/related?${params}`);
+    const data = await resp.json();
+    if (data.error === 'limit_reached') { toast('⚠️ ' + data.message); return; }
+    const results = data.results || [];
+    const section = document.getElementById('relatedSection');
+    const list    = document.getElementById('relatedList');
+    if (!results.length) {
+      list.innerHTML = `<p style="color:var(--muted);font-size:.83rem;padding:10px 0">No related papers found.</p>`;
+    } else {
+      window._relatedResults = results;
+      list.innerHTML = results.map((p,i) => {
+        const auth  = (p.authors||[]).slice(0,2).join(', ');
+        const cites = p.citations || 0;
+        const cColor= cites>1000?'var(--gold)':cites>100?'var(--accent)':'var(--muted)';
+        return `<div class="related-card" onclick="openRelatedPaper(${i})">
+          <div class="related-title">${esc(p.title||'Untitled')}</div>
+          <div class="related-meta">
+            <span>${esc(auth)}</span>
+            <span>· ${p.year||'?'}</span>
+            <span style="font-family:var(--mono);color:${cColor}">★ ${cites.toLocaleString()}</span>
+            ${p.is_oa?`<span style="color:var(--green)">OA</span>`:''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+    section.classList.remove('hidden');
+    section.scrollIntoView({behavior:'smooth', block:'start'});
+    toast(`🔗 ${results.length} related papers — 5 pts used`);
+  } catch(e) { toast('⚠️ Could not load related papers'); }
+  finally { btn.textContent='🔗 Related Papers (5 pts)'; btn.disabled=false; }
 }
-function clearHighlights(){
-  document.querySelectorAll('mark.hit').forEach(m=>{
-    const p=m.parentNode;if(p){p.replaceChild(document.createTextNode(m.textContent),m);p.normalize();}
+
+function openRelatedPaper(idx) {
+  const p = (window._relatedResults||[])[idx];
+  if (!p) return;
+  sessionStorage.setItem('sturch_paper', JSON.stringify(p));
+  window.scrollTo(0,0);
+  window.location.reload();
+}
+
+// ── Find in Paper ─────────────────────────────
+function runFind() {
+  const query = document.getElementById('findInput').value.trim();
+  clearHighlights();
+  if (!query) { updateFindCount(0,0,false); return; }
+  const container = document.getElementById('paperText');
+  if (!container) return;
+  const regex  = new RegExp(escapeRegex(query), 'gi');
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  const toReplace = [];
+  let node;
+  while ((node=walker.nextNode())) { if (regex.test(node.nodeValue)) toReplace.push(node); regex.lastIndex=0; }
+  toReplace.forEach(textNode => {
+    const frag = document.createDocumentFragment();
+    let remain = textNode.nodeValue, match;
+    regex.lastIndex = 0;
+    while ((match=regex.exec(remain)) !== null) {
+      if (match.index > 0) frag.appendChild(document.createTextNode(remain.slice(0, match.index)));
+      const mark = document.createElement('mark');
+      mark.className = 'hit'; mark.textContent = match[0]; frag.appendChild(mark);
+      remain = remain.slice(match.index + match[0].length); regex.lastIndex = 0;
+    }
+    if (remain) frag.appendChild(document.createTextNode(remain));
+    textNode.parentNode.replaceChild(frag, textNode);
   });
-  matchNodes=[];matchIndex=-1;
-  document.getElementById('prevBtn').disabled=true;
-  document.getElementById('nextBtn').disabled=true;
+  matchNodes = Array.from(container.querySelectorAll('mark.hit'));
+  if (!matchNodes.length) { updateFindCount(0,0,true); return; }
+  matchIndex = 0; activateMatch(0); updateFindCount(1, matchNodes.length, false);
+  document.getElementById('prevBtn').disabled = matchNodes.length <= 1;
+  document.getElementById('nextBtn').disabled = matchNodes.length <= 1;
 }
-function clearFind(){
-  document.getElementById('findInput').value='';
-  clearHighlights();updateFindCount(0,0,false);
+function navMatch(dir) {
+  if (!matchNodes.length) return;
+  matchNodes[matchIndex]?.classList.remove('active');
+  matchIndex = (matchIndex + dir + matchNodes.length) % matchNodes.length;
+  activateMatch(matchIndex); updateFindCount(matchIndex+1, matchNodes.length, false);
 }
-function updateFindCount(cur,total,notFound){
-  const el=document.getElementById('findCount');
-  if(notFound){el.textContent='Word not found';el.className='find-count not-found';}
-  else if(!total){el.textContent='—';el.className='find-count';}
-  else{el.textContent=`${cur} of ${total}`;el.className='find-count found';}
+function activateMatch(idx) {
+  matchNodes.forEach(m => m.classList.remove('active'));
+  const el = matchNodes[idx]; if (!el) return;
+  el.classList.add('active');
+  el.scrollIntoView({behavior:'smooth', block:'center'});
 }
-function getSourceBadge(ds){
-  const s=(ds||'').toLowerCase();
-  if(s.includes('semantic'))return`<span class="badge src-semantic">Semantic Scholar</span>`;
-  if(s.includes('arxiv'))return`<span class="badge src-arxiv">arXiv</span>`;
-  if(s.includes('pubmed'))return`<span class="badge src-pubmed">PubMed</span>`;
-  return`<span class="badge src-openalex">OpenAlex</span>`;
+function clearHighlights() {
+  document.querySelectorAll('mark.hit').forEach(m => {
+    const p = m.parentNode; if (p) { p.replaceChild(document.createTextNode(m.textContent), m); p.normalize(); }
+  });
+  matchNodes = []; matchIndex = -1;
+  document.getElementById('prevBtn').disabled = true;
+  document.getElementById('nextBtn').disabled = true;
 }
-function copyAPA(){
-  const ref=paper?.apa_reference||'';
-  if(!ref){toast('No APA reference available');return;}
-  navigator.clipboard.writeText(ref).then(()=>toast('📋 APA reference copied'));
+function clearFind() {
+  document.getElementById('findInput').value = '';
+  clearHighlights(); updateFindCount(0,0,false);
 }
-function renderError(msg){
-  document.getElementById('paperMeta').innerHTML=`
+function updateFindCount(cur, total, notFound) {
+  const el = document.getElementById('findCount');
+  if (notFound) { el.textContent='Not found'; el.className='find-count not-found'; }
+  else if (!total) { el.textContent='—'; el.className='find-count'; }
+  else { el.textContent=`${cur} of ${total}`; el.className='find-count found'; }
+}
+
+// ── Helpers ───────────────────────────────────
+function getSourceBadge(ds) {
+  const s = (ds||'').toLowerCase();
+  if (s.includes('semantic')) return `<span class="badge src-semantic">Semantic Scholar</span>`;
+  if (s.includes('arxiv'))    return `<span class="badge src-arxiv">arXiv</span>`;
+  if (s.includes('pubmed'))   return `<span class="badge src-pubmed">PubMed</span>`;
+  return `<span class="badge src-openalex">OpenAlex</span>`;
+}
+function copyAPA() {
+  const ref = paper?.apa_reference||'';
+  if (!ref) { toast('No APA reference available'); return; }
+  navigator.clipboard.writeText(ref).then(() => toast('📋 APA reference copied'));
+}
+function renderError(msg) {
+  document.getElementById('paperMeta').innerHTML = `
     <div class="state"><div class="big">⚠️</div><h3>Something went wrong</h3>
-    <p style="margin-top:8px;font-size:.85rem">${esc(msg)}</p>
-    <a href="/" class="btn sm" style="margin-top:16px;display:inline-flex">← Back to Search</a></div>`;
+    <p style="margin-top:7px;font-size:.83rem">${esc(msg)}</p>
+    <a href="/" class="btn sm" style="margin-top:14px;display:inline-flex">← Back to Search</a></div>`;
 }
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function escapeRegex(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 let toastTimer;
-function toast(msg){
-  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
-  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+function toast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
 }
 </script>
 </body>

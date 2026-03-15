@@ -4,73 +4,63 @@
 <meta name="google-site-verification" content="zEl7F0Ag_iT-zaQBXGURH-EmUTjF6dhy2_fiND_zLtQ" />
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Sign up — Sturch</title>
+<title>Sign Up — Sturch</title>
 <link rel="canonical" href="https://sturch-production.up.railway.app/signup"/>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Lora:ital,wght@0,600;1,400&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{
-  font-family:'Outfit',sans-serif;
-  background:#0b0d12;color:#d8e0f8;
-  min-height:100vh;display:flex;
-  align-items:center;justify-content:center;padding:20px;
-}
-.card{
-  background:#111520;border:1px solid rgba(100,130,220,.12);
-  border-radius:16px;padding:40px 36px;
-  width:100%;max-width:420px;
-  box-shadow:0 20px 60px rgba(0,0,0,.6);
-}
-.logo{font-family:'Lora',serif;font-size:1.8rem;text-align:center;margin-bottom:6px}
+body{font-family:'Outfit',sans-serif;background:#0b0d12;color:#d8e0f8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:#111520;border:1px solid rgba(100,130,220,.12);border-radius:16px;padding:38px 34px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.logo{font-family:'Lora',serif;font-size:1.75rem;text-align:center;margin-bottom:5px}
 .logo span{color:#4f8de8}
-.tagline{text-align:center;color:#5a6385;font-size:.85rem;margin-bottom:32px}
-.form-group{margin-bottom:18px}
-label{display:block;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:#5a6385;font-weight:600;margin-bottom:6px}
-input{
-  width:100%;background:#181d2e;border:1px solid rgba(100,130,220,.12);
-  border-radius:10px;color:#d8e0f8;font-family:'Outfit',sans-serif;
-  font-size:.95rem;padding:12px 14px;outline:none;transition:border-color .2s,box-shadow .2s;
-}
-input:focus{border-color:#4f8de8;box-shadow:0 0 0 3px rgba(79,141,232,.12)}
+.tagline{text-align:center;color:#5a6385;font-size:.83rem;margin-bottom:22px}
+.form-group{margin-bottom:15px}
+label{display:block;font-size:.76rem;text-transform:uppercase;letter-spacing:.08em;color:#5a6385;font-weight:600;margin-bottom:5px}
+input{width:100%;background:#181d2e;border:1px solid rgba(100,130,220,.12);border-radius:10px;color:#d8e0f8;font-family:'Outfit',sans-serif;font-size:.93rem;padding:11px 13px;outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus{border-color:#4f8de8;box-shadow:0 0 0 3px rgba(79,141,232,.1)}
 input::placeholder{color:#3a4060}
-.btn{
-  width:100%;padding:13px;background:#4f8de8;border:none;
-  border-radius:10px;color:#fff;font-family:'Outfit',sans-serif;
-  font-size:1rem;font-weight:600;cursor:pointer;
-  transition:background .2s,box-shadow .2s;margin-top:6px;
-}
-.btn:hover{background:#3d7fd8;box-shadow:0 0 20px rgba(79,141,232,.3)}
+.btn{width:100%;padding:12px;background:#4f8de8;border:none;border-radius:10px;color:#fff;font-family:'Outfit',sans-serif;font-size:.97rem;font-weight:600;cursor:pointer;transition:background .2s,box-shadow .2s;margin-top:5px}
+.btn:hover{background:#3d7fd8;box-shadow:0 0 20px rgba(79,141,232,.28)}
 .btn:disabled{opacity:.6;cursor:not-allowed}
-.error{background:rgba(240,106,106,.08);border:1px solid rgba(240,106,106,.2);border-radius:8px;color:#f06a6a;font-size:.83rem;padding:10px 14px;margin-bottom:16px;display:none}
-.success{background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.2);border-radius:8px;color:#3ecf8e;font-size:.83rem;padding:10px 14px;margin-bottom:16px;display:none}
-.bottom{text-align:center;margin-top:22px;font-size:.85rem;color:#5a6385}
+.error{background:rgba(240,106,106,.07);border:1px solid rgba(240,106,106,.18);border-radius:8px;color:#f06a6a;font-size:.81rem;padding:9px 13px;margin-bottom:13px;display:none}
+.success{background:rgba(62,207,142,.07);border:1px solid rgba(62,207,142,.18);border-radius:8px;color:#3ecf8e;font-size:.81rem;padding:9px 13px;margin-bottom:13px;display:none}
+.bottom{text-align:center;margin-top:18px;font-size:.83rem;color:#5a6385}
 .bottom a{color:#4f8de8;text-decoration:none}
 .bottom a:hover{text-decoration:underline}
-.perks{
-  background:#181d2e;border:1px solid rgba(100,130,220,.1);
-  border-radius:10px;padding:14px 16px;margin-bottom:24px;
-}
-.perk{display:flex;align-items:center;gap:8px;font-size:.83rem;color:#5a6385;margin-bottom:6px}
+.perks{background:#181d2e;border:1px solid rgba(100,130,220,.1);border-radius:10px;padding:13px 15px;margin-bottom:20px}
+.perk{display:flex;align-items:center;gap:8px;font-size:.81rem;color:#5a6385;margin-bottom:5px}
 .perk:last-child{margin-bottom:0}
-.perk .icon{font-size:.9rem}
-.beta-badge{display:inline-block;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:#9d6ef5;font-size:.68rem;padding:2px 8px;border-radius:20px;margin-left:6px;vertical-align:middle}
+.perk .icon{font-size:.88rem}
+.perk strong{color:#d8e0f8}
+.beta-badge{display:inline-block;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.18);color:#9d6ef5;font-size:.66rem;padding:2px 7px;border-radius:20px;margin-left:5px;vertical-align:middle}
+.pts-hero{text-align:center;margin-bottom:18px;padding:14px 16px;background:linear-gradient(135deg,rgba(79,141,232,.1),rgba(157,110,245,.08));border:1px solid rgba(79,141,232,.2);border-radius:12px}
+.pts-num{font-size:2.2rem;font-weight:700;color:#4f8de8;line-height:1;font-family:'Lora',serif}
+.pts-label{font-size:.75rem;color:#5a6385;margin-top:3px}
 </style>
 </head>
 <body>
 <div class="card">
 
-  <div class="logo"><span>Sturch</span> sign up<span class="beta-badge">BETA</span></div>
+  <div class="logo"><span>Sturch</span><span class="beta-badge">BETA</span></div>
   <div class="tagline">Create your free account</div>
 
-  <!-- What you get -->
-  <div class="perks">
-    <div class="perk"><span class="icon">🔍</span> 10 free searches to start</div>
-    <div class="perk"><span class="icon">📚</span> APA and MLA references</div>
-    <div class="perk"><span class="icon">🔓</span> Open access paper links</div>
-    <div class="perk"><span class="icon">📊</span> Export to CSV and BibTeX</div>
+  <!-- Points hero -->
+  <div class="pts-hero">
+    <div class="pts-num">100</div>
+    <div class="pts-label">free points waiting for you on signup</div>
   </div>
 
-  <div class="error" id="errorMsg"></div>
+  <!-- Perks -->
+  <div class="perks">
+    <div class="perk"><span class="icon">💎</span> <strong>100 points free</strong> — 10 searches to start</div>
+    <div class="perk"><span class="icon">📄</span> Load more papers for only <strong>5 points</strong></div>
+    <div class="perk"><span class="icon">📋</span> APA references auto-generated</div>
+    <div class="perk"><span class="icon">🔖</span> Bookmarks + Collections to organize papers</div>
+    <div class="perk"><span class="icon">🕐</span> Search history saved automatically</div>
+    <div class="perk"><span class="icon">📥</span> Export to CSV and BibTeX</div>
+  </div>
+
+  <div class="error"   id="errorMsg"></div>
   <div class="success" id="successMsg"></div>
 
   <div class="form-group">
@@ -88,18 +78,16 @@ input::placeholder{color:#3a4060}
     <input type="password" id="password2" placeholder="Repeat your password" autocomplete="new-password"/>
   </div>
 
-  <button class="btn" id="signupBtn" onclick="doSignup()">Create Free Account</button>
+  <button class="btn" id="signupBtn" onclick="doSignup()">Create Free Account →</button>
 
-  <div class="bottom" style="margin-top:22px">
+  <div class="bottom" style="margin-top:18px">
     Already have an account? <a href="/login">Sign in</a>
   </div>
 
 </div>
 
 <script>
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter') doSignup();
-});
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doSignup(); });
 
 async function doSignup() {
   const email    = document.getElementById('email').value.trim();
@@ -109,57 +97,47 @@ async function doSignup() {
   const errorEl  = document.getElementById('errorMsg');
   const successEl= document.getElementById('successMsg');
 
-  errorEl.style.display   = 'none';
-  successEl.style.display = 'none';
+  errorEl.style.display = successEl.style.display = 'none';
 
-  // Validate
   if (!email || !password || !password2) {
-    errorEl.textContent   = 'Please fill in all fields';
-    errorEl.style.display = 'block';
-    return;
+    errorEl.textContent = 'Please fill in all fields';
+    errorEl.style.display = 'block'; return;
   }
   if (!email.includes('@')) {
-    errorEl.textContent   = 'Please enter a valid email address';
-    errorEl.style.display = 'block';
-    return;
+    errorEl.textContent = 'Please enter a valid email address';
+    errorEl.style.display = 'block'; return;
   }
   if (password.length < 6) {
-    errorEl.textContent   = 'Password must be at least 6 characters';
-    errorEl.style.display = 'block';
-    return;
+    errorEl.textContent = 'Password must be at least 6 characters';
+    errorEl.style.display = 'block'; return;
   }
   if (password !== password2) {
-    errorEl.textContent   = 'Passwords do not match';
-    errorEl.style.display = 'block';
-    return;
+    errorEl.textContent = 'Passwords do not match';
+    errorEl.style.display = 'block'; return;
   }
 
-  btn.disabled    = true;
-  btn.textContent = 'Creating account…';
+  btn.disabled = true; btn.textContent = 'Creating account…';
 
   try {
     const resp = await fetch('/signup', {
-      method:  'POST',
+      method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body:    JSON.stringify({email, password})
+      body: JSON.stringify({email, password})
     });
     const data = await resp.json();
-
     if (data.success) {
-      successEl.textContent   = 'Account created! Redirecting…';
+      successEl.textContent = '🎉 Account created! Redirecting…';
       successEl.style.display = 'block';
-      setTimeout(() => window.location.href = data.redirect || '/', 800);
+      setTimeout(() => window.location.href = data.redirect || '/', 700);
     } else {
-      errorEl.textContent   = data.error || 'Signup failed';
+      errorEl.textContent = data.error || 'Signup failed';
       errorEl.style.display = 'block';
-      btn.disabled    = false;
-      btn.textContent = 'Create Free Account';
+      btn.disabled = false; btn.textContent = 'Create Free Account →';
     }
   } catch(e) {
-    errorEl.textContent   = 'Connection error. Try again.';
+    errorEl.textContent = 'Connection error. Try again.';
     errorEl.style.display = 'block';
-    btn.disabled    = false;
-    btn.textContent = 'Create Free Account';
+    btn.disabled = false; btn.textContent = 'Create Free Account →';
   }
 }
 </script>

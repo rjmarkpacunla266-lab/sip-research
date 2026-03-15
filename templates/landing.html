@@ -21,145 +21,91 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
 
-/* ── NAV ─────────────────────────────────────── */
-nav{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:18px 24px;border-bottom:1px solid var(--border);
-  position:sticky;top:0;z-index:100;
-  background:rgba(11,13,18,.92);backdrop-filter:blur(14px);
-}
-.logo{font-family:var(--serif);font-size:1.5rem}
+nav{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(11,13,18,.93);backdrop-filter:blur(14px)}
+.logo{font-family:var(--serif);font-size:1.45rem}
 .logo span{color:var(--accent)}
-.beta{font-size:.65rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;margin-left:6px;font-family:monospace}
+.beta{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;margin-left:5px;font-family:monospace}
 .nav-btns{display:flex;gap:8px}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:10px;font-family:var(--sans);font-size:.88rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .2s;text-decoration:none;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 17px;border-radius:10px;font-family:var(--sans);font-size:.87rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .2s;text-decoration:none;white-space:nowrap}
 .btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
 .btn.primary{background:var(--accent);color:#fff;border-color:transparent}
 .btn.primary:hover{background:#3d7fd8}
-.btn.lg{padding:13px 28px;font-size:1rem;font-weight:600}
+.btn.lg{padding:12px 26px;font-size:.98rem;font-weight:600}
 
-/* ── HERO ────────────────────────────────────── */
-.hero{
-  text-align:center;padding:70px 24px 60px;
-  max-width:700px;margin:0 auto;
-}
-.hero-badge{
-  display:inline-block;
-  background:rgba(79,141,232,.08);border:1px solid rgba(79,141,232,.2);
-  color:var(--accent);font-size:.75rem;padding:4px 14px;border-radius:20px;
-  margin-bottom:22px;letter-spacing:.05em;
-}
-.hero h1{
-  font-family:var(--serif);font-size:2.4rem;line-height:1.3;
-  margin-bottom:16px;
-}
+/* Hero */
+.hero{text-align:center;padding:65px 24px 55px;max-width:680px;margin:0 auto}
+.hero-badge{display:inline-block;background:rgba(79,141,232,.08);border:1px solid rgba(79,141,232,.18);color:var(--accent);font-size:.73rem;padding:4px 14px;border-radius:20px;margin-bottom:20px;letter-spacing:.05em}
+.hero h1{font-family:var(--serif);font-size:2.3rem;line-height:1.3;margin-bottom:14px}
 .hero h1 span{color:var(--accent)}
-.hero p{font-size:1rem;color:var(--muted);margin-bottom:32px;max-width:480px;margin-left:auto;margin-right:auto}
+.hero p{font-size:.97rem;color:var(--muted);margin-bottom:28px;max-width:460px;margin-left:auto;margin-right:auto}
 .hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.sources-note{margin-top:20px;font-size:.75rem;color:var(--muted)}
+.sources-note{margin-top:18px;font-size:.73rem;color:var(--muted)}
 .sources-note span{color:var(--text)}
 
-/* ── HOW IT WORKS ────────────────────────────── */
-.section{padding:60px 24px;max-width:800px;margin:0 auto}
-.section-label{
-  font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;
-  color:var(--muted);margin-bottom:10px;
-}
-.section h2{font-family:var(--serif);font-size:1.6rem;margin-bottom:36px}
+/* Points bar */
+.points-bar{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;background:rgba(79,141,232,.05);border:1px solid rgba(79,141,232,.15);border-radius:12px;padding:14px 20px;margin:24px auto 0;max-width:540px}
+.points-item{text-align:center}
+.points-val{font-size:1.5rem;font-weight:700;color:var(--accent);font-family:var(--serif)}
+.points-lbl{font-size:.7rem;color:var(--muted);margin-top:2px}
+.points-div{width:1px;height:36px;background:var(--border)}
 
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
-.step{
-  background:var(--surf);border:1px solid var(--border);
-  border-radius:14px;padding:24px;position:relative;
-  transition:border-color .2s;
-}
+/* Section */
+.section{padding:56px 24px;max-width:800px;margin:0 auto}
+.section-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:8px}
+.section h2{font-family:var(--serif);font-size:1.55rem;margin-bottom:32px}
+
+/* Steps */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px}
+.step{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:22px;transition:border-color .2s}
 .step:hover{border-color:var(--accent)}
-.step-num{
-  font-family:monospace;font-size:.72rem;
-  color:var(--accent);background:rgba(79,141,232,.1);
-  border:1px solid rgba(79,141,232,.2);
-  width:28px;height:28px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  margin-bottom:12px;font-weight:600;
-}
-.step h3{font-size:.95rem;font-weight:600;margin-bottom:6px}
-.step p{font-size:.82rem;color:var(--muted);line-height:1.6}
+.step-num{font-family:monospace;font-size:.7rem;color:var(--accent);background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.18);width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:11px;font-weight:600}
+.step h3{font-size:.93rem;font-weight:600;margin-bottom:5px}
+.step p{font-size:.8rem;color:var(--muted);line-height:1.6}
 
-/* ── FEATURES ────────────────────────────────── */
-.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:8px}
-.feature{
-  background:var(--surf);border:1px solid var(--border);
-  border-radius:12px;padding:20px;
-}
-.feature .icon{font-size:1.4rem;margin-bottom:10px}
-.feature h3{font-size:.9rem;font-weight:600;margin-bottom:4px}
-.feature p{font-size:.78rem;color:var(--muted);line-height:1.5}
+/* Features */
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:14px;margin-top:6px}
+.feature{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:18px}
+.feature .icon{font-size:1.3rem;margin-bottom:9px}
+.feature h3{font-size:.88rem;font-weight:600;margin-bottom:3px}
+.feature p{font-size:.76rem;color:var(--muted);line-height:1.5}
 
-/* ── SOURCES ─────────────────────────────────── */
-.sources-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:8px}
-.source-card{
-  background:var(--surf);border:1px solid var(--border);
-  border-radius:12px;padding:16px;text-align:center;
-}
-.source-card .src-badge{font-size:.7rem;padding:2px 10px;border-radius:20px;display:inline-block;margin-bottom:8px}
-.src-openalex{background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.25);color:#4f8de8}
-.src-semantic{background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.25);color:#9d6ef5}
-.src-arxiv{background:rgba(240,145,75,.1);border:1px solid rgba(240,145,75,.25);color:#f0914b}
-.src-pubmed{background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.25);color:#3ecf8e}
-.source-card p{font-size:.75rem;color:var(--muted);line-height:1.5}
+/* Sources */
+.sources-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:11px;margin-top:6px}
+.source-card{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:15px;text-align:center}
+.src-badge{font-size:.68rem;padding:2px 10px;border-radius:20px;display:inline-block;margin-bottom:7px}
+.src-openalex{background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.22);color:#4f8de8}
+.src-semantic{background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.22);color:#9d6ef5}
+.src-arxiv{background:rgba(240,145,75,.1);border:1px solid rgba(240,145,75,.22);color:#f0914b}
+.src-pubmed{background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.22);color:#3ecf8e}
+.source-card p{font-size:.73rem;color:var(--muted);line-height:1.5}
 
-/* ── RULES ───────────────────────────────────── */
-.rules-box{
-  background:var(--surf);border:1px solid var(--border);
-  border-radius:14px;padding:28px;margin-top:8px;
-}
-.rule{display:flex;gap:12px;margin-bottom:16px;align-items:flex-start}
+/* Rules */
+.rules-box{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:26px;margin-top:6px}
+.rule{display:flex;gap:11px;margin-bottom:14px;align-items:flex-start}
 .rule:last-child{margin-bottom:0}
-.rule .dot{
-  width:8px;height:8px;border-radius:50%;
-  background:var(--accent);margin-top:6px;flex-shrink:0;
-}
+.rule .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);margin-top:6px;flex-shrink:0}
 .rule .dot.warn{background:var(--orange)}
-.rule p{font-size:.85rem;color:var(--muted);line-height:1.6}
+.rule p{font-size:.83rem;color:var(--muted);line-height:1.6}
 .rule p strong{color:var(--text)}
 
-/* ── PRICING ─────────────────────────────────── */
-.pricing-box{
-  background:var(--surf);border:2px solid var(--accent);
-  border-radius:16px;padding:32px;text-align:center;
-  max-width:360px;margin:8px auto 0;
-}
-.price{font-size:3rem;font-weight:700;color:var(--accent);line-height:1}
-.price sup{font-size:1.3rem;vertical-align:top;margin-top:8px}
-.price-desc{color:var(--muted);font-size:.85rem;margin-top:6px;margin-bottom:20px}
-.price-features{text-align:left;margin:16px 0}
-.pf{display:flex;align-items:center;gap:8px;font-size:.83rem;margin-bottom:8px}
+/* Pricing */
+.pricing-box{background:var(--surf);border:2px solid var(--accent);border-radius:16px;padding:28px;text-align:center;max-width:360px;margin:6px auto 0}
+.price{font-size:2.8rem;font-weight:700;color:var(--accent);line-height:1}
+.price sup{font-size:1.2rem;vertical-align:top;margin-top:7px}
+.price-desc{color:var(--muted);font-size:.83rem;margin-top:5px;margin-bottom:18px}
+.price-features{text-align:left;margin:14px 0}
+.pf{display:flex;align-items:center;gap:7px;font-size:.82rem;margin-bottom:7px}
 .pf .check{color:var(--green)}
-.beta-note{
-  background:rgba(157,110,245,.08);border:1px solid rgba(157,110,245,.2);
-  border-radius:8px;padding:10px 14px;font-size:.78rem;color:var(--accent2);
-  margin-top:16px;line-height:1.6;
-}
+.beta-note{background:rgba(157,110,245,.07);border:1px solid rgba(157,110,245,.18);border-radius:8px;padding:9px 13px;font-size:.76rem;color:var(--accent2);margin-top:14px;line-height:1.6}
 
-/* ── CTA ─────────────────────────────────────── */
-.cta{
-  text-align:center;padding:70px 24px;
-  background:linear-gradient(180deg,transparent,rgba(79,141,232,.04));
-  border-top:1px solid var(--border);
-}
-.cta h2{font-family:var(--serif);font-size:1.8rem;margin-bottom:10px}
-.cta p{color:var(--muted);font-size:.92rem;margin-bottom:28px}
+/* CTA */
+.cta{text-align:center;padding:65px 24px;background:linear-gradient(180deg,transparent,rgba(79,141,232,.04));border-top:1px solid var(--border)}
+.cta h2{font-family:var(--serif);font-size:1.75rem;margin-bottom:9px}
+.cta p{color:var(--muted);font-size:.9rem;margin-bottom:26px}
 
-/* ── FOOTER ──────────────────────────────────── */
-footer{
-  text-align:center;padding:24px;
-  border-top:1px solid var(--border);
-  font-size:.75rem;color:var(--muted);
-}
+footer{text-align:center;padding:22px;border-top:1px solid var(--border);font-size:.73rem;color:var(--muted)}
 footer a{color:var(--muted)}
 footer a:hover{color:var(--accent)}
-
-/* ── DIVIDER ─────────────────────────────────── */
 .divider{height:1px;background:var(--border);margin:0 24px}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
@@ -169,16 +115,16 @@ footer a:hover{color:var(--accent)}
 .fadein-d3{animation-delay:.3s}
 
 @media(max-width:600px){
-  .hero h1{font-size:1.7rem}
-  .hero{padding:50px 20px 40px}
-  .section{padding:40px 20px}
-  .btn.lg{padding:12px 22px;font-size:.95rem}
+  .hero h1{font-size:1.65rem}
+  .hero{padding:46px 18px 38px}
+  .section{padding:38px 18px}
+  .btn.lg{padding:11px 20px;font-size:.93rem}
+  .points-bar{gap:10px}
 }
 </style>
 </head>
 <body>
 
-<!-- Nav -->
 <nav>
   <div class="logo"><span>Sturch</span><span class="beta">BETA</span></div>
   <div class="nav-btns">
@@ -191,13 +137,36 @@ footer a:hover{color:var(--accent)}
 <div class="hero">
   <div class="hero-badge fadein">🎓 Built for Filipino STE Students</div>
   <h1 class="fadein fadein-d1">Find research papers<br><span>in seconds</span></h1>
-  <p class="fadein fadein-d2">Your shortcut to academic research. Search across millions of papers from 4 sources simultaneously — free.</p>
+  <p class="fadein fadein-d2">Your shortcut to academic research. Search across 250M+ papers from 4 major databases simultaneously — free to start.</p>
   <div class="hero-btns fadein fadein-d3">
     <a href="/signup" class="btn primary lg">Get Started Free</a>
     <a href="/login"  class="btn lg">Sign In</a>
   </div>
   <div class="sources-note fadein fadein-d3">
-    Searches <span>OpenAlex · Semantic Scholar · arXiv · PubMed</span> simultaneously
+    Searches <span>OpenAlex · Semantic Scholar · arXiv · PubMed</span> at the same time
+  </div>
+
+  <!-- Points breakdown -->
+  <div class="points-bar fadein fadein-d3">
+    <div class="points-item">
+      <div class="points-val">100</div>
+      <div class="points-lbl">Free points on signup</div>
+    </div>
+    <div class="points-div"></div>
+    <div class="points-item">
+      <div class="points-val">10</div>
+      <div class="points-lbl">Points per search</div>
+    </div>
+    <div class="points-div"></div>
+    <div class="points-item">
+      <div class="points-val">5</div>
+      <div class="points-lbl">Points to load more</div>
+    </div>
+    <div class="points-div"></div>
+    <div class="points-item">
+      <div class="points-val">$1</div>
+      <div class="points-lbl">= 200 more points</div>
+    </div>
   </div>
 </div>
 
@@ -211,17 +180,17 @@ footer a:hover{color:var(--accent)}
     <div class="step">
       <div class="step-num">1</div>
       <h3>Type your topic</h3>
-      <p>Enter any research topic — scientific terms, keywords, or a full question. Sturch understands it.</p>
+      <p>Type a keyword, press Enter to add it as a tag. Add multiple tags for more precise results.</p>
     </div>
     <div class="step">
       <div class="step-num">2</div>
       <h3>Get results instantly</h3>
-      <p>Sturch searches 4 major academic databases at the same time and returns the best matching papers.</p>
+      <p>Sturch searches 4 major academic databases at the same time and shows the best matching papers.</p>
     </div>
     <div class="step">
       <div class="step-num">3</div>
-      <h3>Copy your reference</h3>
-      <p>APA and MLA references are auto-generated. One tap to copy. Export to CSV or BibTeX anytime.</p>
+      <h3>Save and cite</h3>
+      <p>Copy APA references, bookmark papers, organize into collections, or export to BibTeX/CSV.</p>
     </div>
   </div>
 </div>
@@ -231,7 +200,7 @@ footer a:hover{color:var(--accent)}
 <!-- Features -->
 <div class="section">
   <div class="section-label">Features</div>
-  <h2>Everything you need for research</h2>
+  <h2>Everything STE students need</h2>
   <div class="features">
     <div class="feature">
       <div class="icon">🔍</div>
@@ -239,24 +208,54 @@ footer a:hover{color:var(--accent)}
       <p>OpenAlex, Semantic Scholar, arXiv and PubMed searched simultaneously.</p>
     </div>
     <div class="feature">
-      <div class="icon">📋</div>
-      <h3>APA & MLA References</h3>
-      <p>Auto-generated references ready to copy. Always verify before submitting.</p>
+      <div class="icon">📄</div>
+      <h3>Load More Papers</h3>
+      <p>Get 100 more results on the same topic for only 5 points — cheaper than a full search.</p>
     </div>
     <div class="feature">
-      <div class="icon">📄</div>
+      <div class="icon">📋</div>
+      <h3>APA References</h3>
+      <p>Auto-generated APA references ready to copy. One tap. Always verify before submitting.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">📖</div>
       <h3>Full Paper Reader</h3>
-      <p>Read full papers inside Sturch. Search for keywords within the text.</p>
+      <p>Read full papers inside Sturch with keyword search, reading progress bar and estimated read time.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🔗</div>
+      <h3>Related Papers</h3>
+      <p>From any paper, find related ones using the same topic and concepts. Only 5 points.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🔖</div>
+      <h3>Bookmarks</h3>
+      <p>Save papers you want to read later. Access them anytime from your Saved panel.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">📚</div>
+      <h3>Collections</h3>
+      <p>Organize saved papers into folders by subject, chapter, or project.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🕐</div>
+      <h3>Search History</h3>
+      <p>Your last 50 searches are saved. Tap any past search to run it again instantly.</p>
     </div>
     <div class="feature">
       <div class="icon">📥</div>
-      <h3>Export Results</h3>
-      <p>Download your results as CSV or BibTeX for use in any citation tool.</p>
+      <h3>Export</h3>
+      <p>Download results as CSV, BibTeX, JSON, or plain text for any citation tool.</p>
     </div>
     <div class="feature">
       <div class="icon">🔓</div>
-      <h3>Open Access Links</h3>
-      <p>Sturch shows open access papers so you can read them for free.</p>
+      <h3>Open Access Filter</h3>
+      <p>Filter results to only show freely accessible full papers.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">💎</div>
+      <h3>Points System</h3>
+      <p>100 free points. Search = 10 pts, load more = 5 pts. Need more? $1 = 200 pts.</p>
     </div>
     <div class="feature">
       <div class="icon">📱</div>
@@ -294,7 +293,7 @@ footer a:hover{color:var(--accent)}
 
 <div class="divider"></div>
 
-<!-- Tips & Tag Search Guide -->
+<!-- Search Tips -->
 <div class="section">
   <div class="section-label">Search Tips</div>
   <h2>How to search like a pro</h2>
@@ -302,22 +301,22 @@ footer a:hover{color:var(--accent)}
     <div class="step">
       <div class="step-num">💡</div>
       <h3>Use multiple tags</h3>
-      <p>Type a keyword and press <strong>Enter</strong> to add it as a tag. Add as many as you need then press Search.</p>
-      <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">
-        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;background:rgba(79,141,232,.12);border:1px solid rgba(79,141,232,.3);color:#4f8de8;font-size:.75rem">biotech ×</span>
-        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;background:rgba(79,141,232,.12);border:1px solid rgba(79,141,232,.3);color:#4f8de8;font-size:.75rem">Philippines ×</span>
-        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;background:rgba(79,141,232,.12);border:1px solid rgba(79,141,232,.3);color:#4f8de8;font-size:.75rem">rice farming ×</span>
-      </div>
+      <p>Type a keyword → press <strong>Enter</strong> → add more tags → press Search. More specific tags = more relevant results.</p>
     </div>
     <div class="step">
       <div class="step-num">📅</div>
       <h3>Filter by year</h3>
-      <p>Use the <strong>Year From</strong> and <strong>To</strong> fields to narrow results to a specific time period. Great for recent research.</p>
+      <p>Use <strong>Year From</strong> and <strong>To</strong> to narrow results. For school projects, 2015–2024 is a good range.</p>
     </div>
     <div class="step">
-      <div class="step-num">⚠️</div>
-      <h3>Don't spam search</h3>
-      <p>Each search uses points. Wait for results to load before searching again. Press <strong>Enter</strong> to add tags, not to search.</p>
+      <div class="step-num">💎</div>
+      <h3>Save your points</h3>
+      <p>Use <strong>Load More (5 pts)</strong> before searching again. You get more papers on the same topic for half the cost.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">🔖</div>
+      <h3>Bookmark as you go</h3>
+      <p>Don't rely on browser history. Tap <strong>Save</strong> on good papers and organize them into collections.</p>
     </div>
   </div>
 </div>
@@ -331,19 +330,19 @@ footer a:hover{color:var(--accent)}
   <div class="rules-box">
     <div class="rule">
       <div class="dot warn"></div>
-      <p><strong>Don't spam the search button.</strong> Each search uses your points. Spamming wastes your free searches and puts load on the server. Wait for results to load before searching again.</p>
+      <p><strong>Don't spam the search button.</strong> Each search uses 10 points. Wait for results before searching again. Use Load More (5 pts) to get more papers on the same topic.</p>
     </div>
     <div class="rule">
       <div class="dot warn"></div>
-      <p><strong>Always verify references before submitting.</strong> APA and MLA references in Sturch are auto-generated. They may contain errors. Double-check before using them in academic work.</p>
+      <p><strong>Always verify references before submitting.</strong> APA references in Sturch are auto-generated. They may have missing volume, issue, or page numbers. Double-check before academic submission.</p>
     </div>
     <div class="rule">
       <div class="dot"></div>
-      <p><strong>For research assistance only.</strong> Sturch helps you find and cite papers. It does not write your research for you. Use it as a tool, not a shortcut.</p>
+      <p><strong>For research assistance only.</strong> Sturch helps you find and cite papers. It does not write your research for you.</p>
     </div>
     <div class="rule">
       <div class="dot"></div>
-      <p><strong>Data is from public academic databases.</strong> Sturch does not own any of the papers. All content belongs to their respective publishers and authors.</p>
+      <p><strong>Data is from public academic databases.</strong> Sturch does not own any papers. All content belongs to their respective publishers and authors.</p>
     </div>
   </div>
 </div>
@@ -353,19 +352,25 @@ footer a:hover{color:var(--accent)}
 <!-- Pricing -->
 <div class="section">
   <div class="section-label">Pricing</div>
-  <h2>Simple and affordable</h2>
+  <h2>Student-friendly pricing</h2>
   <div class="pricing-box">
-    <div style="font-size:2rem;margin-bottom:12px">🆓</div>
+    <div style="font-size:1.9rem;margin-bottom:10px">🆓</div>
     <div class="price">Free</div>
-    <div class="price-desc">to start · 10 searches included</div>
+    <div class="price-desc">to start · 100 points included</div>
     <div class="price-features">
-      <div class="pf"><span class="check">✓</span> 10 free searches on signup</div>
+      <div class="pf"><span class="check">✓</span> 100 free points on signup</div>
+      <div class="pf"><span class="check">✓</span> 1 search = 10 points (10 free searches)</div>
+      <div class="pf"><span class="check">✓</span> Load more papers = 5 points</div>
       <div class="pf"><span class="check">✓</span> All 4 sources searched</div>
-      <div class="pf"><span class="check">✓</span> APA + MLA references</div>
-      <div class="pf"><span class="check">✓</span> CSV + BibTeX export</div>
+      <div class="pf"><span class="check">✓</span> APA references + export</div>
+      <div class="pf"><span class="check">✓</span> Bookmarks + Collections</div>
       <div class="pf"><span class="check">✓</span> Full paper reader</div>
+      <div class="pf"><span class="check">✓</span> Search history</div>
     </div>
-    <a href="/signup" class="btn primary" style="width:100%;justify-content:center;padding:13px">Get Started Free</a>
+    <a href="/signup" class="btn primary" style="width:100%;justify-content:center;padding:12px">Get Started Free</a>
+    <div style="margin-top:14px;background:rgba(79,141,232,.07);border:1px solid rgba(79,141,232,.18);border-radius:8px;padding:10px 13px;font-size:.8rem;color:var(--accent);text-align:center">
+      💡 Need more? <strong>200 points for just $1</strong> — never expires.
+    </div>
     <div class="beta-note">
       🚧 <strong>Beta:</strong> Payment system coming soon. During beta, enjoy extended free access!
     </div>
@@ -382,7 +387,6 @@ footer a:hover{color:var(--accent)}
   </div>
 </div>
 
-<!-- Footer -->
 <footer>
   <p>
     Sturch — Built by a Filipino STE student, for Filipino STE students. &nbsp;·&nbsp;
@@ -391,7 +395,7 @@ footer a:hover{color:var(--accent)}
     <a href="https://arxiv.org" target="_blank">arXiv</a> &amp;
     <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank">PubMed</a>
   </p>
-  <p style="margin-top:6px">References are auto-generated — always verify before academic submission.</p>
+  <p style="margin-top:5px">References are auto-generated — always verify before academic submission.</p>
 </footer>
 
 </body>
