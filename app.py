@@ -117,8 +117,10 @@ def get_int_env(name, default):
     except (TypeError, ValueError):
         return default
 
-FREE_SEARCHES       = get_int_env("FREE_SEARCHES", 10)
-PAID_SEARCHES       = get_int_env("PAID_SEARCHES", 20)
+FREE_POINTS         = get_int_env("FREE_POINTS", 100)    # starting points for every user
+PAID_POINTS         = get_int_env("PAID_POINTS", 200)    # bonus points per $1 purchase
+SEARCH_COST         = 10                                  # points per full search
+LOAD_MORE_COST      = 5                                   # points to load next 100 papers
 MAX_ACCOUNTS_PER_IP = get_int_env("MAX_ACCOUNTS_PER_IP", 3)
 OPENALEX_URL        = "https://api.openalex.org/works"
 
@@ -184,13 +186,22 @@ def get_user_by_email(email):
     result = sb_get("users", f"email=eq.{email}&select=*")
     return result[0] if result else None
 
-def can_search(user):
-    total = FREE_SEARCHES + (user.get('paid_searches', 0))
-    return user.get('search_count', 0) < total
+def total_points(user):
+    """Total points a user has (free + purchased)."""
+    return FREE_POINTS + user.get('paid_searches', 0)  # paid_searches now stores bonus points
 
-def searches_remaining(user):
-    total = FREE_SEARCHES + (user.get('paid_searches', 0))
-    return max(0, total - user.get('search_count', 0))
+def points_used(user):
+    """Points spent so far (search_count now tracks points used)."""
+    return user.get('search_count', 0)
+
+def points_remaining(user):
+    return max(0, total_points(user) - points_used(user))
+
+def can_search(user):
+    return points_remaining(user) >= SEARCH_COST
+
+def can_load_more(user):
+    return points_remaining(user) >= LOAD_MORE_COST
 
 
 # ─── APA REFERENCE BUILDER (shared by all sources) ──────────────────
@@ -690,12 +701,15 @@ def get_me():
     if not user:
         return jsonify({"error": "User not found"}), 404
     return jsonify({
-        "email":              user['email'],
-        "search_count":       user['search_count'],
-        "searches_remaining": searches_remaining(user),
-        "total_allowed":      FREE_SEARCHES + user.get('paid_searches', 0),
-        "is_paid":            user.get('is_paid', False),
-        "can_search":         can_search(user),
+        "email":             user['email'],
+        "points_used":       points_used(user),
+        "points_remaining":  points_remaining(user),
+        "total_points":      total_points(user),
+        "is_paid":           user.get('is_paid', False),
+        "can_search":        can_search(user),
+        "can_load_more":     can_load_more(user),
+        "search_cost":       SEARCH_COST,
+        "load_more_cost":    LOAD_MORE_COST,
     })
 
 
@@ -730,7 +744,7 @@ def search():
     if not can_search(user):
         return jsonify({
             "error":   "limit_reached",
-            "message": "You have used all your free searches. Pay $1 for 20 more!",
+            "message": f"Not enough points. A search costs {SEARCH_COST} points. You have {points_remaining(user)} left. Get 200 more for $1!",
         }), 403
 
     # ── Define the OpenAlex fetch (needs year filter params) ─────────
@@ -811,28 +825,148 @@ def search():
     # ── Sort merged results by citations (highest first) ─────────────
     deduped.sort(key=lambda x: x.get("citations", 0) or 0, reverse=True)
 
-    # ── Update search count and log ──────────────────────────────────
-    new_count = user['search_count'] + 1
-    sb_patch("users", f"id=eq.{user['id']}", {"search_count": new_count})
+    # ── Deduct 10 points and log ─────────────────────────────────────
+    new_points_used = points_used(user) + SEARCH_COST
+    sb_patch("users", f"id=eq.{user['id']}", {"search_count": new_points_used})
 
     sb_post("search_logs", {
         "user_id":     user['id'],
         "query":       query,
         "results":     len(deduped),
+        "points_used": SEARCH_COST,
         "searched_at": datetime.now().isoformat(),
     })
 
-    total_allowed = FREE_SEARCHES + user.get('paid_searches', 0)
+    return jsonify({
+        "results":           deduped,
+        "total":             total_count,
+        "query":             query,
+        "points_remaining":  max(0, total_points(user) - new_points_used),
+        "points_used":       SEARCH_COST,
+        "sources_used":      ["OpenAlex", "Semantic Scholar", "arXiv", "PubMed"],
+        "data_source":       "OpenAlex, Semantic Scholar, arXiv, PubMed",
+        "ref_disclaimer":    "References auto-generated — verify before academic use",
+    })
+
+
+@app.route('/api/load-more')
+@login_required
+def load_more():
+    """
+    Load the next 100 papers for the same query — costs only 5 points.
+
+    Query params:
+      q          — same search query (required)
+      page       — page number to fetch (required, must be > 1)
+      year_from  — same filters as /api/search
+      year_to    — same filters as /api/search
+    """
+    query     = request.args.get('q', '').strip()
+    page      = int(request.args.get('page', 2))
+    year_from = request.args.get('year_from', '')
+    year_to   = request.args.get('year_to', '')
+
+    if not query:
+        return jsonify({"error": "Please enter a search query"}), 400
+
+    if page < 2:
+        return jsonify({"error": "Page must be 2 or higher for load-more"}), 400
+
+    user = get_user(session['user_id'])
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    if not can_load_more(user):
+        return jsonify({
+            "error":   "limit_reached",
+            "message": f"Not enough points. Loading more costs {LOAD_MORE_COST} points. You have {points_remaining(user)} left. Get 200 more for $1!",
+        }), 403
+
+    # ── Same parallel fetch as /api/search but on a different page ────
+    def fetch_openalex():
+        params = {
+            "search":   query,
+            "per-page": RESULTS_PER_SOURCE,
+            "page":     page,
+            "sort":     "cited_by_count:desc",
+        }
+        if year_from and year_to:
+            params["filter"] = f"publication_year:{year_from}-{year_to}"
+        elif year_from:
+            params["filter"] = f"publication_year:{year_from}-"
+        elif year_to:
+            params["filter"] = f"publication_year:-{year_to}"
+        try:
+            resp   = requests.get(OPENALEX_URL, params=params, timeout=15)
+            data   = resp.json()
+            papers = data.get("results", [])
+            count  = data.get("meta", {}).get("count", 0)
+            return [format_paper(p) for p in papers], count
+        except Exception:
+            return [], 0
+
+    all_results = []
+    total_count = 0
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {
+            executor.submit(fetch_openalex):                          "openalex",
+            executor.submit(search_semantic_scholar, query, page):    "semantic_scholar",
+            executor.submit(search_arxiv,            query, page):    "arxiv",
+            executor.submit(search_pubmed,           query, page):    "pubmed",
+        }
+        for future in as_completed(futures):
+            source = futures[future]
+            try:
+                result = future.result()
+                if source == "openalex":
+                    papers, count = result
+                    total_count += count
+                    all_results.extend(papers)
+                else:
+                    all_results.extend(result)
+            except Exception:
+                pass
+
+    # ── Deduplicate ───────────────────────────────────────────────────
+    seen_dois   = set()
+    seen_titles = set()
+    deduped     = []
+    for paper in all_results:
+        doi       = (paper.get("doi") or "").strip().lower()
+        title_key = (paper.get("title") or "").strip().lower()[:60]
+        if doi and doi in seen_dois:
+            continue
+        if title_key and title_key in seen_titles:
+            continue
+        if doi:       seen_dois.add(doi)
+        if title_key: seen_titles.add(title_key)
+        deduped.append(paper)
+
+    deduped.sort(key=lambda x: x.get("citations", 0) or 0, reverse=True)
+
+    # ── Deduct 5 points ───────────────────────────────────────────────
+    new_points_used = points_used(user) + LOAD_MORE_COST
+    sb_patch("users", f"id=eq.{user['id']}", {"search_count": new_points_used})
+
+    sb_post("search_logs", {
+        "user_id":     user['id'],
+        "query":       query,
+        "results":     len(deduped),
+        "points_used": LOAD_MORE_COST,
+        "searched_at": datetime.now().isoformat(),
+    })
 
     return jsonify({
-        "results":            deduped,
-        "total":              total_count,
-        "query":              query,
-        "searches_remaining": max(0, total_allowed - new_count),
-        # Tell the frontend which sources were queried
-        "sources_used":       ["OpenAlex", "Semantic Scholar", "arXiv", "PubMed"],
-        "data_source":        "OpenAlex, Semantic Scholar, arXiv, PubMed",
-        "ref_disclaimer":     "References auto-generated — verify before academic use",
+        "results":          deduped,
+        "total":            total_count,
+        "query":            query,
+        "page":             page,
+        "points_remaining": max(0, total_points(user) - new_points_used),
+        "points_used":      LOAD_MORE_COST,
+        "sources_used":     ["OpenAlex", "Semantic Scholar", "arXiv", "PubMed"],
+        "data_source":      "OpenAlex, Semantic Scholar, arXiv, PubMed",
+        "ref_disclaimer":   "References auto-generated — verify before academic use",
     })
 
 
