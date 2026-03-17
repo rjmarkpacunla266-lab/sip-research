@@ -290,9 +290,7 @@ function renderFullText(data) {
   }
 
   updateReadTime(text);
-  const paragraphs = text.split(/\n{2,}/).filter(s => s.trim());
-  document.getElementById('paperText').innerHTML =
-    paragraphs.map(para => `<p>${esc(para.replace(/\n/g,' '))}</p>`).join('');
+  document.getElementById('paperText').innerHTML = formatPaperText(text);
   toast(`📄 ${isFull?'Full paper loaded':'Abstract loaded'}`);
 }
 
@@ -381,7 +379,39 @@ function openRelatedPaper(idx) {
   window.location.reload();
 }
 
-// ── Find in Paper ─────────────────────────────
+// ── Format Paper Text ─────────────────────────
+// Scraped text often arrives as one giant block.
+// This splits it into readable paragraphs intelligently.
+function formatPaperText(text) {
+  if (!text) return '';
+
+  // Step 1: Try splitting on double newlines first
+  let paragraphs = text.split(/\n{2,}/).map(s => s.replace(/\n/g,' ').trim()).filter(Boolean);
+
+  // Step 2: If we got only 1 big block, split on sentence boundaries
+  // (every ~3-5 sentences becomes a paragraph)
+  if (paragraphs.length <= 2 && text.length > 400) {
+    const sentences = text
+      .replace(/\n/g, ' ')
+      .split(/(?<=[.!?])\s+(?=[A-Z])/)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    paragraphs = [];
+    const SENTENCES_PER_PARA = 4;
+    for (let i = 0; i < sentences.length; i += SENTENCES_PER_PARA) {
+      const chunk = sentences.slice(i, i + SENTENCES_PER_PARA).join(' ');
+      if (chunk.trim()) paragraphs.push(chunk.trim());
+    }
+  }
+
+  // Step 3: Remove junk short fragments (nav links, cookie notices etc.)
+  paragraphs = paragraphs.filter(p => p.split(' ').length >= 6);
+
+  return paragraphs.map(p => `<p>${esc(p)}</p>`).join('');
+}
+
+
 function runFind() {
   const query = document.getElementById('findInput').value.trim();
   clearHighlights();
