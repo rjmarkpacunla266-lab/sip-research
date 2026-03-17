@@ -7,7 +7,7 @@
 
   "base_url": "https://api.openalex.org/works",
 
-  "per_page": 25,
+  "per_page": 30,
   "_per_page_note": "Papers per page. Max allowed by OpenAlex: 200. Recommended: 25-50",
 
   "max_pages": 4,
@@ -27,7 +27,7 @@
   "min_word_count": 10,
   "_min_word_count_note": "Text blocks shorter than this are ignored. Increase to remove short/useless sentences.",
 
-  "min_abstract_words": 20,
+  "min_abstract_words": 30,
   "_min_abstract_words_note": "Abstracts shorter than this are skipped entirely.",
 
   "max_blocks_per_source": 3,
@@ -35,7 +35,7 @@
 
   "─── PAPER FILTERS ──────────────────────────────────────────────────": "",
 
-  "year_min": 2000,
+  "year_min": 1800,
   "year_max": 2026,
   "_year_note": "Only include papers published in this year range.",
 
@@ -76,7 +76,7 @@
   "include_abstract_full": true,
   "_abstract_note": "Include the full reconstructed abstract in JSON output.",
 
-  "reference_style": "apa7",
+  "reference_style": "apa",
   "_ref_style_note": "Reference format. Currently: 'apa7' (APA 7th edition). WARNING: Auto-generated, may be incomplete.",
 
   "─── REFERENCES DISCLAIMER ──────────────────────────────────────────": "",
@@ -110,7 +110,7 @@
 
   "─── NETWORK ────────────────────────────────────────────────────────": "",
 
-  "timeout_seconds": 15,
+  "timeout_seconds": 30,
   "_timeout_note": "Seconds to wait for API response before giving up.",
 
   "retry_attempts": 3,

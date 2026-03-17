@@ -93,7 +93,7 @@ def load_config():
 
         # How many papers per page (max allowed by OpenAlex: 200)
         # Recommended: 25-50 for balance of speed and results
-        "per_page": 25,
+        "per_page": 50,
 
         # How many pages to fetch (total = per_page × max_pages)
         # Example: 25 × 4 = 100 papers maximum per search
@@ -125,11 +125,11 @@ def load_config():
 
         # Maximum text blocks to extract from each paper's abstract
         # Increase to get more content per paper
-        "max_blocks_per_source": 9,
+        "max_blocks_per_source": 3,
 
         # ── Paper Filters ─────────────────────────────────────────────────────
         # Only include papers published within this year range
-        "year_min": 1800,
+        "year_min": 2000,
         "year_max": 2026,
 
         # Only include papers with at least this many citations
@@ -178,7 +178,7 @@ def load_config():
 
         # Reference style — currently "apa7" only, more styles planned
         # ⚠️  Auto-generated — always verify before academic use
-        "reference_style": "apa",
+        "reference_style": "apa7",
 
         # ── Caching ───────────────────────────────────────────────────────────
         # Cache saves API responses as files so repeated searches are instant
@@ -217,7 +217,7 @@ def load_config():
 
         # ── Display ───────────────────────────────────────────────────────────
         # Show extra debug info in terminal output
-        "verbose": True,
+        "verbose": False,
 
         # Max authors to show in references (rest become "et al.")
         "max_authors_display": 3,
@@ -581,6 +581,7 @@ def filter_paper(paper):
             return False
 
     return True
+
 
 # ─── REFERENCE FORMATTING ───────────────────────────────────────────────────────
 #
