@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Payment — Sturch</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Lora:ital,wght@0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:#0b0d12;color:#d8e0f8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:#111520;border:1px solid rgba(100,130,220,.12);border-radius:16px;padding:40px 34px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.6);text-align:center}
+.icon{font-size:3.5rem;margin-bottom:16px}
+h1{font-family:'Lora',serif;font-size:1.6rem;margin-bottom:10px}
+.sub{color:#5a6385;font-size:.88rem;line-height:1.6;margin-bottom:24px}
+.points-box{background:#181d2e;border:2px solid #4f8de8;border-radius:14px;padding:20px;margin-bottom:24px}
+.pts-num{font-size:3rem;font-weight:700;color:#4f8de8;font-family:'Lora',serif;line-height:1}
+.pts-lbl{font-size:.78rem;color:#5a6385;margin-top:4px}
+.btn{display:block;width:100%;padding:12px;background:#4f8de8;border:none;border-radius:10px;color:#fff;font-family:'Outfit',sans-serif;font-size:.97rem;font-weight:600;cursor:pointer;transition:background .2s;text-decoration:none;margin-bottom:10px;text-align:center}
+.btn:hover{background:#3d7fd8}
+.btn.secondary{background:#181d2e;border:1px solid rgba(100,130,220,.18);color:#5a6385}
+.btn.secondary:hover{border-color:#4f8de8;color:#d8e0f8}
+.notice{font-size:.75rem;color:#5a6385;margin-top:16px;line-height:1.6}
+@keyframes pop{0%{transform:scale(.8);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+.icon{animation:pop .5s ease both}
+</style>
+</head>
+<body>
+<div class="card">
+  {% if success %}
+    <div class="icon">🎉</div>
+    <h1>Payment Successful!</h1>
+    <p class="sub">200 points have been added to your account. Happy researching!</p>
+    <div class="points-box">
+      <div class="pts-num">+200</div>
+      <div class="pts-lbl">points added to your account</div>
+    </div>
+    <a href="/" class="btn">Start Searching →</a>
+  {% else %}
+    <div class="icon">❌</div>
+    <h1>Payment Not Completed</h1>
+    <p class="sub">Your payment was not completed or could not be verified. You have not been charged. Please try again.</p>
+    <a href="/upgrade" class="btn">Try Again</a>
+    <a href="/" class="btn secondary">← Back to Search</a>
+    <div class="notice">
+      If you were charged but points were not added, please contact us with your transaction reference.
+    </div>
+  {% endif %}
+</div>
+</body>
+</html>

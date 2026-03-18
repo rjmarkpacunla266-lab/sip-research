@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Forgot Password — Sturch</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Lora:ital,wght@0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:#0b0d12;color:#d8e0f8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:#111520;border:1px solid rgba(100,130,220,.12);border-radius:16px;padding:38px 34px;width:100%;max-width:410px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.logo{font-family:'Lora',serif;font-size:1.75rem;text-align:center;margin-bottom:5px}
+.logo span{color:#4f8de8}
+.tagline{text-align:center;color:#5a6385;font-size:.83rem;margin-bottom:28px}
+.icon{font-size:2.5rem;text-align:center;margin-bottom:14px}
+.form-group{margin-bottom:16px}
+label{display:block;font-size:.76rem;text-transform:uppercase;letter-spacing:.08em;color:#5a6385;font-weight:600;margin-bottom:5px}
+input{width:100%;background:#181d2e;border:1px solid rgba(100,130,220,.12);border-radius:10px;color:#d8e0f8;font-family:'Outfit',sans-serif;font-size:.93rem;padding:11px 13px;outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus{border-color:#4f8de8;box-shadow:0 0 0 3px rgba(79,141,232,.1)}
+input::placeholder{color:#3a4060}
+.btn{width:100%;padding:12px;background:#4f8de8;border:none;border-radius:10px;color:#fff;font-family:'Outfit',sans-serif;font-size:.97rem;font-weight:600;cursor:pointer;transition:background .2s;margin-top:5px}
+.btn:hover{background:#3d7fd8}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.error{background:rgba(240,106,106,.07);border:1px solid rgba(240,106,106,.18);border-radius:8px;color:#f06a6a;font-size:.81rem;padding:9px 13px;margin-bottom:13px;display:none}
+.success{background:rgba(62,207,142,.07);border:1px solid rgba(62,207,142,.18);border-radius:8px;color:#3ecf8e;font-size:.81rem;padding:9px 13px;margin-bottom:13px;display:none}
+.bottom{text-align:center;margin-top:18px;font-size:.83rem;color:#5a6385}
+.bottom a{color:#4f8de8;text-decoration:none}
+.bottom a:hover{text-decoration:underline}
+.hint{font-size:.78rem;color:#5a6385;margin-top:8px;line-height:1.5;background:#181d2e;border-radius:8px;padding:10px 13px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">🔑</div>
+  <div class="logo"><span>Sturch</span></div>
+  <div class="tagline">Reset your password</div>
+
+  <div class="error"   id="errorMsg"></div>
+  <div class="success" id="successMsg"></div>
+
+  <div id="step1">
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="email" placeholder="youremail@gmail.com" autocomplete="email"/>
+    </div>
+    <button class="btn" id="sendBtn" onclick="sendCode()">Send Reset Code</button>
+    <div class="hint">
+      We'll send a 6-digit code to your email. It expires in 15 minutes.
+    </div>
+  </div>
+
+  <div id="step2" style="display:none">
+    <div class="form-group">
+      <label>6-Digit Code</label>
+      <input type="text" id="code" placeholder="123456" maxlength="6" inputmode="numeric"
+        style="font-size:1.5rem;letter-spacing:8px;text-align:center;font-family:monospace"/>
+    </div>
+    <div class="form-group">
+      <label>New Password</label>
+      <input type="password" id="newPassword" placeholder="At least 6 characters"/>
+    </div>
+    <div class="form-group">
+      <label>Confirm New Password</label>
+      <input type="password" id="confirmPassword" placeholder="Repeat new password"/>
+    </div>
+    <button class="btn" id="resetBtn" onclick="doReset()">Reset Password</button>
+    <div class="hint">
+      Didn't receive the code? Check your spam folder or <a href="#" onclick="backToStep1()" style="color:#4f8de8">try again</a>.
+    </div>
+  </div>
+
+  <div class="bottom">
+    <a href="/login">← Back to Login</a>
+  </div>
+</div>
+
+<script>
+let userEmail = '';
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (document.getElementById('step2').style.display === 'none') sendCode();
+    else doReset();
+  }
+});
+
+async function sendCode() {
+  const email   = document.getElementById('email').value.trim();
+  const btn     = document.getElementById('sendBtn');
+  const errorEl = document.getElementById('errorMsg');
+  const succEl  = document.getElementById('successMsg');
+
+  errorEl.style.display = succEl.style.display = 'none';
+
+  if (!email || !email.includes('@')) {
+    errorEl.textContent = 'Enter a valid email address';
+    errorEl.style.display = 'block'; return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Sending…';
+
+  try {
+    const resp = await fetch('/forgot-password', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email})
+    });
+    const data = await resp.json();
+
+    if (data.success) {
+      userEmail = email;
+      succEl.textContent = `Code sent to ${email}. Check your inbox.`;
+      succEl.style.display = 'block';
+      document.getElementById('step1').style.display = 'none';
+      document.getElementById('step2').style.display = 'block';
+      document.getElementById('code').focus();
+    } else {
+      errorEl.textContent = data.error || 'Could not send code';
+      errorEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Send Reset Code';
+    }
+  } catch(e) {
+    errorEl.textContent = 'Connection error. Try again.';
+    errorEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Send Reset Code';
+  }
+}
+
+async function doReset() {
+  const code     = document.getElementById('code').value.trim();
+  const password = document.getElementById('newPassword').value.trim();
+  const confirm  = document.getElementById('confirmPassword').value.trim();
+  const btn      = document.getElementById('resetBtn');
+  const errorEl  = document.getElementById('errorMsg');
+  const succEl   = document.getElementById('successMsg');
+
+  errorEl.style.display = succEl.style.display = 'none';
+
+  if (!code || code.length !== 6) {
+    errorEl.textContent = 'Enter the 6-digit code from your email';
+    errorEl.style.display = 'block'; return;
+  }
+  if (password.length < 6) {
+    errorEl.textContent = 'Password must be at least 6 characters';
+    errorEl.style.display = 'block'; return;
+  }
+  if (password !== confirm) {
+    errorEl.textContent = 'Passwords do not match';
+    errorEl.style.display = 'block'; return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Resetting…';
+
+  try {
+    const resp = await fetch('/reset-password', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email: userEmail, code, password})
+    });
+    const data = await resp.json();
+
+    if (data.success) {
+      succEl.textContent = '✅ Password reset! Redirecting to login…';
+      succEl.style.display = 'block';
+      setTimeout(() => window.location.href = '/login', 1500);
+    } else {
+      errorEl.textContent = data.error || 'Reset failed';
+      errorEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Reset Password';
+    }
+  } catch(e) {
+    errorEl.textContent = 'Connection error. Try again.';
+    errorEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Reset Password';
+  }
+}
+
+function backToStep1() {
+  document.getElementById('step1').style.display = 'block';
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('errorMsg').style.display = 'none';
+  document.getElementById('successMsg').style.display = 'none';
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('sendBtn').textContent = 'Send Reset Code';
+}
+</script>
+</body>
+</html>

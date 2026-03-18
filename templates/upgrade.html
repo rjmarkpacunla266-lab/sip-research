@@ -103,8 +103,8 @@ h1{font-family:'Lora',serif;font-size:1.55rem;margin-bottom:7px}
     </div>
   </div>
 
-  <button class="btn" onclick="alert('Payment coming soon! You are in beta — enjoy free access.')">
-    Get 200 Points — $1
+  <button class="btn" id="payBtn" onclick="startPayment()">
+    Pay ₱55 — Get 200 Points via GCash / Card
   </button>
 
   <a href="/" class="btn secondary">← Go Back to Search</a>
@@ -130,10 +130,28 @@ window.addEventListener('load', async () => {
     document.getElementById('ptsTotal').textContent     = user.total_points ?? '—';
     if ((user.points_remaining ?? 0) > 0) {
       document.getElementById('subText').textContent =
-        `You have ${user.points_remaining} points left. Get 200 more for $1 to keep researching.`;
+        `You have ${user.points_remaining} points left. Get 200 more for ₱55 to keep researching.`;
     }
   } catch(e) {}
 });
+
+async function startPayment() {
+  const btn = document.getElementById('payBtn');
+  btn.disabled = true; btn.textContent = 'Creating payment…';
+  try {
+    const resp = await fetch('/api/create-payment', {method: 'POST'});
+    const data = await resp.json();
+    if (data.checkout_url) {
+      window.location.href = data.checkout_url;
+    } else {
+      alert(data.error || 'Could not start payment. Try again.');
+      btn.disabled = false; btn.textContent = 'Pay ₱55 — Get 200 Points via GCash / Card';
+    }
+  } catch(e) {
+    alert('Connection error. Try again.');
+    btn.disabled = false; btn.textContent = 'Pay ₱55 — Get 200 Points via GCash / Card';
+  }
+}
 </script>
 </body>
 </html>

@@ -50,6 +50,22 @@ from dotenv import load_dotenv
 # Load secret keys from .env file
 load_dotenv()
 
+# ─── EMAIL CONFIG ────────────────────────────────────────────────────
+import smtplib
+import random
+import string
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+GMAIL_USER         = os.getenv("GMAIL_USER", "")
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
+APP_URL            = os.getenv("APP_URL", "http://localhost:8080")
+
+# ─── PAYMONGO CONFIG ─────────────────────────────────────────────────
+import base64
+PAYMONGO_SECRET_KEY = os.getenv("PAYMONGO_SECRET_KEY", "")
+PAYMONGO_PUBLIC_KEY = os.getenv("PAYMONGO_PUBLIC_KEY", "")
+
 
 # ─── EMAIL NORMALIZATION ─────────────────────────────────────────────
 def normalize_email(email):
@@ -106,6 +122,12 @@ def sb_patch(table, filters, data):
     """UPDATE Supabase table."""
     url  = f"{SUPABASE_URL}/rest/v1/{table}?{filters}"
     resp = requests.patch(url, headers=sb_headers(), json=data)
+    return resp.ok
+
+def sb_delete(table, filters):
+    """DELETE from Supabase table."""
+    url  = f"{SUPABASE_URL}/rest/v1/{table}?{filters}"
+    resp = requests.delete(url, headers=sb_headers())
     return resp.ok
 
 
@@ -1155,14 +1177,498 @@ def fetch_paper():
         }), 404
 
     return jsonify({
-        "text":   full_text,
-        "source": fetch_source,
-        "full":   True,
-        "notice": ""
+        "text":         full_text,
+        "source":       fetch_source,
+        "full":         True,
+        "notice":       "",
+        "image_notice": (
+            "📷 Images and figures in this paper are not displayed here. "
+            "To view them, visit the original page using the link above."
+        ) if full_text else "",
     })
 
 
-# ─── RUN ────────────────────────────────────────────────────────────
+# ─── SEARCH HISTORY ─────────────────────────────────────────────────
+@app.route('/api/history')
+@login_required
+def get_history():
+    """Return the last 50 searches for the logged-in user."""
+    user_id = session['user_id']
+    result  = sb_get("search_logs", f"user_id=eq.{user_id}&order=searched_at.desc&limit=50")
+    return jsonify(result or [])
+
+
+# ─── BOOKMARKS ───────────────────────────────────────────────────────
+@app.route('/api/bookmarks', methods=['GET'])
+@login_required
+def get_bookmarks():
+    user_id = session['user_id']
+    result  = sb_get("bookmarks", f"user_id=eq.{user_id}&order=created_at.desc")
+    return jsonify(result or [])
+
+@app.route('/api/bookmarks', methods=['POST'])
+@login_required
+def add_bookmark():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No paper data"}), 400
+    user_id  = session['user_id']
+    paper_id = (data.get('openalex_id') or data.get('doi') or (data.get('title','')[:60])).strip()
+    # Prevent duplicates
+    existing = sb_get("bookmarks", f"user_id=eq.{user_id}&paper_id=eq.{paper_id}")
+    if existing:
+        return jsonify({"error": "already_bookmarked"}), 409
+    result = sb_post("bookmarks", {
+        "user_id":    user_id,
+        "paper_id":   paper_id,
+        "paper_data": data,
+        "created_at": datetime.now().isoformat(),
+    })
+    item = (result[0] if isinstance(result, list) else result) or {}
+    return jsonify({"success": True, "id": item.get("id", "")})
+
+@app.route('/api/bookmarks/<bookmark_id>', methods=['DELETE'])
+@login_required
+def delete_bookmark(bookmark_id):
+    user_id = session['user_id']
+    ok = sb_delete("bookmarks", f"id=eq.{bookmark_id}&user_id=eq.{user_id}")
+    return jsonify({"success": ok})
+
+
+# ─── COLLECTIONS ─────────────────────────────────────────────────────
+@app.route('/api/collections', methods=['GET'])
+@login_required
+def get_collections():
+    user_id = session['user_id']
+    result  = sb_get("collections", f"user_id=eq.{user_id}&order=created_at.desc")
+    return jsonify(result or [])
+
+@app.route('/api/collections', methods=['POST'])
+@login_required
+def create_collection():
+    data = request.get_json() or {}
+    name = (data.get('name') or '').strip()
+    if not name:
+        return jsonify({"error": "Collection name required"}), 400
+    user_id = session['user_id']
+    result  = sb_post("collections", {
+        "user_id":    user_id,
+        "name":       name,
+        "created_at": datetime.now().isoformat(),
+    })
+    col = (result[0] if isinstance(result, list) else result) or {}
+    return jsonify(col)
+
+@app.route('/api/collections/<col_id>', methods=['DELETE'])
+@login_required
+def delete_collection(col_id):
+    user_id = session['user_id']
+    ok = sb_delete("collections", f"id=eq.{col_id}&user_id=eq.{user_id}")
+    return jsonify({"success": ok})
+
+@app.route('/api/collections/<col_id>/papers', methods=['GET'])
+@login_required
+def get_collection_papers(col_id):
+    user_id = session['user_id']
+    result  = sb_get("collection_papers", f"collection_id=eq.{col_id}&user_id=eq.{user_id}&order=created_at.desc")
+    return jsonify(result or [])
+
+@app.route('/api/collections/<col_id>/papers', methods=['POST'])
+@login_required
+def add_to_collection(col_id):
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No paper data"}), 400
+    user_id  = session['user_id']
+    paper_id = (data.get('openalex_id') or data.get('doi') or (data.get('title','')[:60])).strip()
+    result   = sb_post("collection_papers", {
+        "collection_id": col_id,
+        "user_id":       user_id,
+        "paper_id":      paper_id,
+        "paper_data":    data,
+        "created_at":    datetime.now().isoformat(),
+    })
+    item = (result[0] if isinstance(result, list) else result) or {}
+    return jsonify({"success": True, "id": item.get("id", "")})
+
+@app.route('/api/collections/<col_id>/papers/<entry_id>', methods=['DELETE'])
+@login_required
+def remove_from_collection(col_id, entry_id):
+    user_id = session['user_id']
+    ok = sb_delete("collection_papers", f"id=eq.{entry_id}&collection_id=eq.{col_id}&user_id=eq.{user_id}")
+    return jsonify({"success": ok})
+
+
+# ─── RELATED PAPERS ──────────────────────────────────────────────────
+# Costs 5 points — same as load-more
+# Searches using paper concepts or first words of title
+
+def _openalex_related(query):
+    params = {"search": query, "per-page": 25, "page": 1, "sort": "cited_by_count:desc"}
+    try:
+        resp   = requests.get(OPENALEX_URL, params=params, timeout=15)
+        data   = resp.json()
+        return [format_paper(p) for p in data.get("results", [])], data.get("meta",{}).get("count",0)
+    except Exception:
+        return [], 0
+
+@app.route('/api/related')
+@login_required
+def related_papers():
+    """
+    Find related papers based on a paper's concepts or title.
+    Costs LOAD_MORE_COST (5) points.
+
+    Query params:
+      title    — paper title (used if no concepts)
+      concepts — comma-separated concept tags (preferred)
+    """
+    title    = request.args.get('title', '').strip()
+    concepts = request.args.get('concepts', '').strip()
+
+    if not title and not concepts:
+        return jsonify({"error": "title or concepts required"}), 400
+
+    user = get_user(session['user_id'])
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    if not can_load_more(user):
+        return jsonify({
+            "error":   "limit_reached",
+            "message": f"Not enough points. Related papers cost {LOAD_MORE_COST} points. You have {points_remaining(user)} left.",
+        }), 403
+
+    # Build search query
+    if concepts:
+        query = ' '.join(concepts.split(',')[:3]).strip()
+    else:
+        query = ' '.join(title.split()[:5])
+
+    all_results = []
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {
+            executor.submit(_openalex_related, query):               "openalex",
+            executor.submit(search_semantic_scholar, query, 1):      "semantic_scholar",
+            executor.submit(search_arxiv, query, 1):                 "arxiv",
+            executor.submit(search_pubmed, query, 1):                "pubmed",
+        }
+        for future in as_completed(futures):
+            src = futures[future]
+            try:
+                result = future.result()
+                if src == "openalex":
+                    papers, _ = result
+                    all_results.extend(papers)
+                else:
+                    all_results.extend(result)
+            except Exception:
+                pass
+
+    # Deduplicate and exclude the source paper
+    seen_dois   = set()
+    seen_titles = set()
+    deduped     = []
+    orig_title  = title.lower()[:60]
+
+    for paper in all_results:
+        doi       = (paper.get("doi") or "").strip().lower()
+        title_key = (paper.get("title") or "").strip().lower()[:60]
+        if title_key == orig_title:
+            continue   # exclude the original paper
+        if doi and doi in seen_dois:
+            continue
+        if title_key and title_key in seen_titles:
+            continue
+        if doi:       seen_dois.add(doi)
+        if title_key: seen_titles.add(title_key)
+        deduped.append(paper)
+
+    deduped.sort(key=lambda x: x.get("citations", 0) or 0, reverse=True)
+
+    # Deduct 5 points
+    new_pts = points_used(user) + LOAD_MORE_COST
+    sb_patch("users", f"id=eq.{user['id']}", {"search_count": new_pts})
+
+    return jsonify({
+        "results":          deduped[:20],
+        "query":            query,
+        "points_remaining": max(0, total_points(user) - new_pts),
+        "points_used":      LOAD_MORE_COST,
+    })
+
+
+# ─── EMAIL HELPER ────────────────────────────────────────────────────
+
+def send_email(to_email, subject, html_body):
+    """Send email via Gmail SMTP using app password."""
+    if not GMAIL_USER or not GMAIL_APP_PASSWORD:
+        return False
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = f"Sturch <{GMAIL_USER}>"
+        msg["To"]      = to_email
+        msg.attach(MIMEText(html_body, "html"))
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            server.sendmail(GMAIL_USER, to_email, msg.as_string())
+        return True
+    except Exception as e:
+        print(f"Email error: {e}")
+        return False
+
+
+def generate_reset_code():
+    """Generate a 6-digit numeric reset code."""
+    return ''.join(random.choices(string.digits, k=6))
+
+
+# ─── PASSWORD RESET ROUTES ────────────────────────────────────────────
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'GET':
+        return render_template('forgot.html')
+
+    data  = request.get_json() or request.form
+    email = normalize_email(data.get('email') or '')
+
+    if not email or '@' not in email:
+        return jsonify({"error": "Enter a valid email address"}), 400
+
+    user = get_user_by_email(email)
+    # Always return success even if email not found — prevents user enumeration
+    if not user:
+        return jsonify({"success": True, "message": "If that email exists, a code has been sent."})
+
+    code = generate_reset_code()
+
+    # Save code to Supabase (expires in 15 minutes)
+    sb_post("password_resets", {
+        "email":      email,
+        "code":       code,
+        "used":       False,
+        "created_at": datetime.now().isoformat(),
+    })
+
+    # Send email
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;background:#0b0d12;color:#d8e0f8;padding:32px;border-radius:12px">
+      <h2 style="font-family:Georgia,serif;color:#4f8de8;margin-bottom:8px">Sturch Password Reset</h2>
+      <p style="color:#8a94b8;margin-bottom:24px">Your one-time reset code:</p>
+      <div style="background:#181d2e;border:2px solid #4f8de8;border-radius:10px;padding:20px;text-align:center;margin-bottom:24px">
+        <span style="font-size:2.5rem;font-weight:700;letter-spacing:12px;color:#4f8de8;font-family:monospace">{code}</span>
+      </div>
+      <p style="color:#8a94b8;font-size:.85rem">This code expires in <strong>15 minutes</strong>. Do not share it with anyone.</p>
+      <p style="color:#8a94b8;font-size:.85rem">If you did not request this, ignore this email.</p>
+      <hr style="border:none;border-top:1px solid #1f2540;margin:20px 0"/>
+      <p style="color:#5a6385;font-size:.75rem">Sturch — Built for Filipino STE students 🇵🇭</p>
+    </div>
+    """
+
+    sent = send_email(email, "Sturch — Your password reset code", html)
+    if not sent:
+        return jsonify({"error": "Could not send email. Try again later."}), 500
+
+    return jsonify({"success": True, "message": "Reset code sent to your email."})
+
+
+@app.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    if request.method == 'GET':
+        email = request.args.get('email', '')
+        return render_template('reset.html', email=email)
+
+    data     = request.get_json() or request.form
+    email    = normalize_email(data.get('email') or '')
+    code     = (data.get('code') or '').strip()
+    password = (data.get('password') or '').strip()
+
+    if not email or not code or not password:
+        return jsonify({"error": "All fields are required"}), 400
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
+
+    # Find valid unused code within 15 minutes
+    cutoff = (datetime.now() - __import__('datetime').timedelta(minutes=15)).isoformat()
+    results = sb_get("password_resets",
+        f"email=eq.{email}&code=eq.{code}&used=eq.false&created_at=gte.{cutoff}&order=created_at.desc&limit=1"
+    )
+
+    if not results:
+        return jsonify({"error": "Invalid or expired code. Please request a new one."}), 400
+
+    reset_id = results[0]['id']
+
+    # Mark code as used
+    sb_patch("password_resets", f"id=eq.{reset_id}", {"used": True})
+
+    # Update password
+    hashed = hash_password(password)
+    sb_patch("users", f"email=eq.{email}", {"password_hash": hashed})
+
+    return jsonify({"success": True, "redirect": "/login"})
+
+
+# ─── PAYMONGO PAYMENT ─────────────────────────────────────────────────
+
+def pm_headers():
+    """PayMongo API headers with base64-encoded secret key."""
+    encoded = base64.b64encode(f"{PAYMONGO_SECRET_KEY}:".encode()).decode()
+    return {
+        "Authorization": f"Basic {encoded}",
+        "Content-Type":  "application/json",
+        "Accept":        "application/json",
+    }
+
+
+@app.route('/api/create-payment', methods=['POST'])
+@login_required
+def create_payment():
+    """
+    Create a PayMongo payment link for 200 points ($1 / ₱55 approx).
+    Returns the checkout URL to redirect the user to.
+    """
+    if not PAYMONGO_SECRET_KEY:
+        return jsonify({"error": "Payment not configured yet"}), 503
+
+    user = get_user(session['user_id'])
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    try:
+        payload = {
+            "data": {
+                "attributes": {
+                    "amount":      5500,          # ₱55 in centavos (~$1)
+                    "currency":    "PHP",
+                    "description": "Sturch — 200 research points",
+                    "remarks":     f"user_id:{user['id']}",
+                    "redirect": {
+                        "success": f"{APP_URL}/payment/success",
+                        "failed":  f"{APP_URL}/payment/failed",
+                    }
+                }
+            }
+        }
+        resp = requests.post(
+            "https://api.paymongo.com/v1/links",
+            headers=pm_headers(),
+            json=payload,
+            timeout=15
+        )
+        if not resp.ok:
+            print(f"PayMongo error: {resp.text}")
+            return jsonify({"error": "Could not create payment. Try again."}), 500
+
+        link_data    = resp.json()["data"]
+        checkout_url = link_data["attributes"]["checkout_url"]
+        link_id      = link_data["id"]
+
+        # Log payment attempt
+        sb_post("payments", {
+            "user_id":     user['id'],
+            "amount":      1.00,
+            "points_added": 200,
+            "status":      "pending",
+            "reference":   link_id,
+            "created_at":  datetime.now().isoformat(),
+        })
+
+        return jsonify({"checkout_url": checkout_url, "link_id": link_id})
+
+    except Exception as e:
+        print(f"PayMongo exception: {e}")
+        return jsonify({"error": "Payment error. Try again."}), 500
+
+
+@app.route('/payment/success')
+@login_required
+def payment_success():
+    """
+    User lands here after successful PayMongo payment.
+    We verify by checking the payment link status.
+    """
+    link_id = request.args.get('link_id', '')
+    user    = get_user(session['user_id'])
+    if not user:
+        return redirect(url_for('login'))
+
+    # Verify payment with PayMongo
+    verified = False
+    if link_id and PAYMONGO_SECRET_KEY:
+        try:
+            resp = requests.get(
+                f"https://api.paymongo.com/v1/links/{link_id}",
+                headers=pm_headers(),
+                timeout=15
+            )
+            if resp.ok:
+                status = resp.json()["data"]["attributes"]["status"]
+                if status == "paid":
+                    verified = True
+        except Exception:
+            pass
+
+    if verified:
+        # Add 200 points
+        new_paid = user.get('paid_searches', 0) + 200
+        sb_patch("users", f"id=eq.{user['id']}", {
+            "paid_searches": new_paid,
+            "is_paid": True
+        })
+        # Update payment record
+        sb_patch("payments", f"reference=eq.{link_id}", {"status": "paid"})
+
+    return render_template('payment_result.html',
+        success=verified,
+        points=200 if verified else 0,
+        user=user
+    )
+
+
+@app.route('/payment/failed')
+@login_required
+def payment_failed():
+    return render_template('payment_result.html', success=False, points=0, user=get_user(session['user_id']))
+
+
+@app.route('/api/payment-webhook', methods=['POST'])
+def payment_webhook():
+    """
+    PayMongo webhook — called automatically when payment completes.
+    Set this URL in PayMongo dashboard: APP_URL/api/payment-webhook
+    More reliable than relying on redirect alone.
+    """
+    try:
+        data       = request.get_json()
+        event_type = data.get("data", {}).get("attributes", {}).get("type", "")
+
+        if event_type == "link.payment.paid":
+            attrs   = data["data"]["attributes"]["data"]["attributes"]
+            remarks = attrs.get("remarks", "")
+            link_id = data["data"]["attributes"]["data"]["id"]
+
+            # Extract user_id from remarks
+            if remarks.startswith("user_id:"):
+                user_id = remarks.replace("user_id:", "").strip()
+                user    = get_user(user_id)
+                if user:
+                    new_paid = user.get('paid_searches', 0) + 200
+                    sb_patch("users", f"id=eq.{user_id}", {
+                        "paid_searches": new_paid,
+                        "is_paid": True
+                    })
+                    sb_patch("payments", f"reference=eq.{link_id}", {"status": "paid"})
+
+        return jsonify({"received": True}), 200
+    except Exception as e:
+        print(f"Webhook error: {e}")
+        return jsonify({"error": str(e)}), 400
+
+
+# ─── RUN ─────────────────────────────────────────────────────────────
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
