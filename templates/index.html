@@ -648,12 +648,13 @@ function buildCard(item, i) {
       <span class="ref-warn">${item.apa_missing&&item.apa_missing.length?'⚠️ Missing: '+item.apa_missing.join(', '):'⚠️ Auto-ref'}</span>
       <span class="apa-text" title="${esc(item.apa_reference||'')}">${esc(item.apa_reference||'')}</span>
       <div class="foot-btns">
-        <button class="btn xs" onclick="copyAPA(${i},event)">📋 APA</button>
+        <button class="btn xs" onclick="showCitationPicker(${i},${n},event)">📋 Cite</button>
         ${item.doi?`<a href="${esc(item.doi)}" target="_blank" class="btn xs">DOI</a>`:''}
         ${item.oa_url?`<a href="${esc(item.oa_url)}" target="_blank" class="btn xs">Full Text</a>`:''}
         <button class="btn xs" onclick="openPaperPage(${i},event)">📄 Read</button>
         <button class="btn xs ${isBookmark?'gold':''}" id="bk-${n}" onclick="toggleBookmark(${i},${n},event)">${isBookmark?'🔖 Saved':'🔖 Save'}</button>
         <button class="btn xs" onclick="openAddToCollection(${i},event)">📚+</button>
+        <button class="btn xs" onclick="shareFromCard(${i},event)">🔗 Share</button>
       </div>
     </div>
   </div>`;
@@ -915,6 +916,68 @@ function copyAllAPA() {
     document.getElementById('citeCounter').classList.add('active');
     toast(`📋 ${refs.length} APA references copied`);
   });
+}
+
+// ── Citation Picker ────────────────────────────────────
+let _modalCiteCache = {};
+async function showCitationPicker(idx, cardNum, e) {
+  if (e) e.stopPropagation();
+  const item = currentResults[idx];
+  if (!item) return;
+  _modalCiteCache = {};
+  document.getElementById('modalContent').innerHTML = `
+    <h2>📋 Citation Styles</h2>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">${esc(stripTags(item.title||''))}</p>
+    <div class="warn-box">⚠️ Auto-generated — always verify before academic submission.</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0" id="citeStyleBtns">
+      <button class="btn sm" id="cb-apa"     onclick="loadCiteStyle('apa',${idx},this)"     style="border-color:var(--accent);color:var(--accent)">APA</button>
+      <button class="btn sm" id="cb-mla"     onclick="loadCiteStyle('mla',${idx},this)"    >MLA</button>
+      <button class="btn sm" id="cb-chicago" onclick="loadCiteStyle('chicago',${idx},this)">Chicago</button>
+      <button class="btn sm" id="cb-harvard" onclick="loadCiteStyle('harvard',${idx},this)">Harvard</button>
+    </div>
+    <div id="citeResult" style="background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;font-size:.8rem;font-style:italic;color:var(--muted);line-height:1.6;min-height:60px">${esc(item.apa_reference||'Not available')}</div>
+    <button class="btn sm" style="margin-top:10px;width:100%;justify-content:center" onclick="copyModalCite()">📋 Copy</button>`;
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+
+async function loadCiteStyle(style, idx, btn) {
+  const item = currentResults[idx];
+  if (!item) return;
+  document.querySelectorAll('#citeStyleBtns .btn').forEach(b => { b.style.borderColor=''; b.style.color=''; });
+  if (btn) { btn.style.borderColor='var(--accent)'; btn.style.color='var(--accent)'; }
+  const box = document.getElementById('citeResult');
+  if (_modalCiteCache[style]) { box.textContent=_modalCiteCache[style]; return; }
+  box.textContent = 'Generating…';
+  try {
+    const resp = await fetch('/api/citations', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item)});
+    const data = await resp.json();
+    _modalCiteCache = data;
+    box.textContent = data[style]||'Not available';
+  } catch(e) { box.textContent = item.apa_reference||'Not available'; }
+}
+
+function copyModalCite() {
+  const text = document.getElementById('citeResult')?.textContent||'';
+  navigator.clipboard.writeText(text).then(()=>toast('📋 Citation copied'));
+}
+
+// ── Share from card ────────────────────────────────────
+async function shareFromCard(idx, e) {
+  if (e) e.stopPropagation();
+  const item = currentResults[idx];
+  if (!item) return;
+  try {
+    const resp = await fetch('/api/share', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item)});
+    const data = await resp.json();
+    if (data.url) {
+      if (navigator.share) {
+        await navigator.share({title:item.title||'Research Paper',text:item.apa_reference||'',url:data.url});
+      } else {
+        await navigator.clipboard.writeText(data.url);
+        toast(`🔗 Link copied (${data.source})`);
+      }
+    } else { toast('⚠️ No shareable link for this paper'); }
+  } catch(e) { toast('⚠️ Could not generate share link'); }
 }
 
 // ── Export ─────────────────────────────────────
