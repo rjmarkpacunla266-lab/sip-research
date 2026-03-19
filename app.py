@@ -267,6 +267,111 @@ def _build_apa(authors, year, title, journal, volume, issue, pages, doi):
     )
 
 
+
+
+def _build_mla(authors, year, title, journal, volume, issue, pages, doi):
+    mla_authors = []
+    for i, name in enumerate((authors or [])[:3]):
+        parts = name.strip().split()
+        if len(parts) >= 2:
+            if i == 0:
+                mla_authors.append(parts[-1] + ", " + " ".join(parts[:-1]))
+            else:
+                mla_authors.append(name.strip())
+        elif name.strip():
+            mla_authors.append(name.strip())
+    if not mla_authors:
+        author_str = "Unknown"
+    elif len(mla_authors) == 1:
+        author_str = mla_authors[0]
+        if len(authors or []) > 1:
+            author_str += ", et al"
+    else:
+        author_str = ", and ".join(mla_authors)
+        if len(authors or []) > 3:
+            author_str += ", et al"
+    ref = author_str + '. "' + title + '."'
+    if journal: ref += " " + journal
+    if volume:  ref += ", vol. " + str(volume)
+    if issue:   ref += ", no. " + str(issue)
+    if year:    ref += ", " + str(year)
+    if pages:   ref += ", pp. " + str(pages)
+    ref += "."
+    if doi:
+        d = doi if doi.startswith("http") else "https://doi.org/" + doi
+        ref += " " + d + "."
+    return ref
+
+
+def _build_chicago(authors, year, title, journal, volume, issue, pages, doi):
+    chi_authors = []
+    for i, name in enumerate((authors or [])[:3]):
+        parts = name.strip().split()
+        if len(parts) >= 2:
+            if i == 0:
+                chi_authors.append(parts[-1] + ", " + " ".join(parts[:-1]))
+            else:
+                chi_authors.append(name.strip())
+        elif name.strip():
+            chi_authors.append(name.strip())
+    if not chi_authors:
+        author_str = "Unknown"
+    elif len(chi_authors) == 1:
+        author_str = chi_authors[0]
+        if len(authors or []) > 1:
+            author_str += ", et al."
+    else:
+        author_str = ", ".join(chi_authors)
+        if len(authors or []) > 3:
+            author_str += ", et al."
+    y = str(year) if year else "n.d."
+    ref = author_str + ". " + y + '. "' + title + '."'
+    if journal: ref += " " + journal
+    if volume:
+        ref += " " + str(volume)
+        if issue: ref += " (" + str(issue) + ")"
+    if pages: ref += ": " + str(pages)
+    ref += "."
+    if doi:
+        d = doi if doi.startswith("http") else "https://doi.org/" + doi
+        ref += " " + d + "."
+    return ref
+
+
+def _build_harvard(authors, year, title, journal, volume, issue, pages, doi):
+    harv_authors = []
+    for name in (authors or [])[:3]:
+        parts = name.strip().split()
+        if len(parts) >= 2:
+            initials = ". ".join(p[0].upper() for p in parts[:-1] if p) + "."
+            harv_authors.append(parts[-1] + ", " + initials)
+        elif name.strip():
+            harv_authors.append(name.strip())
+    if len(authors or []) > 3:
+        harv_authors.append("et al.")
+    author_str = ", ".join(harv_authors) if harv_authors else "Unknown"
+    y = str(year) if year else "n.d."
+    ref = author_str + " (" + y + ") '" + title + "'"
+    if journal: ref += ", " + journal
+    if volume:
+        ref += ", " + str(volume)
+        if issue: ref += "(" + str(issue) + ")"
+    if pages: ref += ", pp. " + str(pages)
+    ref += "."
+    if doi:
+        d = doi if doi.startswith("http") else "https://doi.org/" + doi
+        ref += " Available at: " + d + "."
+    return ref
+
+
+def _all_citations(authors, year, title, journal, volume, issue, pages, doi):
+    return {
+        "apa":     _build_apa(authors, year, title, journal, volume, issue, pages, doi),
+        "mla":     _build_mla(authors, year, title, journal, volume, issue, pages, doi),
+        "chicago": _build_chicago(authors, year, title, journal, volume, issue, pages, doi),
+        "harvard": _build_harvard(authors, year, title, journal, volume, issue, pages, doi),
+    }
+
 # ─── OPENALEX HELPERS ────────────────────────────────────────────────
 def reconstruct_abstract(abstract_index):
     """OpenAlex stores abstracts as inverted index — rebuild the plain text."""
@@ -1667,6 +1772,48 @@ def payment_webhook():
         print(f"Webhook error: {e}")
         return jsonify({"error": str(e)}), 400
 
+
+
+
+# ─── CITATIONS ENDPOINT ──────────────────────────────────────────────
+@app.route('/api/citations', methods=['POST'])
+@login_required
+def get_citations():
+    data    = request.get_json() or {}
+    authors = data.get('authors') or []
+    year    = data.get('year') or 'n.d.'
+    title   = data.get('title') or ''
+    journal = data.get('journal') or ''
+    volume  = data.get('volume') or ''
+    issue   = data.get('issue') or ''
+    pages   = data.get('pages') or ''
+    doi     = data.get('doi') or ''
+    if not title:
+        return jsonify({"error": "Title is required"}), 400
+    return jsonify(_all_citations(authors, year, title, journal, volume, issue, pages, doi))
+
+
+# ─── SHARE ENDPOINT ──────────────────────────────────────────────────
+@app.route('/api/share', methods=['POST'])
+@login_required
+def share_paper():
+    data  = request.get_json() or {}
+    doi   = (data.get('doi') or '').strip()
+    oa    = (data.get('oa_url') or '').strip()
+    title = (data.get('title') or '').strip()
+    if doi:
+        link   = doi if doi.startswith('http') else "https://doi.org/" + doi
+        source = "DOI"
+    elif oa:
+        link   = oa
+        source = "Open Access"
+    elif title:
+        import urllib.parse
+        link   = "https://scholar.google.com/scholar?q=" + urllib.parse.quote(title)
+        source = "Google Scholar"
+    else:
+        return jsonify({"error": "No shareable link available"}), 404
+    return jsonify({"url": link, "source": source})
 
 # ─── RUN ─────────────────────────────────────────────────────────────
 if __name__ == '__main__':
