@@ -1121,10 +1121,14 @@ def load_more():
 
 
 @app.route('/upgrade')
-@login_required
 def upgrade():
-    user = get_user(session['user_id'])
-    return render_template('upgrade.html', user=user)
+    return redirect(url_for('donate'))
+
+
+@app.route('/donate')
+def donate():
+    """Public donation page — no login required."""
+    return render_template('donate.html')
 
 
 @app.route('/health')

@@ -217,6 +217,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
     <button class="btn sm" onclick="openSaved()">🔖</button>
     <button class="btn sm" onclick="openCollections()">📚</button>
     <button class="btn sm" onclick="showExportMenu()">↓ Export</button>
+    <a href="/donate" class="btn sm" style="background:linear-gradient(135deg,rgba(79,141,232,.15),rgba(157,110,245,.15));border-color:rgba(157,110,245,.3);color:#9d6ef5">💙 Donate</a>
     <a href="/logout" class="btn sm danger">Logout</a>
   </div>
 </header>
@@ -302,8 +303,8 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 
 <!-- Load More -->
 <div class="load-more-bar hidden" id="loadMoreBar">
-  <span>Want more papers on the same topic?</span>
-  <button class="btn sm primary" id="loadMoreBtn" onclick="loadMorePapers()">Load 100 more — 5 pts</button>
+  <button class="btn sm primary" id="showMoreBtn" onclick="showNextTen()">Show next 10</button>
+  <button class="btn sm" id="loadMoreBtn" onclick="loadMorePapers()" style="display:none">Load 100 more from APIs — 5 pts</button>
 </div>
 
 </div><!-- /#app -->
@@ -378,6 +379,8 @@ let totalResults   = 0;
 let bookmarkMap    = {};  // paperId → bookmark UUID
 let citeCopiedCount = 0;
 let oaOnly         = false;
+let displayedCount = 0;   // how many results currently shown on screen
+const DISPLAY_PER_PAGE = 10; // show 10 at a time
 
 // ── Init ──────────────────────────────────────
 window.addEventListener('load', () => {
@@ -520,6 +523,7 @@ async function doSearch(page = 1) {
 
     currentResults = data.results || [];
     totalResults   = data.total   || 0;
+    displayedCount = 0; // reset for new search
 
     // Client-side OA filter
     if (oaOnly) currentResults = currentResults.filter(p => p.is_oa);
@@ -546,7 +550,7 @@ async function doSearch(page = 1) {
   } catch(e) { showError('Connection error. Check your internet and try again.'); }
 }
 
-// ── Load More Papers ───────────────────────────
+// ── Load More Papers from API (5 pts) ──────────
 async function loadMorePapers() {
   if (!currentQuery) return;
   const btn = document.getElementById('loadMoreBtn');
@@ -568,25 +572,29 @@ async function loadMorePapers() {
     if (!newPapers.length) { toast('No more papers found.'); return; }
 
     currentPage++;
-    const startIdx = currentResults.length;
     currentResults = [...currentResults, ...newPapers];
 
+    // Show first 10 of new batch
+    const newStart = displayedCount;
+    const newEnd   = Math.min(newStart + DISPLAY_PER_PAGE, currentResults.length);
     const container = document.getElementById('results');
-    newPapers.forEach((item, i) => {
+    currentResults.slice(newStart, newEnd).forEach((item, i) => {
       const div = document.createElement('div');
-      div.innerHTML = buildCard(item, startIdx + i);
+      div.innerHTML = buildCard(item, newStart + i);
       const card = div.firstElementChild;
-      card.style.animationDelay = (i * 18) + 'ms';
+      card.style.animationDelay = (i * 16) + 'ms';
       container.appendChild(card);
     });
+    displayedCount = newEnd;
 
-    document.getElementById('s_shown').textContent = currentResults.length;
     document.getElementById('s_remaining').textContent = data.points_remaining ?? '—';
     document.getElementById('pointsPill').textContent  = `${data.points_remaining ?? '—'} pts`;
-    toast(`✅ ${newPapers.length} more papers loaded — 5 pts used`);
+    document.getElementById('s_shown').textContent     = displayedCount;
+    toast(`✅ ${newPapers.length} more papers fetched — 5 pts used`);
+    updateLoadMoreBar();
     loadUserInfo();
   } catch(e) { toast('⚠️ Connection error'); }
-  finally { btn.textContent = 'Load 100 more — 5 pts'; btn.disabled = false; }
+  finally { btn.textContent = 'Load 100 more from APIs — 5 pts'; btn.disabled = false; }
 }
 
 // ── Render Results ─────────────────────────────
@@ -594,20 +602,71 @@ function renderResults(data) {
   const results = data.results || [];
   document.getElementById('statsBar').classList.remove('hidden');
   document.getElementById('s_total').textContent = (data.total||0).toLocaleString();
-  document.getElementById('s_shown').textContent = results.length;
   document.getElementById('s_remaining').textContent = data.points_remaining ?? '—';
   const srcEl = document.getElementById('s_sources');
   if (srcEl && data.sources_used) srcEl.textContent = data.sources_used.length;
 
   document.getElementById('toolbar').classList.remove('hidden');
   document.getElementById('toolbarCount').innerHTML =
-    `<strong>${results.length}</strong> papers · ${(data.sources_used||['OpenAlex']).join(', ')}`;
+    `<strong>${results.length}</strong> fetched · showing first 10 · ${(data.sources_used||['OpenAlex']).join(', ')}`;
 
-  document.getElementById('results').innerHTML = results.map((item,i) => buildCard(item, i)).join('');
-  document.getElementById('results').querySelectorAll('.card').forEach((c,i) => {
+  // Show only first 10
+  displayedCount = Math.min(DISPLAY_PER_PAGE, results.length);
+  document.getElementById('s_shown').textContent = displayedCount;
+
+  const container = document.getElementById('results');
+  container.innerHTML = results.slice(0, displayedCount).map((item,i) => buildCard(item, i)).join('');
+  container.querySelectorAll('.card').forEach((c,i) => {
     c.style.animationDelay = (i * 16) + 'ms';
   });
-  document.getElementById('loadMoreBar').classList.remove('hidden');
+
+  updateLoadMoreBar();
+}
+
+// ── Update load more bar buttons ───────────────
+function updateLoadMoreBar() {
+  const bar        = document.getElementById('loadMoreBar');
+  const showBtn    = document.getElementById('showMoreBtn');
+  const loadBtn    = document.getElementById('loadMoreBtn');
+  const hasMore    = displayedCount < currentResults.length;
+  const canLoadAPI = displayedCount >= currentResults.length;
+
+  bar.classList.remove('hidden');
+
+  if (hasMore) {
+    showBtn.style.display = '';
+    showBtn.textContent   = `Show next 10 (${currentResults.length - displayedCount} remaining)`;
+  } else {
+    showBtn.style.display = 'none';
+  }
+
+  if (canLoadAPI) {
+    loadBtn.style.display = '';
+  } else {
+    loadBtn.style.display = 'none';
+  }
+}
+
+// ── Show Next 10 (no points, no API call) ──────
+function showNextTen() {
+  const start = displayedCount;
+  const end   = Math.min(start + DISPLAY_PER_PAGE, currentResults.length);
+  const slice = currentResults.slice(start, end);
+
+  const container = document.getElementById('results');
+  slice.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.innerHTML = buildCard(item, start + i);
+    const card = div.firstElementChild;
+    card.style.animationDelay = (i * 16) + 'ms';
+    container.appendChild(card);
+  });
+
+  displayedCount = end;
+  document.getElementById('s_shown').textContent = displayedCount;
+  document.getElementById('toolbarCount').innerHTML =
+    `<strong>${currentResults.length}</strong> fetched · showing ${displayedCount}`;
+  updateLoadMoreBar();
 }
 
 // ── Build Card HTML ────────────────────────────

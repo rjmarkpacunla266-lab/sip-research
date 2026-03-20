@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Support Sturch — Buy Me a Coffee</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Lora:ital,wght@0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:#0b0d12;color:#d8e0f8;min-height:100vh;padding:20px;display:flex;align-items:center;justify-content:center}
+.card{background:#111520;border:1px solid rgba(100,130,220,.12);border-radius:16px;padding:38px 34px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.logo{font-family:'Lora',serif;font-size:1.4rem;text-align:center;margin-bottom:4px}
+.logo span{color:#4f8de8}
+.tagline{text-align:center;color:#5a6385;font-size:.8rem;margin-bottom:24px}
+
+/* Story section */
+.story{background:#181d2e;border:1px solid rgba(100,130,220,.1);border-radius:12px;padding:18px 20px;margin-bottom:22px}
+.story-title{font-family:'Lora',serif;font-size:1rem;margin-bottom:10px;color:#d8e0f8}
+.story p{font-size:.83rem;color:#8a94b8;line-height:1.7;margin-bottom:8px}
+.story p:last-child{margin-bottom:0}
+.story strong{color:#d8e0f8}
+
+/* Stats */
+.stats{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap}
+.stat-box{flex:1;min-width:80px;background:#181d2e;border:1px solid rgba(100,130,220,.1);border-radius:10px;padding:12px;text-align:center}
+.stat-val{font-family:'Lora',serif;font-size:1.4rem;font-weight:700;color:#4f8de8}
+.stat-lbl{font-size:.68rem;color:#5a6385;margin-top:3px}
+
+/* GCash section */
+.gcash-box{background:#181d2e;border:2px solid #4f8de8;border-radius:14px;padding:22px;margin-bottom:16px;text-align:center}
+.gcash-title{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:#5a6385;margin-bottom:12px}
+.gcash-logo{font-size:2rem;margin-bottom:8px}
+.gcash-name{font-family:'Lora',serif;font-size:1.1rem;margin-bottom:4px}
+.gcash-number{font-size:1.6rem;font-weight:700;color:#4f8de8;font-family:monospace;letter-spacing:3px;margin-bottom:8px}
+.gcash-hint{font-size:.75rem;color:#5a6385;line-height:1.5}
+
+/* Copy button */
+.btn-copy{width:100%;padding:12px;background:#4f8de8;border:none;border-radius:10px;color:#fff;font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;transition:background .2s;margin-bottom:10px}
+.btn-copy:hover{background:#3d7fd8}
+.btn-copy.copied{background:#3ecf8e}
+
+/* What you get */
+.perks{background:#181d2e;border:1px solid rgba(100,130,220,.1);border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.perks-title{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:#5a6385;margin-bottom:10px}
+.perk{display:flex;align-items:flex-start;gap:8px;font-size:.82rem;color:#8a94b8;margin-bottom:7px;line-height:1.5}
+.perk:last-child{margin-bottom:0}
+.perk .icon{flex-shrink:0;font-size:.9rem}
+
+/* Amount suggestion */
+.amounts{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.amount-chip{flex:1;min-width:60px;padding:10px 8px;background:#181d2e;border:1px solid rgba(100,130,220,.15);border-radius:10px;text-align:center;cursor:pointer;transition:all .15s;font-size:.82rem;color:#5a6385}
+.amount-chip:hover,.amount-chip.active{border-color:#4f8de8;color:#4f8de8;background:rgba(79,141,232,.08)}
+.amount-chip .val{font-family:'Lora',serif;font-size:1.1rem;font-weight:700;display:block;color:#d8e0f8}
+
+.btn-back{width:100%;padding:11px;background:transparent;border:1px solid rgba(100,130,220,.18);border-radius:10px;color:#5a6385;font-family:'Outfit',sans-serif;font-size:.9rem;cursor:pointer;transition:all .2s;text-decoration:none;display:flex;align-items:center;justify-content:center}
+.btn-back:hover{border-color:#4f8de8;color:#d8e0f8}
+
+.notice{font-size:.72rem;color:#5a6385;text-align:center;margin-top:14px;line-height:1.6}
+.notice a{color:#4f8de8;text-decoration:none}
+
+/* Toast */
+#toast{position:fixed;bottom:20px;right:20px;background:#111520;border:1px solid rgba(100,130,220,.2);border-radius:10px;padding:10px 16px;font-size:.83rem;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:300;transform:translateY(50px);opacity:0;transition:all .3s}
+#toast.show{transform:translateY(0);opacity:1}
+</style>
+</head>
+<body>
+<div class="card">
+
+  <div class="logo"><span>Sturch</span></div>
+  <div class="tagline">Support the student who built this</div>
+
+  <!-- Story -->
+  <div class="story">
+    <div class="story-title">👋 Hi, I'm RJ Mark — I built Sturch</div>
+    <p>I'm a <strong>14-year-old Filipino STE student</strong> and I built Sturch using only my mobile phone. No laptop, no computer, no mentor.</p>
+    <p>Sturch searches <strong>250M+ academic papers</strong> from 4 databases simultaneously — completely free for students like me who can't afford paid research tools.</p>
+    <p>I built this because I know how hard it is to find good research papers for school projects. If Sturch helped your research, consider supporting me so I can keep building and eventually get a proper computer.</p>
+    <p style="color:#4f8de8;font-size:.82rem">Every peso goes toward keeping Sturch running and improving it for all Filipino STE students. 🇵🇭</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-box">
+      <div class="stat-val">4</div>
+      <div class="stat-lbl">Sources searched</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val">250M+</div>
+      <div class="stat-lbl">Papers available</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val">14</div>
+      <div class="stat-lbl">My age</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val">📱</div>
+      <div class="stat-lbl">Built on mobile</div>
+    </div>
+  </div>
+
+  <!-- Suggested amounts -->
+  <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:#5a6385;margin-bottom:8px">Suggested donation</div>
+  <div class="amounts">
+    <div class="amount-chip" onclick="selectAmount(this)">
+      <span class="val">₱10</span>
+      1 coffee
+    </div>
+    <div class="amount-chip active" onclick="selectAmount(this)">
+      <span class="val">₱50</span>
+      5 coffees
+    </div>
+    <div class="amount-chip" onclick="selectAmount(this)">
+      <span class="val">₱100</span>
+      laptop fund
+    </div>
+    <div class="amount-chip" onclick="selectAmount(this)">
+      <span class="val">₱200</span>
+      legend 🏆
+    </div>
+  </div>
+
+  <!-- GCash -->
+  <div class="gcash-box">
+    <div class="gcash-title">Send via GCash</div>
+    <div class="gcash-logo">💙</div>
+    <div class="gcash-name">RJ Mark Pacunla</div>
+    <div class="gcash-number" id="gcashNum">0955 204 2072</div>
+    <div class="gcash-hint">Open GCash → Send Money → enter number above</div>
+  </div>
+
+  <button class="btn-copy" id="copyBtn" onclick="copyGcash()">
+    📋 Copy GCash Number
+  </button>
+
+  <!-- What donation supports -->
+  <div class="perks">
+    <div class="perks-title">What your support goes toward</div>
+    <div class="perk"><span class="icon">🖥️</span> Saving up for a laptop to build faster and better</div>
+    <div class="perk"><span class="icon">🌐</span> Keeping Sturch hosted and running for all students</div>
+    <div class="perk"><span class="icon">⚡</span> Adding new features like AI summarizer and grammar checker</div>
+    <div class="perk"><span class="icon">🎓</span> Keeping it free for Filipino STE students forever</div>
+  </div>
+
+  <a href="/" class="btn-back">← Back to Sturch</a>
+
+  <div class="notice">
+    Sturch is completely free to use. Donations are voluntary and go directly to the student developer.<br><br>
+    Data from <a href="https://openalex.org" target="_blank">OpenAlex</a>, Semantic Scholar, arXiv &amp; PubMed.<br>
+    References auto-generated — always verify before academic submission.
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+function selectAmount(el) {
+  document.querySelectorAll('.amount-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function copyGcash() {
+  const num = '09552042072';
+  navigator.clipboard.writeText(num).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✅ Copied!';
+    btn.classList.add('copied');
+    toast('📋 GCash number copied!');
+    setTimeout(() => {
+      btn.textContent = '📋 Copy GCash Number';
+      btn.classList.remove('copied');
+    }, 3000);
+  });
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
