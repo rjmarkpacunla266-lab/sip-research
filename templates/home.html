@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sturch — Research Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
+  --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
+  --gold:#e8b84b;--green:#3ecf8e;--red:#f06a6a;--orange:#f0914b;
+  --text:#d8e0f8;--muted:#5a6385;
+  --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.65}
+a{color:var(--accent);text-decoration:none}
+.hidden{display:none!important}
+
+/* ── App shell ── */
+#app{max-width:900px;margin:0 auto;padding:0 18px 60px}
+
+/* ── Header ── */
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 0 14px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+.logo{font-family:var(--serif);font-size:1.4rem;display:flex;align-items:center;gap:6px}
+.logo span{color:var(--accent)}
+.beta{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;font-family:var(--mono)}
+.header-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.user-pill{font-size:.75rem;color:var(--muted);background:var(--surf2);border:1px solid var(--border);border-radius:20px;padding:4px 11px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:10px;font-family:var(--sans);font-size:.82rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .2s;white-space:nowrap;text-decoration:none}
+.btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
+.btn.donate{background:linear-gradient(135deg,rgba(79,141,232,.15),rgba(157,110,245,.15));border-color:rgba(157,110,245,.3);color:var(--accent2)}
+.btn.danger{background:rgba(240,106,106,.08);border-color:rgba(240,106,106,.18);color:var(--red)}
+.btn.sm{padding:5px 10px;font-size:.76rem}
+
+/* ── Welcome ── */
+.welcome{padding:28px 0 20px}
+.welcome-top{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.welcome h2{font-family:var(--serif);font-size:1.5rem}
+.welcome h2 span{color:var(--accent)}
+.welcome p{font-size:.83rem;color:var(--muted)}
+
+/* ── Tool grid ── */
+.tools-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px;margin-top:24px}
+.tools-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+
+/* ── Tool card ── */
+.tool-card{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:22px;cursor:pointer;transition:all .22s;position:relative;overflow:hidden;animation:fadeUp .4s ease both;text-decoration:none;display:block}
+.tool-card::before{content:'';position:absolute;inset:0;background:var(--card-glow,transparent);opacity:0;transition:opacity .22s;border-radius:16px}
+.tool-card:hover{border-color:var(--card-color, var(--accent));transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3);text-decoration:none}
+.tool-card:hover::before{opacity:1}
+.tool-card.coming-soon{cursor:default;opacity:.55}
+.tool-card.coming-soon:hover{transform:none;box-shadow:none;border-color:var(--border)}
+.tool-card.coming-soon::before{display:none}
+
+/* Card colors */
+.tool-card.blue{--card-color:rgba(79,141,232,.5);--card-glow:radial-gradient(circle at top left,rgba(79,141,232,.07),transparent 60%)}
+.tool-card.purple{--card-color:rgba(157,110,245,.5);--card-glow:radial-gradient(circle at top left,rgba(157,110,245,.07),transparent 60%)}
+.tool-card.green{--card-color:rgba(62,207,142,.5);--card-glow:radial-gradient(circle at top left,rgba(62,207,142,.07),transparent 60%)}
+.tool-card.gold{--card-color:rgba(232,184,75,.5);--card-glow:radial-gradient(circle at top left,rgba(232,184,75,.07),transparent 60%)}
+
+.tool-icon{font-size:2rem;margin-bottom:12px;display:block}
+.tool-name{font-family:var(--serif);font-size:1rem;font-weight:600;margin-bottom:5px;color:var(--text)}
+.tool-desc{font-size:.76rem;color:var(--muted);line-height:1.5}
+.tool-badge{position:absolute;top:12px;right:12px;font-size:.62rem;padding:2px 8px;border-radius:20px;font-family:var(--mono)}
+.badge-free{background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.2);color:var(--green)}
+.badge-soon{background:rgba(90,99,133,.1);border:1px solid rgba(90,99,133,.2);color:var(--muted)}
+.tool-features{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
+.tool-feat{font-size:.66rem;padding:2px 7px;border-radius:20px;background:var(--surf2);border:1px solid var(--border);color:var(--muted)}
+
+/* ── Quick actions ── */
+.quick-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;margin-top:26px}
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.quick-card{background:var(--surf2);border:1px solid var(--border);border-radius:12px;padding:13px 10px;text-align:center;cursor:pointer;transition:all .18s;text-decoration:none;display:block;animation:fadeUp .4s ease both}
+.quick-card:hover{border-color:var(--accent);background:var(--surf3);text-decoration:none}
+.quick-icon{font-size:1.3rem;margin-bottom:5px;display:block}
+.quick-name{font-size:.72rem;color:var(--muted);line-height:1.3}
+
+/* ── Donate banner ── */
+.donate-banner{margin-top:26px;background:linear-gradient(135deg,rgba(79,141,232,.08),rgba(157,110,245,.06));border:1px solid rgba(157,110,245,.18);border-radius:14px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;animation:fadeUp .5s ease .3s both}
+.donate-banner p{font-size:.8rem;color:var(--muted);line-height:1.5}
+.donate-banner strong{color:var(--text)}
+.btn.donate-cta{background:linear-gradient(135deg,#4f8de8,#9d6ef5);border:none;color:#fff;padding:8px 16px}
+.btn.donate-cta:hover{opacity:.9;transform:translateY(-1px)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+@media(max-width:500px){
+  .tools-grid{grid-template-columns:1fr}
+  .quick-grid{grid-template-columns:repeat(2,1fr)}
+  .welcome h2{font-size:1.25rem}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- Header -->
+<header>
+  <div class="logo"><span>Sturch</span><span class="beta">BETA</span></div>
+  <div class="header-right">
+    <span class="user-pill" id="userEmail">Loading…</span>
+    <a href="/donate" class="btn sm donate">💙 Donate</a>
+    <a href="/logout" class="btn sm danger">Logout</a>
+  </div>
+</header>
+
+<!-- Welcome -->
+<div class="welcome">
+  <div class="welcome-top">
+    <h2>Good <span id="timeGreet">day</span>, researcher 👋</h2>
+  </div>
+  <p>What would you like to do today?</p>
+</div>
+
+<!-- Main tools -->
+<div class="tools-label">Research Tools</div>
+<div class="tools-grid">
+
+  <!-- Search Papers -->
+  <a href="/search" class="tool-card blue">
+    <span class="tool-badge badge-free">FREE</span>
+    <span class="tool-icon">🔍</span>
+    <div class="tool-name">Search Papers</div>
+    <div class="tool-desc">Search 250M+ academic papers across 4 databases simultaneously.</div>
+    <div class="tool-features">
+      <span class="tool-feat">OpenAlex</span>
+      <span class="tool-feat">Semantic Scholar</span>
+      <span class="tool-feat">arXiv</span>
+      <span class="tool-feat">PubMed</span>
+    </div>
+  </a>
+
+  <!-- Answer Finder -->
+  <a href="/answer" class="tool-card purple">
+    <span class="tool-badge badge-free">FREE</span>
+    <span class="tool-icon">💡</span>
+    <div class="tool-name">Answer Finder</div>
+    <div class="tool-desc">Ask questions using templates and get answers from real academic papers.</div>
+    <div class="tool-features">
+      <span class="tool-feat">What is</span>
+      <span class="tool-feat">What causes</span>
+      <span class="tool-feat">How does</span>
+      <span class="tool-feat">Define</span>
+    </div>
+  </a>
+
+  <!-- Grammar Checker — coming soon -->
+  <div class="tool-card green coming-soon">
+    <span class="tool-badge badge-soon">SOON</span>
+    <span class="tool-icon">✍️</span>
+    <div class="tool-name">Grammar Checker</div>
+    <div class="tool-desc">Check and improve your research writing with academic grammar suggestions.</div>
+    <div class="tool-features">
+      <span class="tool-feat">LanguageTool API</span>
+      <span class="tool-feat">Academic style</span>
+    </div>
+  </div>
+
+  <!-- Research Topic Generator — coming soon -->
+  <div class="tool-card gold coming-soon">
+    <span class="tool-badge badge-soon">SOON</span>
+    <span class="tool-icon">🧭</span>
+    <div class="tool-name">Topic Generator</div>
+    <div class="tool-desc">Generate research topic ideas based on your subject area and interests.</div>
+    <div class="tool-features">
+      <span class="tool-feat">STE focused</span>
+      <span class="tool-feat">Filipino context</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Quick actions -->
+<div class="quick-label">Quick Access</div>
+<div class="quick-grid">
+  <a href="/search" class="quick-card" style="animation-delay:.05s" onclick="openSavedFromHome()">
+    <span class="quick-icon">🔖</span>
+    <span class="quick-name">Saved Papers</span>
+  </a>
+  <a href="/search" class="quick-card" style="animation-delay:.1s" onclick="openCollectionsFromHome()">
+    <span class="quick-icon">📚</span>
+    <span class="quick-name">Collections</span>
+  </a>
+  <a href="/search" class="quick-card" style="animation-delay:.15s" onclick="openHistoryFromHome()">
+    <span class="quick-icon">🕐</span>
+    <span class="quick-name">History</span>
+  </a>
+  <a href="/search" class="quick-card" style="animation-delay:.2s">
+    <span class="quick-icon">📋</span>
+    <span class="quick-name">Citations</span>
+  </a>
+</div>
+
+<!-- Donate banner -->
+<div class="donate-banner">
+  <p>
+    <strong>Sturch is 100% free.</strong><br>
+    Built by a 14-year-old Filipino STE student on a mobile phone. If it helped your research, consider supporting.
+  </p>
+  <a href="/donate" class="btn donate-cta">💙 Support via GCash</a>
+</div>
+
+</div>
+
+<script>
+// ── Greeting ──────────────────────────────────
+const h = new Date().getHours();
+document.getElementById('timeGreet').textContent =
+  h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+
+// ── Load user info ─────────────────────────────
+window.addEventListener('load', async () => {
+  try {
+    const resp = await fetch('/api/me');
+    if (!resp.ok) { window.location.href = '/login'; return; }
+    const user = await resp.json();
+    const name = user.email.split('@')[0];
+    document.getElementById('userEmail').textContent = user.email;
+  } catch(e) {}
+});
+
+// ── Quick access — store intent then redirect ──
+function openSavedFromHome() {
+  sessionStorage.setItem('sturch_open_panel', 'saved');
+}
+function openCollectionsFromHome() {
+  sessionStorage.setItem('sturch_open_panel', 'collections');
+}
+function openHistoryFromHome() {
+  sessionStorage.setItem('sturch_open_panel', 'history');
+}
+</script>
+</body>
+</html>

@@ -209,14 +209,13 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 
 <!-- Header -->
 <header>
-  <div class="logo"><span>Sturch</span><span class="beta">BETA</span></div>
+  <a href="/" class="logo" style="text-decoration:none"><span>Sturch</span><span class="beta">BETA</span></a>
   <div class="header-right">
     <span class="user-pill" id="userEmail">…</span>
     <span class="points-pill" id="pointsPill" onclick="openUpgrade()" title="Search counter">… pts</span>
     <button class="btn sm" onclick="openHistory()">🕐</button>
     <button class="btn sm" onclick="openSaved()">🔖</button>
     <button class="btn sm" onclick="openCollections()">📚</button>
-    <a href="/answer" class="btn sm">💡 Answer Finder</a>
     <button class="btn sm" onclick="showExportMenu()">↓ Export</button>
     <a href="/donate" class="btn sm" style="background:linear-gradient(135deg,rgba(79,141,232,.15),rgba(157,110,245,.15));border-color:rgba(157,110,245,.3);color:#9d6ef5">💙 Donate</a>
     <a href="/logout" class="btn sm danger">Logout</a>
@@ -384,7 +383,19 @@ let displayedCount = 0;   // how many results currently shown on screen
 const DISPLAY_PER_PAGE = 10; // show 10 at a time
 
 // ── Init ──────────────────────────────────────
+// Handle quick access panel from home
 window.addEventListener('load', () => {
+  const panel = sessionStorage.getItem('sturch_open_panel');
+  if (panel) {
+    sessionStorage.removeItem('sturch_open_panel');
+    setTimeout(() => {
+      if (panel === 'saved') openSaved();
+      else if (panel === 'collections') openCollections();
+      else if (panel === 'history') openHistory();
+    }, 500);
+  }
+
+
   loadUserInfo();
   loadBookmarkState();
   restoreLastSearch();
