@@ -1889,21 +1889,45 @@ def _extract_keyword(query):
 def _find_answer_sentences(abstract, keyword, ttype):
     if not abstract:
         return []
-    kw       = keyword.lower()
-    sentences = _re.split(r'(?<=[.!?])\s+', abstract)
-    results  = []
-    patterns = [
-        kw + " is ", kw + " are ", kw + " refers to",
-        kw + " can be", kw + " was ", kw + " involves",
-        kw + " is defined", "defined as", kw + " causes",
-        kw + " affects", kw + " plays", kw + " helps",
-    ]
+    kw        = keyword.lower()
+    kw_words  = kw.split()
+    sentences = _re.split(r"(?<=[.!?])\s+", abstract)
+    results   = []
+
     for sent in sentences:
-        sl = sent.lower()
-        if any(p in sl for p in patterns) and len(sent.split()) >= 8:
+        sl    = sent.lower()
+        words = len(sent.split())
+        if words < 6:
+            continue
+
+        # Check if sentence contains the keyword or most of its words
+        kw_present = kw in sl or all(w in sl for w in kw_words if len(w) > 3)
+        if not kw_present:
+            continue
+
+        # Check if sentence has definition-style language
+        def_patterns = [
+            " is ", " are ", " refers to", " can be", " was ",
+            " involves", "defined as", "defined ", "is a ", "are a ",
+            " process ", " mechanism ", " occurs ", " known as",
+            " describes ", " represents ", " consists ", " plays ",
+            " enables ", " allows ", " helps ", " causes ", " affects ",
+        ]
+        if any(p in sl for p in def_patterns):
             results.append(sent.strip())
+
         if len(results) >= 3:
             break
+
+    # If still nothing, just return first 2 sentences mentioning keyword
+    if not results:
+        for sent in sentences:
+            sl = sent.lower()
+            if (kw in sl or all(w in sl for w in kw_words if len(w) > 3)) and len(sent.split()) >= 6:
+                results.append(sent.strip())
+            if len(results) >= 2:
+                break
+
     return results
 
 
