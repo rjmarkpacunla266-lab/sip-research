@@ -1121,14 +1121,10 @@ def load_more():
 
 
 @app.route('/upgrade')
+@login_required
 def upgrade():
-    return redirect(url_for('donate'))
-
-
-@app.route('/donate')
-def donate():
-    """Public donation page — no login required."""
-    return render_template('donate.html')
+    user = get_user(session['user_id'])
+    return render_template('upgrade.html', user=user)
 
 
 @app.route('/health')
@@ -1859,6 +1855,134 @@ def share_paper():
         return jsonify({"error": "No shareable link available"}), 404
 
     return jsonify({"url": link, "source": source})
+
+
+# ─── ANSWER FINDER ───────────────────────────────────────────────────
+import re as _re
+
+ANSWER_TEMPLATES = [
+    (r"^what is the difference between (.+) and (.+)$", "difference"),
+    (r"^what is the effect of (.+)$",                   "effect"),
+    (r"^what causes (.+)$",                             "causes"),
+    (r"^what are (.+)$",                                "what_are"),
+    (r"^what is (.+)$",                                 "what_is"),
+    (r"^how does (.+) work$",                           "how_does"),
+    (r"^how does (.+)$",                                "how_does"),
+    (r"^why is (.+)$",                                  "why_is"),
+    (r"^define (.+)$",                                  "define"),
+]
+
+def _extract_keyword(query):
+    q = query.strip().lower()
+    for pattern, ttype in ANSWER_TEMPLATES:
+        m = _re.match(pattern, q)
+        if m:
+            return m.group(1).strip(), ttype
+    return None, None
+
+def _find_answer_sentences(abstract, keyword, ttype):
+    if not abstract:
+        return []
+    kw       = keyword.lower()
+    sentences = _re.split(r'(?<=[.!?])\s+', abstract)
+    results  = []
+    patterns = [
+        kw + " is ", kw + " are ", kw + " refers to",
+        kw + " can be", kw + " was ", kw + " involves",
+        kw + " is defined", "defined as", kw + " causes",
+        kw + " affects", kw + " plays", kw + " helps",
+    ]
+    for sent in sentences:
+        sl = sent.lower()
+        if any(p in sl for p in patterns) and len(sent.split()) >= 8:
+            results.append(sent.strip())
+        if len(results) >= 3:
+            break
+    return results
+
+
+@app.route('/api/answer')
+@login_required
+def answer_finder():
+    """
+    Answer Finder — free, no points deducted.
+    Supported templates:
+      What is [topic]
+      What are [topic]
+      What causes [topic]
+      How does [topic] work
+      Why is [topic]
+      Define [topic]
+    """
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify({"error": "Query required"}), 400
+
+    keyword, ttype = _extract_keyword(query)
+    if not keyword:
+        return jsonify({
+            "error":   "unsupported_template",
+            "message": "Try: What is [topic], What are [topic], How does [topic] work, What causes [topic], Define [topic]"
+        }), 400
+
+    params = {
+        "search":   keyword,
+        "per-page": 15,
+        "page":     1,
+        "sort":     "cited_by_count:desc",
+    }
+    try:
+        resp   = requests.get(OPENALEX_URL, params=params, timeout=15)
+        papers = resp.json().get("results", [])
+    except Exception:
+        return jsonify({"error": "Could not fetch results"}), 500
+
+    answers = []
+    sources = []
+
+    for paper in papers:
+        abstract = reconstruct_abstract(paper.get("abstract_inverted_index"))
+        if not abstract:
+            continue
+        sentences = _find_answer_sentences(abstract, keyword, ttype)
+        if sentences:
+            answers.extend(sentences)
+            loc    = (paper.get("primary_location") or {})
+            src    = (loc.get("source") or {})
+            sources.append({
+                "title":     paper.get("title", ""),
+                "journal":   src.get("display_name", ""),
+                "year":      paper.get("publication_year"),
+                "doi":       paper.get("doi", ""),
+                "oa_url":    (paper.get("open_access") or {}).get("oa_url", ""),
+                "citations": paper.get("cited_by_count", 0),
+            })
+        if len(answers) >= 5:
+            break
+
+    # Deduplicate
+    seen  = set()
+    dedup = []
+    for a in answers:
+        key = a.lower()[:60]
+        if key not in seen:
+            seen.add(key)
+            dedup.append(a)
+
+    return jsonify({
+        "keyword":  keyword,
+        "template": ttype,
+        "query":    query,
+        "answers":  dedup[:5],
+        "sources":  sources[:3],
+        "message":  "" if dedup else "No direct answer found. Try searching for papers instead.",
+    })
+
+
+@app.route('/answer')
+@login_required
+def answer_page():
+    return render_template('answer.html')
 
 
 # ─── RUN ─────────────────────────────────────────────────────────────

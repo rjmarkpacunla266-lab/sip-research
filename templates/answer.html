@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Answer Finder — Sturch</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
+  --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
+  --gold:#e8b84b;--green:#3ecf8e;--red:#f06a6a;--orange:#f0914b;
+  --text:#d8e0f8;--muted:#5a6385;
+  --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;--r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.65}
+#app{max-width:780px;margin:0 auto;padding:0 18px 80px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.hidden{display:none!important}
+
+/* Header */
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 0 14px;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap}
+.logo{font-family:var(--serif);font-size:1.35rem}
+.logo span{color:var(--accent)}
+.beta{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;margin-left:5px;font-family:var(--mono)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:var(--r);font-family:var(--sans);font-size:.82rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .2s;white-space:nowrap;text-decoration:none}
+.btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent}
+.btn.primary:hover{background:#3d7fd8}
+.btn.sm{padding:5px 10px;font-size:.76rem}
+.btn.xs{padding:3px 8px;font-size:.71rem}
+
+/* Hero */
+.hero{text-align:center;padding:32px 0 24px}
+.hero-icon{font-size:2.5rem;margin-bottom:10px}
+.hero h1{font-family:var(--serif);font-size:1.6rem;margin-bottom:6px}
+.hero p{color:var(--muted);font-size:.85rem;max-width:480px;margin:0 auto}
+
+/* Template buttons */
+.template-section{margin:20px 0 12px}
+.template-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+.templates{display:flex;flex-wrap:wrap;gap:7px}
+.tpl-btn{padding:7px 14px;border-radius:20px;font-family:var(--sans);font-size:.82rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--muted);transition:all .15s}
+.tpl-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(79,141,232,.06)}
+.tpl-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(79,141,232,.1)}
+
+/* Search */
+.search-wrap{display:flex;gap:8px;margin:12px 0}
+.search-wrap .prefix{display:flex;align-items:center;padding:12px 14px;background:var(--surf2);border:1px solid var(--accent);border-right:none;border-radius:var(--r) 0 0 var(--r);color:var(--accent);font-weight:600;font-size:.88rem;white-space:nowrap}
+.search-wrap input{flex:1;padding:12px 14px;background:var(--surf);border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;color:var(--text);font-family:var(--sans);font-size:.93rem;outline:none;transition:border-color .2s}
+.search-wrap input:focus{border-color:var(--accent)}
+.search-wrap input::placeholder{color:var(--muted)}
+
+/* Examples */
+.examples{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px}
+.example-chip{padding:3px 11px;border-radius:20px;background:var(--surf2);border:1px solid var(--border);color:var(--muted);font-size:.73rem;cursor:pointer;transition:all .15s}
+.example-chip:hover{border-color:var(--accent2);color:var(--accent2)}
+
+/* Results */
+.results-section{margin-top:24px}
+.answer-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:12px;animation:fadeUp .3s ease both}
+.answer-card .answer-num{font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-bottom:8px}
+.answer-text{font-family:var(--serif);font-size:1rem;line-height:1.75;color:var(--text)}
+.answer-text mark{background:rgba(79,141,232,.18);color:var(--accent);border-radius:2px;padding:0 2px}
+
+/* Sources */
+.sources-section{margin-top:20px}
+.sources-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sources-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.source-card{background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;margin-bottom:7px;display:flex;align-items:flex-start;gap:10px}
+.source-info{flex:1;min-width:0}
+.source-title{font-size:.83rem;font-weight:500;line-height:1.3;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.source-meta{font-size:.73rem;color:var(--muted)}
+.source-btns{display:flex;gap:5px;flex-shrink:0}
+
+/* Search papers CTA */
+.search-cta{background:rgba(79,141,232,.06);border:1px solid rgba(79,141,232,.18);border-radius:var(--r);padding:14px 16px;margin-top:20px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.search-cta p{font-size:.83rem;color:var(--muted)}
+.search-cta strong{color:var(--text)}
+
+/* No results */
+.no-result{text-align:center;padding:40px 20px;color:var(--muted)}
+.no-result .big{font-size:2rem;margin-bottom:10px}
+
+/* States */
+.spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:30px auto}
+
+/* Toast */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:9px 15px;font-size:.83rem;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:300;transform:translateY(50px);opacity:0;transition:all .3s}
+#toast.show{transform:translateY(0);opacity:1}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:600px){.search-wrap{flex-direction:column}.search-wrap .prefix{border-radius:var(--r);border-right:1px solid var(--accent)}.search-wrap input{border-radius:var(--r)}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<header>
+  <div class="logo"><span>Sturch</span><span class="beta">BETA</span></div>
+  <div style="display:flex;gap:6px">
+    <a href="/" class="btn sm">🔍 Search Papers</a>
+    <a href="/logout" class="btn sm" style="color:var(--red);border-color:rgba(240,106,106,.2)">Logout</a>
+  </div>
+</header>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-icon">💡</div>
+  <h1>Answer Finder</h1>
+  <p>Ask a question using a template and Sturch finds the answer from real academic papers — free, no points needed.</p>
+</div>
+
+<!-- Template buttons -->
+<div class="template-section">
+  <div class="template-label">Choose a question template</div>
+  <div class="templates">
+    <button class="tpl-btn active" onclick="setTemplate('What is', this)">What is</button>
+    <button class="tpl-btn" onclick="setTemplate('What are', this)">What are</button>
+    <button class="tpl-btn" onclick="setTemplate('What causes', this)">What causes</button>
+    <button class="tpl-btn" onclick="setTemplate('How does', this)">How does</button>
+    <button class="tpl-btn" onclick="setTemplate('Why is', this)">Why is</button>
+    <button class="tpl-btn" onclick="setTemplate('Define', this)">Define</button>
+  </div>
+</div>
+
+<!-- Search input -->
+<div class="search-wrap">
+  <div class="prefix" id="prefixEl">What is</div>
+  <input type="text" id="topicInput" placeholder="e.g. photosynthesis, DNA, climate change…" autocomplete="off"/>
+  <button class="btn primary" onclick="doAnswer()">Ask</button>
+</div>
+
+<!-- Example chips -->
+<div class="examples" id="examplesWrap">
+  <span style="font-size:.7rem;color:var(--muted);line-height:2;margin-right:3px">Try:</span>
+  <span class="example-chip" onclick="quickAsk('photosynthesis')">photosynthesis</span>
+  <span class="example-chip" onclick="quickAsk('DNA replication')">DNA replication</span>
+  <span class="example-chip" onclick="quickAsk('climate change')">climate change</span>
+  <span class="example-chip" onclick="quickAsk('CRISPR')">CRISPR</span>
+  <span class="example-chip" onclick="quickAsk('antibiotic resistance')">antibiotic resistance</span>
+  <span class="example-chip" onclick="quickAsk('renewable energy')">renewable energy</span>
+</div>
+
+<!-- Results -->
+<div id="results"></div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+let currentTemplate = 'What is';
+let currentKeyword  = '';
+
+// ── Template selection ─────────────────────────
+function setTemplate(tpl, btn) {
+  currentTemplate = tpl;
+  document.getElementById('prefixEl').textContent = tpl;
+  document.querySelectorAll('.tpl-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('topicInput').focus();
+
+  // Update example chips based on template
+  const examples = {
+    'What is':    ['photosynthesis','DNA replication','climate change','CRISPR','antibiotic resistance','renewable energy'],
+    'What are':   ['stem cells','greenhouse gases','antibiotics','black holes','enzymes','chromosomes'],
+    'What causes': ['climate change','cancer','antibiotic resistance','earthquakes','inflation','deforestation'],
+    'How does':   ['photosynthesis work','the immune system work','DNA replication work','climate change work','CRISPR work'],
+    'Why is':     ['biodiversity important','sleep important','vaccination important','exercise important'],
+    'Define':     ['photosynthesis','entropy','osmosis','biodiversity','metabolism','ecosystem'],
+  };
+  const chips = examples[tpl] || [];
+  document.getElementById('examplesWrap').innerHTML =
+    '<span style="font-size:.7rem;color:var(--muted);line-height:2;margin-right:3px">Try:</span>' +
+    chips.map(e => `<span class="example-chip" onclick="quickAsk('${e}')">${e}</span>`).join('');
+}
+
+function quickAsk(topic) {
+  document.getElementById('topicInput').value = topic;
+  doAnswer();
+}
+
+document.getElementById('topicInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doAnswer();
+});
+
+// ── Answer search ──────────────────────────────
+async function doAnswer() {
+  const topic = document.getElementById('topicInput').value.trim();
+  if (!topic) { toast('⚠️ Type a topic first'); return; }
+
+  currentKeyword = topic;
+  const query    = `${currentTemplate} ${topic}`;
+  const results  = document.getElementById('results');
+
+  results.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    const resp = await fetch(`/api/answer?q=${encodeURIComponent(query)}`);
+    const data = await resp.json();
+
+    if (data.error === 'unsupported_template') {
+      results.innerHTML = `<div class="no-result"><div class="big">🤔</div><p>${esc(data.message)}</p></div>`;
+      return;
+    }
+    if (!resp.ok) { results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>${esc(data.error||'Error')}</p></div>`; return; }
+
+    if (!data.answers || !data.answers.length) {
+      results.innerHTML = `
+        <div class="no-result">
+          <div class="big">📭</div>
+          <p style="margin-bottom:14px">No direct answer found for <strong>${esc(topic)}</strong>.</p>
+          <a href="/?q=${encodeURIComponent(topic)}" class="btn primary">🔍 Search papers instead</a>
+        </div>`;
+      return;
+    }
+
+    renderAnswers(data);
+  } catch(e) {
+    results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>Connection error. Try again.</p></div>`;
+  }
+}
+
+function renderAnswers(data) {
+  const kw = data.keyword || '';
+  const results = document.getElementById('results');
+
+  // Highlight keyword in answer
+  function highlight(text) {
+    const escaped = esc(text);
+    const re = new RegExp('(' + kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+    return escaped.replace(re, '<mark>$1</mark>');
+  }
+
+  const answerCards = data.answers.map((ans, i) => `
+    <div class="answer-card" style="animation-delay:${i*60}ms">
+      <div class="answer-num">Answer ${i+1} of ${data.answers.length}</div>
+      <div class="answer-text">${highlight(ans)}</div>
+      <button class="btn xs" style="margin-top:10px" onclick="copyText('${esc(ans).replace(/'/g,"\\'")}')">📋 Copy</button>
+    </div>`).join('');
+
+  const sourceCards = (data.sources||[]).map(s => {
+    const cites = s.citations || 0;
+    const cColor = cites>1000?'var(--gold)':cites>100?'var(--accent)':'var(--muted)';
+    return `<div class="source-card">
+      <div class="source-info">
+        <div class="source-title" title="${esc(s.title)}">${esc(s.title||'Untitled')}</div>
+        <div class="source-meta">${esc(s.journal||'—')} · ${s.year||'?'} · <span style="color:${cColor}">★ ${cites.toLocaleString()}</span></div>
+      </div>
+      <div class="source-btns">
+        ${s.doi?`<a href="${esc(s.doi)}" target="_blank" class="btn xs">DOI</a>`:''}
+        ${s.oa_url?`<a href="${esc(s.oa_url)}" target="_blank" class="btn xs">Read</a>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  results.innerHTML = `
+    <div class="results-section">
+      <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">
+        Answers for: <strong style="color:var(--accent)">${esc(currentTemplate)} ${esc(kw)}</strong>
+      </div>
+      ${answerCards}
+      ${sourceCards ? `<div class="sources-label">Sources</div>${sourceCards}` : ''}
+      <div class="search-cta">
+        <p>Want more? <strong>Search full papers on "${esc(kw)}"</strong></p>
+        <a href="/?q=${encodeURIComponent(kw)}" class="btn primary sm">🔍 Search Papers</a>
+      </div>
+    </div>`;
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('📋 Copied!'));
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+let toastTimer;
+function toast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>
