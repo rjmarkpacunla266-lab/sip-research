@@ -29,10 +29,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 .beta{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;font-family:var(--mono)}
 .header-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .user-pill{font-size:.75rem;color:var(--muted);background:var(--surf2);border:1px solid var(--border);border-radius:20px;padding:4px 11px}
-.points-pill{font-size:.75rem;font-family:var(--mono);background:var(--surf2);border:1px solid var(--border);border-radius:20px;padding:4px 11px;cursor:pointer;transition:border-color .2s}
-.points-pill:hover{border-color:var(--accent)}
-.points-pill.low{border-color:rgba(240,145,75,.3);color:var(--orange)}
-.points-pill.empty{border-color:rgba(240,106,106,.3);color:var(--red)}
+
 
 /* ── Buttons ── */
 .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:var(--r);font-family:var(--sans);font-size:.82rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .2s;white-space:nowrap;text-decoration:none}
@@ -138,11 +135,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 .spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 13px}
 
 /* ── Paywall ── */
-.paywall{background:var(--surf);border:2px solid rgba(79,141,232,.28);border-radius:14px;padding:28px;text-align:center;margin:18px 0}
-.paywall h2{font-family:var(--serif);font-size:1.35rem;margin-bottom:8px}
-.paywall p{color:var(--muted);font-size:.86rem;margin-bottom:18px}
-.paywall .price{font-size:2.4rem;font-weight:700;color:var(--accent);margin:10px 0}
-.paywall .price sup{font-size:1.1rem;vertical-align:top;margin-top:5px}
+
 
 /* ── Toast ── */
 #toast{position:fixed;bottom:20px;right:20px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:9px 15px;font-size:.83rem;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:300;transform:translateY(50px);opacity:0;transition:all .3s;max-width:280px}
@@ -212,7 +205,6 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
   <a href="/" class="logo" style="text-decoration:none"><span>Sturch</span><span class="beta">BETA</span></a>
   <div class="header-right">
     <span class="user-pill" id="userEmail">…</span>
-    <span class="points-pill" id="pointsPill" onclick="openUpgrade()" title="Search counter">… pts</span>
     <button class="btn sm" onclick="openHistory()">🕐</button>
     <button class="btn sm" onclick="openSaved()">🔖</button>
     <button class="btn sm" onclick="openCollections()">📚</button>
@@ -279,7 +271,6 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 <div class="stats-bar hidden" id="statsBar">
   <div class="stat"><div><div class="val" id="s_total">—</div><div class="lbl">Total found</div></div></div>
   <div class="stat"><div><div class="val" id="s_shown">—</div><div class="lbl">Showing</div></div></div>
-  <div class="stat"><div><div class="val" id="s_remaining">—</div><div class="lbl">Searches</div></div></div>
   <div class="stat"><div><div class="val" id="s_sources">4</div><div class="lbl">Sources</div></div></div>
 </div>
 
@@ -485,11 +476,6 @@ async function loadUserInfo() {
     if (!resp.ok) { window.location.href = '/login'; return; }
     const user = await resp.json();
     document.getElementById('userEmail').textContent = user.email;
-    const pill = document.getElementById('pointsPill');
-    const pts  = user.points_remaining ?? 0;
-    pill.textContent = `${user.points_remaining ?? ''} searches`;
-    pill.className = 'points-pill';
-    document.getElementById('s_remaining').textContent = pts;
   } catch(e) {}
 }
 
@@ -530,7 +516,6 @@ async function doSearch(page = 1) {
     const resp = await fetch(url);
     const data = await resp.json();
 
-    if (data.error === 'limit_reached') { showPaywall(data.message); return; }
     if (!resp.ok) { showError(data.error || 'Search failed'); return; }
 
     currentResults = data.results || [];
@@ -576,7 +561,6 @@ async function loadMorePapers() {
 
     const resp = await fetch(url);
     const data = await resp.json();
-    if (data.error === 'limit_reached') { showPaywall(data.message); return; }
     if (!resp.ok) { toast('⚠️ ' + (data.error || 'Could not load more')); return; }
 
     let newPapers = data.results || [];
@@ -599,9 +583,7 @@ async function loadMorePapers() {
     });
     displayedCount = newEnd;
 
-    document.getElementById('s_remaining').textContent = data.points_remaining ?? '—';
-    
-    document.getElementById('s_shown').textContent     = displayedCount;
+    document.getElementById('s_shown').textContent = displayedCount;
     toast(`✅ ${newPapers.length} more papers loaded`);
     updateLoadMoreBar();
     loadUserInfo();
@@ -614,7 +596,6 @@ function renderResults(data) {
   const results = data.results || [];
   document.getElementById('statsBar').classList.remove('hidden');
   document.getElementById('s_total').textContent = (data.total||0).toLocaleString();
-  document.getElementById('s_remaining').textContent = data.points_remaining ?? '—';
   const srcEl = document.getElementById('s_sources');
   if (srcEl && data.sources_used) srcEl.textContent = data.sources_used.length;
 
@@ -957,7 +938,7 @@ async function removeFromCol(colId, entryId, btn) {
 }
 
 // ── Upgrade nudge ──────────────────────────────
-function openUpgrade() { window.location.href = '/upgrade'; }
+
 
 // ── Modal ──────────────────────────────────────
 function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }
@@ -1085,22 +1066,6 @@ function doExport(fmt) {
 }
 
 // ── Paywall ────────────────────────────────────
-function showPaywall(msg) {
-  ['statsBar','toolbar','loadMoreBar'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-  document.getElementById('results').innerHTML = `
-    <div class="paywall">
-      <div style="font-size:2.4rem;margin-bottom:10px">🔒</div>
-      <h2>Search limit reached</h2>
-      <p>${esc(msg||"You have reached the search limit.")}<br>
-      <em style="font-size:.78rem;color:var(--muted)">(Payment coming soon — during beta enjoy free access!)</em></p>
-      <div class="price"><sup>$</sup>1</div>
-      <p style="color:var(--muted);font-size:.8rem;margin-bottom:18px">One-time · 200 points · Never expires</p>
-      <button class="btn primary" style="margin:0 auto;display:block;max-width:240px" onclick="alert('Payment coming soon! You are in beta.')">
-        Get 200 Points — $1
-      </button>
-      <p style="margin-top:12px"><a href="/">← Back to search</a></p>
-    </div>`;
-}
 
 // ── Loading / Error states ─────────────────────
 function showLoading() {

@@ -362,7 +362,6 @@ async function loadRelated() {
   try {
     const resp = await fetch(`/api/related?${params}`);
     const data = await resp.json();
-    if (data.error === 'limit_reached') { toast('⚠️ ' + data.message); return; }
     const results = data.results || [];
     const section = document.getElementById('relatedSection');
     const list    = document.getElementById('relatedList');
