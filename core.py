@@ -81,16 +81,27 @@ def normalize_email(email):
     return f"{local}@{domain}"
 
 def hash_password(password):
-    salt = secrets.token_hex(16)
-    h    = hashlib.sha256((password + salt).encode()).hexdigest()
-    return f"{salt}:{h}"
+    salt = secrets.token_bytes(16)
+    key  = hashlib.scrypt(password.encode(), salt=salt, n=16384, r=8, p=1)
+    return f"scrypt:{salt.hex()}:{key.hex()}"
 
-def check_password(password, hashed):
+def _check_old_sha256(password, hashed):
     try:
         salt, h = hashed.split(":")
         return hashlib.sha256((password + salt).encode()).hexdigest() == h
     except Exception:
         return False
+
+def check_password(password, hashed):
+    if hashed.startswith("scrypt:"):
+        try:
+            _, salt_hex, key_hex = hashed.split(":")
+            salt = bytes.fromhex(salt_hex)
+            key  = hashlib.scrypt(password.encode(), salt=salt, n=16384, r=8, p=1)
+            return key.hex() == key_hex
+        except Exception:
+            return False
+    return _check_old_sha256(password, hashed)
 
 def get_client_ip():
     return request.headers.get("X-Forwarded-For", request.remote_addr).split(",")[0].strip()

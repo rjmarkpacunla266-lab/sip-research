@@ -37,7 +37,10 @@ def get_me():
 @login_required
 def search():
     query     = request.args.get("q", "").strip()
-    page      = int(request.args.get("page", 1))
+    try:
+        page  = max(1, int(request.args.get("page", 1)))
+    except (ValueError, TypeError):
+        page  = 1
     year_from = request.args.get("year_from", "")
     year_to   = request.args.get("year_to", "")
     if not query:
@@ -109,7 +112,10 @@ def search():
 @login_required
 def load_more():
     query     = request.args.get("q", "").strip()
-    page      = int(request.args.get("page", 2))
+    try:
+        page  = max(1, int(request.args.get("page", 2)))
+    except (ValueError, TypeError):
+        page  = 2
     year_from = request.args.get("year_from", "")
     year_to   = request.args.get("year_to", "")
     if not query:

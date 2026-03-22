@@ -1,5 +1,5 @@
 """routes/auth.py — Authentication: signup, login, logout, password reset"""
-import random, string
+import string, secrets
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, session, redirect, url_for, jsonify
 from core import (normalize_email, hash_password, check_password, get_client_ip,
@@ -9,7 +9,7 @@ from core import (normalize_email, hash_password, check_password, get_client_ip,
 auth_bp = Blueprint("auth", __name__)
 
 def generate_reset_code():
-    return "".join(random.choices(string.digits, k=6))
+    return "".join(secrets.choice(string.digits) for _ in range(6))
 
 @auth_bp.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -57,6 +57,9 @@ def login():
         user = get_user_by_email(email)
         if not user or not check_password(password, user["password_hash"]):
             return jsonify({"error": "Invalid email or password"}), 401
+        if not user["password_hash"].startswith("scrypt:"):
+            sb_patch("users", f"id=eq.{user['id']}",
+                     {"password_hash": hash_password(password)})
         session["user_id"]    = user["id"]
         session["user_email"] = user["email"]
         return jsonify({"success": True, "redirect": "/"})
