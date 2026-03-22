@@ -236,25 +236,28 @@ function renderAnswers(data) {
     return escaped.replace(re, '<mark>$1</mark>');
   }
 
-  const answerCards = data.answers.map((ans, i) => `
+  // Pair each answer with its source
+  const paired = data.answers.map((ans, i) => {
+    const s = (data.sources||[])[i];
+    const cites = s ? (s.citations || 0) : 0;
+    const cColor = cites>1000?'var(--gold)':cites>100?'var(--accent)':'var(--muted)';
+    const sourceHtml = s ? `
+      <div class="source-card" style="margin-top:8px;margin-bottom:0">
+        <div class="source-info">
+          <div class="source-title" title="${esc(s.title)}">${esc(s.title||'Untitled')}</div>
+          <div class="source-meta">${esc(s.journal||s.source||'—')} · ${s.year||'?'} · <span style="color:${cColor}">★ ${cites.toLocaleString()}</span></div>
+        </div>
+        <div class="source-btns">
+          ${s.doi?`<a href="${esc(s.doi)}" target="_blank" class="btn xs">DOI</a>`:''}
+          ${s.oa_url?`<a href="${esc(s.oa_url)}" target="_blank" class="btn xs">Read</a>`:''}
+        </div>
+      </div>` : '';
+    return `
     <div class="answer-card" style="animation-delay:${i*60}ms">
       <div class="answer-num">Answer ${i+1} of ${data.answers.length}</div>
       <div class="answer-text">${highlight(ans)}</div>
       <button class="btn xs" style="margin-top:10px" onclick="copyText('${esc(ans).replace(/'/g,"\\'")}')">📋 Copy</button>
-    </div>`).join('');
-
-  const sourceCards = (data.sources||[]).map(s => {
-    const cites = s.citations || 0;
-    const cColor = cites>1000?'var(--gold)':cites>100?'var(--accent)':'var(--muted)';
-    return `<div class="source-card">
-      <div class="source-info">
-        <div class="source-title" title="${esc(s.title)}">${esc(s.title||'Untitled')}</div>
-        <div class="source-meta">${esc(s.journal||'—')} · ${s.year||'?'} · <span style="color:${cColor}">★ ${cites.toLocaleString()}</span></div>
-      </div>
-      <div class="source-btns">
-        ${s.doi?`<a href="${esc(s.doi)}" target="_blank" class="btn xs">DOI</a>`:''}
-        ${s.oa_url?`<a href="${esc(s.oa_url)}" target="_blank" class="btn xs">Read</a>`:''}
-      </div>
+      ${sourceHtml}
     </div>`;
   }).join('');
 
@@ -263,25 +266,9 @@ function renderAnswers(data) {
       <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">
         Answers for: <strong style="color:var(--accent)">${esc(currentTemplate)} ${esc(kw)}</strong>
       </div>
-      ${answerCards}
-      ${sourceCards ? `<div class="sources-label">Sources</div>${sourceCards}` : ''}
+      ${paired}
       <div class="search-cta">
         <p>Want more? <strong>Search full papers on "${esc(kw)}"</strong></p>
-        <a href="/?q=${encodeURIComponent(kw)}" class="btn primary sm">🔍 Search Papers</a>
+        <a href="/search?q=${encodeURIComponent(kw)}" class="btn primary sm">🔍 Search Papers</a>
       </div>
     </div>`;
-}
-
-function copyText(text) {
-  navigator.clipboard.writeText(text).then(() => toast('📋 Copied!'));
-}
-
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-let toastTimer;
-function toast(msg) {
-  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
-  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
-}
-</script>
-</body>
-</html>
