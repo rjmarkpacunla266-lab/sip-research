@@ -125,18 +125,6 @@ def get_user_by_email(email):
     result = sb_get("users", f"email=eq.{email}&select=*")
     return result[0] if result else None
 
-def total_points(user):
-    return 
-def points_used(user):
-    return user.get('search_count', 0)
-
-def points_remaining(user):
-    return max(0, total_points(user) - points_used(user))
-
-def can_search(user):
-    return points_remaining(user) >= 
-def can_load_more(user):
-    return points_remaining(user) >= 
 # ─── CITATION BUILDERS ───────────────────────────────────────────────
 def _build_apa(authors, year, title, journal, volume, issue, pages, doi):
     apa_authors = []
