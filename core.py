@@ -21,8 +21,6 @@ load_dotenv()
 RESEND_API_KEY      = os.getenv("RESEND_API_KEY", "")
 GMAIL_USER          = os.getenv("GMAIL_USER", "pacunlarjmark@gmail.com")
 APP_URL             = os.getenv("APP_URL", "http://localhost:8080")
-PAYMONGO_SECRET_KEY = os.getenv("PAYMONGO_SECRET_KEY", "")
-PAYMONGO_PUBLIC_KEY = os.getenv("PAYMONGO_PUBLIC_KEY", "")
 SUPABASE_URL        = os.getenv("SUPABASE_URL")
 SUPABASE_KEY        = os.getenv("SUPABASE_SECRET_KEY")
 OPENALEX_URL        = "https://api.openalex.org/works"
@@ -33,10 +31,6 @@ def get_int_env(name, default):
     except (TypeError, ValueError):
         return default
 
-FREE_POINTS         = get_int_env("FREE_POINTS", 100)
-PAID_POINTS         = get_int_env("PAID_POINTS", 200)
-SEARCH_COST         = 10
-LOAD_MORE_COST      = 5
 MAX_ACCOUNTS_PER_IP = get_int_env("MAX_ACCOUNTS_PER_IP", 3)
 RESULTS_PER_SOURCE  = 100
 
@@ -132,8 +126,7 @@ def get_user_by_email(email):
     return result[0] if result else None
 
 def total_points(user):
-    return FREE_POINTS + user.get('paid_searches', 0)
-
+    return 
 def points_used(user):
     return user.get('search_count', 0)
 
@@ -141,11 +134,9 @@ def points_remaining(user):
     return max(0, total_points(user) - points_used(user))
 
 def can_search(user):
-    return points_remaining(user) >= SEARCH_COST
-
+    return points_remaining(user) >= 
 def can_load_more(user):
-    return points_remaining(user) >= LOAD_MORE_COST
-
+    return points_remaining(user) >= 
 # ─── CITATION BUILDERS ───────────────────────────────────────────────
 def _build_apa(authors, year, title, journal, volume, issue, pages, doi):
     apa_authors = []

@@ -19,9 +19,6 @@ def search_page():
 def donate():
     return render_template("donate.html")
 
-@pages_bp.route("/upgrade")
-def upgrade():
-    return redirect(url_for("pages.donate"))
 
 @pages_bp.route("/health")
 def health():

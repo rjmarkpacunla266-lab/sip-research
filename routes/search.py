@@ -3,11 +3,10 @@ import requests
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Blueprint, render_template, request, session, jsonify
-from core import (login_required, get_user, total_points, points_used, points_remaining,
-                  can_search, can_load_more, SEARCH_COST, LOAD_MORE_COST, OPENALEX_URL,
+from core import (login_required, get_user, OPENALEX_URL,
                   RESULTS_PER_SOURCE, format_paper, reconstruct_abstract,
                   search_semantic_scholar, search_arxiv, search_pubmed,
-                  sb_patch, sb_post, sb_get, _all_citations,
+                  sb_post, sb_get, _all_citations,
                   BeautifulSoup)
 from bs4 import BeautifulSoup as BS
 
@@ -21,15 +20,8 @@ def get_me():
     if not user:
         return jsonify({"error": "User not found"}), 404
     return jsonify({
-        "email":            user["email"],
-        "points_used":      points_used(user),
-        "points_remaining": points_remaining(user),
-        "total_points":     total_points(user),
-        "is_paid":          user.get("is_paid", False),
-        "can_search":       can_search(user),
-        "can_load_more":    can_load_more(user),
-        "search_cost":      SEARCH_COST,
-        "load_more_cost":   LOAD_MORE_COST,
+        "email": user["email"],
+        "is_paid": user.get("is_paid", False),
     })
 
 # ─── /api/search ─────────────────────────────────────────────────────
@@ -48,9 +40,6 @@ def search():
     user = get_user(session["user_id"])
     if not user:
         return jsonify({"error": "User not found"}), 404
-    if not can_search(user):
-        return jsonify({"error": "limit_reached",
-                        "message": f"Not enough points. A search costs {SEARCH_COST} pts. You have {points_remaining(user)} left."}), 403
 
     def fetch_openalex():
         params = {"search": query, "per-page": RESULTS_PER_SOURCE, "page": page, "sort": "cited_by_count:desc"}
@@ -95,15 +84,9 @@ def search():
         if tk:  seen_titles.add(tk)
         deduped.append(paper)
     deduped.sort(key=lambda x: x.get("citations", 0) or 0, reverse=True)
-
-    new_pts = points_used(user) + SEARCH_COST
-    sb_patch("users", f"id=eq.{user['id']}", {"search_count": new_pts})
     sb_post("search_logs", {"user_id": user["id"], "query": query, "results": len(deduped),
-                            "points_used": SEARCH_COST, "searched_at": datetime.now().isoformat()})
-
+                            "searched_at": datetime.now().isoformat()})
     return jsonify({"results": deduped, "total": total_count, "query": query,
-                    "points_remaining": max(0, total_points(user) - new_pts),
-                    "points_used": SEARCH_COST,
                     "sources_used": ["OpenAlex", "Semantic Scholar", "arXiv", "PubMed"],
                     "ref_disclaimer": "References auto-generated — verify before academic use"})
 
@@ -125,9 +108,6 @@ def load_more():
     user = get_user(session["user_id"])
     if not user:
         return jsonify({"error": "User not found"}), 404
-    if not can_load_more(user):
-        return jsonify({"error": "limit_reached",
-                        "message": f"Not enough points. Load-more costs {LOAD_MORE_COST} pts. You have {points_remaining(user)} left."}), 403
 
     def fetch_openalex():
         params = {"search": query, "per-page": RESULTS_PER_SOURCE, "page": page, "sort": "cited_by_count:desc"}
@@ -172,14 +152,9 @@ def load_more():
         if tk:  seen_titles.add(tk)
         deduped.append(paper)
     deduped.sort(key=lambda x: x.get("citations", 0) or 0, reverse=True)
-
-    new_pts = points_used(user) + LOAD_MORE_COST
-    sb_patch("users", f"id=eq.{user['id']}", {"search_count": new_pts})
     sb_post("search_logs", {"user_id": user["id"], "query": query, "results": len(deduped),
-                            "points_used": LOAD_MORE_COST, "searched_at": datetime.now().isoformat()})
-
+                            "searched_at": datetime.now().isoformat()})
     return jsonify({"results": deduped, "total": total_count, "query": query, "page": page,
-                    "points_remaining": max(0, total_points(user) - new_pts),
                     "sources_used": ["OpenAlex", "Semantic Scholar", "arXiv", "PubMed"]})
 
 # ─── /api/history ────────────────────────────────────────────────────
@@ -209,8 +184,6 @@ def related_papers():
     user = get_user(session["user_id"])
     if not user:
         return jsonify({"error": "User not found"}), 404
-    if not can_load_more(user):
-        return jsonify({"error": "limit_reached", "message": "Not enough points for related papers."}), 403
     results = _openalex_related(query)
     new_pts = points_used(user) + LOAD_MORE_COST
     sb_patch("users", f"id=eq.{user['id']}", {"search_count": new_pts})
