@@ -1782,7 +1782,7 @@ def main():
     print(f"   Run 'python api.py --history' to see all past searches")
     print(f"   Run 'python api.py --cache-stats' to see cache size\n")
 
-
+# __lol____________________________________________________________________
 # ─── RUN ────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     main()
