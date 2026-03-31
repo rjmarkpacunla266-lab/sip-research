@@ -262,7 +262,8 @@ def paper():
 def fetch_paper():
     oa_url      = request.args.get("oa_url", "").strip()
     openalex_id = request.args.get("openalex_id", "").strip()
-    if not oa_url and not openalex_id:
+    abstract    = request.args.get("abstract", "").strip()
+    if not oa_url and not openalex_id and not abstract:
         return jsonify({"error": "oa_url or openalex_id required"}), 400
 
     text         = None
@@ -285,7 +286,13 @@ def fetch_paper():
         except Exception:
             pass
 
+    # Fallback: use abstract from search results if full text unavailable
+    if not text and abstract:
+        text = abstract
+        image_notice = True
+
     if not text:
         return jsonify({"error": "Could not fetch full text for this paper.", "available": False})
 
-    return jsonify({"text": text, "available": True, "image_notice": image_notice})
+    return jsonify({"text": text, "available": True, "image_notice": image_notice,
+                    "abstract_only": image_notice})
