@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Topic Finder — Sturch</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
+  --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
+  --gold:#e8b84b;--green:#3ecf8e;--red:#f06a6a;--orange:#f0914b;
+  --text:#d8e0f8;--muted:#5a6385;
+  --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;--r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.65}
+#app{max-width:780px;margin:0 auto;padding:0 18px 80px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.hidden{display:none!important}
+
+/* Header */
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 0 14px;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap}
+.logo{font-family:var(--serif);font-size:1.35rem}
+.logo span{color:var(--accent)}
+.beta{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;margin-left:5px;font-family:var(--mono)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:var(--r);font-family:var(--sans);font-size:.82rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .2s;white-space:nowrap;text-decoration:none}
+.btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent}
+.btn.primary:hover{background:#3d7fd8}
+.btn.sm{padding:5px 10px;font-size:.76rem}
+.btn.xs{padding:3px 8px;font-size:.71rem}
+
+/* Hero */
+.hero{text-align:center;padding:32px 0 24px}
+.hero-icon{font-size:2.5rem;margin-bottom:10px}
+.hero h1{font-family:var(--serif);font-size:1.6rem;margin-bottom:6px}
+.hero p{color:var(--muted);font-size:.85rem;max-width:480px;margin:0 auto}
+
+/* Disclaimer note */
+.disclaimer{background:rgba(232,184,75,.06);border:1px solid rgba(232,184,75,.2);border-radius:var(--r);padding:12px 16px;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start}
+.disclaimer .icon{font-size:1rem;flex-shrink:0;margin-top:2px}
+.disclaimer p{font-size:.8rem;color:#c9a83a;line-height:1.5}
+
+/* Form */
+.form-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;display:block}
+.form-input{width:100%;padding:11px 14px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:.93rem;outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--accent)}
+.form-input::placeholder{color:var(--muted)}
+select.form-input{cursor:pointer}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.submit-wrap{margin-top:6px}
+
+/* Chips */
+.chip-group{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.chip{padding:3px 11px;border-radius:20px;background:var(--surf2);border:1px solid var(--border);color:var(--muted);font-size:.73rem;cursor:pointer;transition:all .15s}
+.chip:hover{border-color:var(--accent2);color:var(--accent2)}
+.chip.active{border-color:var(--accent);color:var(--accent);background:rgba(79,141,232,.1)}
+
+/* Results */
+.results-section{margin-top:24px}
+.section-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Topic card */
+.topic-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:10px;animation:fadeUp .3s ease both}
+.topic-card:hover{border-color:rgba(79,141,232,.25)}
+.topic-num{font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-bottom:6px}
+.topic-title{font-family:var(--serif);font-size:.97rem;font-weight:600;line-height:1.4;margin-bottom:6px;color:var(--text)}
+.topic-meta{font-size:.75rem;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.topic-abstract{font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.topic-actions{display:flex;gap:6px;flex-wrap:wrap}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.68rem;font-family:var(--mono)}
+.badge.oa{background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.2);color:var(--green)}
+
+/* Inspiration box */
+.inspo-box{background:rgba(157,110,245,.05);border:1px solid rgba(157,110,245,.15);border-radius:var(--r);padding:14px 16px;margin-top:20px}
+.inspo-box h3{font-size:.83rem;color:var(--accent2);margin-bottom:8px;font-family:var(--sans)}
+.inspo-box p{font-size:.8rem;color:var(--muted);line-height:1.6}
+
+/* States */
+.spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:30px auto}
+.no-result{text-align:center;padding:40px 20px;color:var(--muted)}
+.no-result .big{font-size:2rem;margin-bottom:10px}
+
+/* Toast */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:9px 15px;font-size:.83rem;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:300;transform:translateY(50px);opacity:0;transition:all .3s}
+#toast.show{transform:translateY(0);opacity:1}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:600px){.form-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<header>
+  <div class="logo"><span>Sturch</span><span class="beta">BETA</span></div>
+  <div style="display:flex;gap:6px">
+    <a href="/" class="btn sm">🔍 Search Papers</a>
+    <a href="/logout" class="btn sm" style="color:var(--red);border-color:rgba(240,106,106,.2)">Logout</a>
+  </div>
+</header>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-icon">🧭</div>
+  <h1>Topic Finder</h1>
+  <p>Explore real research to help you visualize and develop your own original topic.</p>
+</div>
+
+<!-- Disclaimer -->
+<div class="disclaimer">
+  <div class="icon">⚠️</div>
+  <p>These results are from real published research — they are shown to help you <strong>visualize what research looks like</strong> in your chosen field. Do not copy or use these titles directly. Use them as inspiration to develop your own original topic.</p>
+</div>
+
+<!-- Form -->
+<div class="form-card">
+  <div class="form-group">
+    <label class="form-label">Field / Subject Area</label>
+    <input type="text" id="fieldInput" class="form-input" placeholder="e.g. Biology, Environmental Science, Computer Science…" autocomplete="off"/>
+    <div class="chip-group" id="fieldChips">
+      <span class="chip" onclick="setField('Biology')">Biology</span>
+      <span class="chip" onclick="setField('Environmental Science')">Environmental Science</span>
+      <span class="chip" onclick="setField('Computer Science')">Computer Science</span>
+      <span class="chip" onclick="setField('Physics')">Physics</span>
+      <span class="chip" onclick="setField('Chemistry')">Chemistry</span>
+      <span class="chip" onclick="setField('Psychology')">Psychology</span>
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label">Grade / Level</label>
+      <select id="levelSelect" class="form-input">
+        <option value="">Any level</option>
+        <option value="high school">High School</option>
+        <option value="college">College / University</option>
+        <option value="graduate">Graduate / Postgrad</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Focus (optional)</label>
+      <input type="text" id="focusInput" class="form-input" placeholder="e.g. effects, causes, comparison…" autocomplete="off"/>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Keywords (optional)</label>
+    <input type="text" id="keywordsInput" class="form-input" placeholder="e.g. climate, renewable, urban…" autocomplete="off"/>
+  </div>
+
+  <div class="submit-wrap">
+    <button class="btn primary" onclick="findTopics()" style="width:100%;justify-content:center;padding:12px">
+      🧭 Find Related Research
+    </button>
+  </div>
+</div>
+
+<!-- Results -->
+<div id="results"></div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+function setField(val) {
+  document.getElementById('fieldInput').value = val;
+  document.querySelectorAll('#fieldChips .chip').forEach(c => {
+    c.classList.toggle('active', c.textContent === val);
+  });
+}
+
+document.getElementById('fieldInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') findTopics();
+});
+document.getElementById('keywordsInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') findTopics();
+});
+
+async function findTopics() {
+  const field    = document.getElementById('fieldInput').value.trim();
+  const level    = document.getElementById('levelSelect').value;
+  const focus    = document.getElementById('focusInput').value.trim();
+  const keywords = document.getElementById('keywordsInput').value.trim();
+
+  if (!field) { toast('⚠️ Enter a field or subject area first'); return; }
+
+  // Build search query
+  let query = field;
+  if (focus)    query += ' ' + focus;
+  if (keywords) query += ' ' + keywords;
+  if (level)    query += ' ' + level;
+
+  const results = document.getElementById('results');
+  results.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    const resp = await fetch(`/api/search?q=${encodeURIComponent(query)}&page=1`);
+    const data = await resp.json();
+
+    if (!resp.ok || !data.results || !data.results.length) {
+      results.innerHTML = `
+        <div class="no-result">
+          <div class="big">📭</div>
+          <p>No research found for <strong>${esc(field)}</strong>. Try a broader field or different keywords.</p>
+        </div>`;
+      return;
+    }
+
+    renderTopics(data.results.slice(0, 10), field, query);
+  } catch(e) {
+    results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>Connection error. Try again.</p></div>`;
+  }
+}
+
+function renderTopics(papers, field, query) {
+  const results = document.getElementById('results');
+
+  const cards = papers.map((p, i) => {
+    const title    = p.title || 'Untitled';
+    const authors  = (p.authors || []).slice(0, 2).join(', ') + (p.authors?.length > 2 ? ' et al.' : '');
+    const year     = p.year || '?';
+    const journal  = p.journal || p.data_source || '—';
+    const abstract = (p.abstract || '').slice(0, 200) + (p.abstract?.length > 200 ? '…' : '');
+    const cites    = p.citations || 0;
+    const cColor   = cites > 1000 ? 'var(--gold)' : cites > 100 ? 'var(--accent)' : 'var(--muted)';
+    const isOA     = p.is_oa;
+
+    return `
+    <div class="topic-card" style="animation-delay:${i * 50}ms">
+      <div class="topic-num">Research ${i + 1} of ${papers.length}</div>
+      <div class="topic-title">${esc(title)}</div>
+      <div class="topic-meta">
+        <span>${esc(authors) || 'Unknown authors'}</span>
+        <span>· ${year}</span>
+        <span>· ${esc(journal)}</span>
+        <span style="color:${cColor}">· ★ ${cites.toLocaleString()}</span>
+        ${isOA ? '<span class="badge oa">Open Access</span>' : ''}
+      </div>
+      ${abstract ? `<div class="topic-abstract">${esc(abstract)}</div>` : ''}
+      <div class="topic-actions">
+        ${p.doi ? `<a href="${esc(p.doi)}" target="_blank" class="btn xs">↗ DOI</a>` : ''}
+        ${p.oa_url ? `<a href="${esc(p.oa_url)}" target="_blank" class="btn xs">↗ Read</a>` : ''}
+        <button class="btn xs" onclick="copyText('${esc(title).replace(/'/g,"\\'")}')">📋 Copy Title</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  results.innerHTML = `
+    <div class="results-section">
+      <div class="section-label">Related research in <strong style="color:var(--accent)">${esc(field)}</strong></div>
+      ${cards}
+      <div class="inspo-box">
+        <h3>💡 How to use these results</h3>
+        <p>Look at the <strong>themes, methods, and gaps</strong> in these papers. Ask yourself: What hasn't been studied yet? What could be applied locally? What angle is missing? Your original topic should come from your own thinking — these papers are just the map, not the destination.</p>
+      </div>
+      <div style="margin-top:14px;text-align:center">
+        <a href="/search?q=${encodeURIComponent(query)}" class="btn primary sm">🔍 Full Paper Search</a>
+      </div>
+    </div>`;
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('📋 Copied!')).catch(() => toast('❌ Copy failed'));
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
