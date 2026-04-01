@@ -195,4 +195,4 @@ def answer_page():
 @tools_bp.route("/topic-generator")
 @login_required
 def topic_generator():
-    return render_template("coming_soon.html", tool="Topic Generator")
+    return render_template("topic_finder.html")
