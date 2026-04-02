@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Source Tracer — Sturch</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
+  --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
+  --gold:#e8b84b;--green:#3ecf8e;--red:#f06a6a;--orange:#f0914b;
+  --text:#d8e0f8;--muted:#5a6385;
+  --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;--r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.65}
+#app{max-width:780px;margin:0 auto;padding:0 18px 80px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.hidden{display:none!important}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 0 14px;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap}
+.logo{font-family:var(--serif);font-size:1.35rem}
+.logo span{color:var(--accent)}
+.beta{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;margin-left:5px;font-family:var(--mono)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:var(--r);font-family:var(--sans);font-size:.82rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .2s;white-space:nowrap;text-decoration:none}
+.btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent}
+.btn.primary:hover{background:#3d7fd8}
+.btn.sm{padding:5px 10px;font-size:.76rem}
+.btn.xs{padding:3px 8px;font-size:.71rem}
+
+.hero{text-align:center;padding:32px 0 24px}
+.hero-icon{font-size:2.5rem;margin-bottom:10px}
+.hero h1{font-family:var(--serif);font-size:1.6rem;margin-bottom:6px}
+.hero p{color:var(--muted);font-size:.85rem;max-width:480px;margin:0 auto}
+
+.input-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.input-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;display:block}
+textarea{width:100%;padding:12px 14px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:.93rem;outline:none;transition:border-color .2s;resize:vertical;min-height:100px;line-height:1.6}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--muted)}
+.char-count{font-size:.7rem;color:var(--muted);text-align:right;margin-top:4px}
+.examples-label{font-size:.7rem;color:var(--muted);margin:10px 0 6px}
+.example-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+.chip{padding:3px 11px;border-radius:20px;background:var(--surf2);border:1px solid var(--border);color:var(--muted);font-size:.73rem;cursor:pointer;transition:all .15s}
+.chip:hover{border-color:var(--accent2);color:var(--accent2)}
+
+/* Confidence badge */
+.confidence-bar{margin:16px 0 8px}
+.confidence-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+.conf-track{height:6px;background:var(--surf3);border-radius:3px;overflow:hidden}
+.conf-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.conf-fill.high{background:var(--green)}
+.conf-fill.medium{background:var(--gold)}
+.conf-fill.low{background:var(--orange)}
+.conf-fill.none{background:var(--red);width:5%}
+.conf-text{font-size:.78rem;margin-top:5px}
+.conf-text.high{color:var(--green)}
+.conf-text.medium{color:var(--gold)}
+.conf-text.low{color:var(--orange)}
+.conf-text.none{color:var(--red)}
+
+/* Result cards */
+.results-section{margin-top:20px}
+.section-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.result-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:10px;animation:fadeUp .3s ease both}
+.result-card.top-match{border-color:rgba(62,207,142,.3);background:rgba(62,207,142,.03)}
+.result-num{font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.match-badge{padding:1px 7px;border-radius:4px;font-size:.65rem;font-family:var(--mono)}
+.match-badge.top{background:rgba(62,207,142,.15);border:1px solid rgba(62,207,142,.25);color:var(--green)}
+.match-badge.related{background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.2);color:var(--accent)}
+.result-title{font-family:var(--serif);font-size:.97rem;font-weight:600;line-height:1.4;margin-bottom:6px}
+.result-meta{font-size:.75rem;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.result-abstract{font-size:.8rem;color:var(--muted);line-height:1.6;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.result-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* Not found box */
+.not-found-box{background:rgba(240,145,75,.05);border:1px solid rgba(240,145,75,.2);border-radius:var(--r);padding:16px;margin-bottom:16px}
+.not-found-box h3{font-size:.85rem;color:var(--orange);margin-bottom:6px}
+.not-found-box p{font-size:.8rem;color:var(--muted);line-height:1.6}
+.not-found-box ul{font-size:.8rem;color:var(--muted);padding-left:16px;margin-top:6px;line-height:1.8}
+
+.keywords-wrap{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 16px}
+.kw-badge{padding:2px 9px;border-radius:4px;font-size:.7rem;font-family:var(--mono);background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.2);color:var(--accent)}
+
+.spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:30px auto}
+.no-result{text-align:center;padding:40px 20px;color:var(--muted)}
+.no-result .big{font-size:2rem;margin-bottom:10px}
+
+#toast{position:fixed;bottom:20px;right:20px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:9px 15px;font-size:.83rem;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:300;transform:translateY(50px);opacity:0;transition:all .3s}
+#toast.show{transform:translateY(0);opacity:1}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<header>
+  <div class="logo"><span>Sturch</span><span class="beta">BETA</span></div>
+  <div style="display:flex;gap:6px">
+    <a href="/" class="btn sm">🏠 Home</a>
+    <a href="/logout" class="btn sm" style="color:var(--red);border-color:rgba(240,106,106,.2)">Logout</a>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-icon">🔎</div>
+  <h1>Source Tracer</h1>
+  <p>Paste a quote or sentence and Sturch will try to find its original academic source. If not found, related research will be suggested.</p>
+</div>
+
+<div class="input-card">
+  <label class="input-label">Paste your quote or sentence</label>
+  <textarea id="quoteInput" placeholder="e.g. The greatest threat to our planet is the belief that someone else will save it." oninput="updateCount()"></textarea>
+  <div class="char-count"><span id="charCount">0</span> characters</div>
+
+  <div class="examples-label">Try an example:</div>
+  <div class="example-chips">
+    <span class="chip" onclick="setQuote('Climate change is the defining challenge of our time.')">Climate change quote</span>
+    <span class="chip" onclick="setQuote('Antibiotic resistance is one of the biggest threats to global health.')">Antibiotic resistance</span>
+    <span class="chip" onclick="setQuote('Biodiversity loss is occurring at unprecedented rates due to human activity.')">Biodiversity loss</span>
+    <span class="chip" onclick="setQuote('Renewable energy sources are essential for sustainable development.')">Renewable energy</span>
+  </div>
+
+  <button class="btn primary" onclick="traceSource()" style="width:100%;justify-content:center;padding:12px">
+    🔎 Trace Source
+  </button>
+</div>
+
+<div id="results"></div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+function updateCount() {
+  document.getElementById('charCount').textContent = document.getElementById('quoteInput').value.length;
+}
+
+function setQuote(text) {
+  document.getElementById('quoteInput').value = text;
+  updateCount();
+}
+
+document.getElementById('quoteInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) traceSource();
+});
+
+async function traceSource() {
+  const quote = document.getElementById('quoteInput').value.trim();
+  if (!quote) { toast('⚠️ Paste a quote first'); return; }
+  if (quote.length < 10) { toast('⚠️ Quote is too short'); return; }
+
+  const results = document.getElementById('results');
+  results.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    const resp = await fetch('/api/source-tracer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quote })
+    });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>${esc(data.error || 'Error')}</p></div>`;
+      return;
+    }
+
+    renderResults(data);
+  } catch(e) {
+    results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>Connection error. Try again.</p></div>`;
+  }
+}
+
+function renderResults(data) {
+  const results = document.getElementById('results');
+  let html = '';
+
+  // Keywords detected
+  if (data.keywords && data.keywords.length) {
+    html += `<div style="margin-bottom:12px">
+      <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Keywords detected</div>
+      <div class="keywords-wrap">${data.keywords.map(k => `<span class="kw-badge">${esc(k)}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  // Confidence bar
+  const confClass = data.confidence;
+  const confLabel = {
+    high:   '✅ High confidence — likely source found',
+    medium: '⚠️ Medium confidence — possible match',
+    low:    '🔶 Low confidence — related papers shown',
+    none:   '❌ No match found',
+  }[confClass] || '';
+
+  html += `<div class="confidence-bar">
+    <div class="confidence-label">Match confidence</div>
+    <div class="conf-track"><div class="conf-fill ${confClass}" style="width:${data.confidence_pct || 5}%"></div></div>
+    <div class="conf-text ${confClass}">${confLabel} (${data.confidence_pct}%)</div>
+  </div>`;
+
+  // Not found message
+  if (!data.found && data.message) {
+    html += `<div class="not-found-box">
+      <h3>⚠️ Source not found in indexed databases</h3>
+      <p>Possible reasons:</p>
+      <ul>
+        <li>The source may not be indexed in OpenAlex, Semantic Scholar, arXiv, or PubMed</li>
+        <li>The quote may be paraphrased or slightly altered</li>
+        <li>There may be a typo in the quote</li>
+        <li>The source may be a book, website, or non-academic publication</li>
+      </ul>
+      <p style="margin-top:8px">Related research papers are shown below for reference.</p>
+    </div>`;
+  }
+
+  // Results
+  if (data.results && data.results.length) {
+    const label = data.found ? 'Possible sources' : 'Related research';
+    html += `<div class="results-section">
+      <div class="section-label">${label}</div>`;
+
+    data.results.forEach((r, i) => {
+      const isTop    = i === 0 && data.found;
+      const badge    = isTop ? '<span class="match-badge top">Best Match</span>' : '<span class="match-badge related">Related</span>';
+      const authors  = (r.authors || []).join(', ') || 'Unknown authors';
+      const cites    = r.citations || 0;
+      const cColor   = cites > 1000 ? 'var(--gold)' : cites > 100 ? 'var(--accent)' : 'var(--muted)';
+
+      html += `<div class="result-card ${isTop ? 'top-match' : ''}" style="animation-delay:${i*60}ms">
+        <div class="result-num">Result ${i+1} ${badge}</div>
+        <div class="result-title">${esc(r.title || 'Untitled')}</div>
+        <div class="result-meta">
+          <span>${esc(authors)}</span>
+          <span>· ${r.year || '?'}</span>
+          <span>· ${esc(r.journal || r.data_source || '—')}</span>
+          <span style="color:${cColor}">· ★ ${cites.toLocaleString()}</span>
+        </div>
+        ${r.abstract ? `<div class="result-abstract">${esc(r.abstract)}</div>` : ''}
+        <div class="result-actions">
+          ${r.doi ? `<a href="${esc(r.doi)}" target="_blank" class="btn xs">↗ DOI</a>` : ''}
+          ${r.oa_url ? `<a href="${esc(r.oa_url)}" target="_blank" class="btn xs">↗ Read</a>` : ''}
+          <button class="btn xs" onclick="copyAPA(${i})">📋 Copy APA</button>
+        </div>
+      </div>`;
+    });
+
+    html += '</div>';
+  } else {
+    html += `<div class="no-result"><div class="big">📭</div><p>No related papers found. Try a different quote.</p></div>`;
+  }
+
+  // Store results for copy function
+  window._traceResults = data.results || [];
+  results.innerHTML = html;
+}
+
+function copyAPA(i) {
+  const r = window._traceResults[i];
+  if (!r) return;
+  const authors = (r.authors || []).slice(0,3).map(a => {
+    const p = a.trim().split(' ');
+    return p.length >= 2 ? `${p[p.length-1]}, ${p[0][0]}.` : a;
+  }).join(', ') + ((r.authors||[]).length > 3 ? ', et al.' : '');
+  const apa = `${authors || 'Unknown'} (${r.year || 'n.d.'}). ${r.title}. ${r.journal || ''}.${r.doi ? ' ' + r.doi : ''}`;
+  navigator.clipboard.writeText(apa).then(() => toast('📋 APA copied!')).catch(() => toast('❌ Copy failed'));
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

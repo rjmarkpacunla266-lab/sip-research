@@ -196,3 +196,167 @@ def answer_page():
 @login_required
 def topic_generator():
     return render_template("topic_finder.html")
+
+# ─── SOURCE TRACER ───────────────────────────────────────────────────
+import difflib
+
+def _clean_text(text):
+    """Normalize text for comparison."""
+    text = text.lower().strip()
+    text = _re.sub(r'[^\w\s]', ' ', text)
+    text = _re.sub(r'\s+', ' ', text)
+    return text
+
+def _similarity_score(a, b):
+    """Return similarity ratio between two strings."""
+    return difflib.SequenceMatcher(None, _clean_text(a), _clean_text(b)).ratio()
+
+def _extract_keywords(text):
+    """Extract meaningful keywords from input text."""
+    stopwords = {'the','a','an','is','are','was','were','be','been','being',
+                 'have','has','had','do','does','did','will','would','could',
+                 'should','may','might','shall','can','need','dare','ought',
+                 'used','of','in','on','at','to','for','with','by','from',
+                 'and','or','but','if','as','that','this','it','its','their',
+                 'they','we','our','you','your','he','she','his','her','not'}
+    words = _re.findall(r'\b\w{4,}\b', text.lower())
+    return [w for w in words if w not in stopwords][:8]
+
+def _score_paper(paper_abstract, input_text, keywords):
+    """Score a paper based on similarity and keyword overlap."""
+    if not paper_abstract:
+        return 0
+    sim    = _similarity_score(input_text, paper_abstract[:500])
+    kw_hit = sum(1 for kw in keywords if kw in paper_abstract.lower())
+    kw_score = kw_hit / max(len(keywords), 1)
+    return (sim * 0.6) + (kw_score * 0.4)
+
+@tools_bp.route("/api/source-tracer", methods=["POST"])
+@login_required
+def source_tracer():
+    data  = request.get_json() or {}
+    quote = (data.get("quote") or "").strip()
+    if not quote:
+        return jsonify({"error": "Quote is required"}), 400
+    if len(quote) < 10:
+        return jsonify({"error": "Quote is too short. Please enter at least 10 characters."}), 400
+
+    keywords = _extract_keywords(quote)
+    if not keywords:
+        return jsonify({"error": "Could not extract keywords from the quote."}), 400
+
+    search_query = " ".join(keywords[:5])
+
+    # Fetch from all 4 sources in parallel
+    oa_papers    = []
+    other_papers = []
+
+    def fetch_oa():
+        try:
+            resp = requests.get(OPENALEX_URL,
+                                params={"search": search_query, "per-page": 20,
+                                        "page": 1, "sort": "cited_by_count:desc"},
+                                timeout=15)
+            return resp.json().get("results", [])
+        except Exception:
+            return []
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {
+            executor.submit(fetch_oa):                                        "openalex",
+            executor.submit(search_semantic_scholar, search_query, 1, 20):   "semantic",
+            executor.submit(search_arxiv, search_query, 1, 20):              "arxiv",
+            executor.submit(search_pubmed, search_query, 1, 20):             "pubmed",
+        }
+        for future in as_completed(futures):
+            src = futures[future]
+            try:
+                result = future.result()
+                if src == "openalex":
+                    oa_papers = result
+                else:
+                    other_papers.extend(result)
+            except Exception:
+                pass
+
+    # Score all papers
+    scored = []
+
+    for paper in oa_papers:
+        abstract = reconstruct_abstract(paper.get("abstract_inverted_index")) or ""
+        score    = _score_paper(abstract, quote, keywords)
+        loc      = (paper.get("primary_location") or {})
+        src      = (loc.get("source") or {})
+        scored.append({
+            "title":       paper.get("title", ""),
+            "authors":     [(a.get("author") or {}).get("display_name", "")
+                            for a in paper.get("authorships", [])
+                            if (a.get("author") or {}).get("display_name")][:3],
+            "year":        paper.get("publication_year"),
+            "journal":     src.get("display_name", ""),
+            "doi":         paper.get("doi", ""),
+            "oa_url":      (paper.get("open_access") or {}).get("oa_url", ""),
+            "citations":   paper.get("cited_by_count", 0),
+            "abstract":    abstract[:300],
+            "score":       score,
+            "data_source": "OpenAlex",
+        })
+
+    for paper in other_papers:
+        abstract = paper.get("abstract", "") or ""
+        score    = _score_paper(abstract, quote, keywords)
+        scored.append({
+            "title":       paper.get("title", ""),
+            "authors":     (paper.get("authors") or [])[:3],
+            "year":        paper.get("year"),
+            "journal":     paper.get("journal", ""),
+            "doi":         paper.get("doi", ""),
+            "oa_url":      paper.get("oa_url", ""),
+            "citations":   paper.get("citations", 0) or 0,
+            "abstract":    abstract[:300],
+            "score":       score,
+            "data_source": paper.get("data_source", ""),
+        })
+
+    # Sort by score
+    scored.sort(key=lambda x: x["score"], reverse=True)
+
+    # Determine confidence
+    top_score = scored[0]["score"] if scored else 0
+    if top_score >= 0.5:
+        confidence = "high"
+        confidence_pct = int(top_score * 100)
+        found = True
+    elif top_score >= 0.25:
+        confidence = "medium"
+        confidence_pct = int(top_score * 100)
+        found = True
+    elif scored:
+        confidence = "low"
+        confidence_pct = int(top_score * 100)
+        found = False
+    else:
+        confidence = "none"
+        confidence_pct = 0
+        found = False
+
+    message = ""
+    if not found:
+        message = ("No exact source found. Possible reasons: the source may not be indexed "
+                   "in our databases, the quote may be paraphrased, or there may be a typo. "
+                   "Related papers are shown below.")
+
+    return jsonify({
+        "quote":          quote,
+        "keywords":       keywords,
+        "found":          found,
+        "confidence":     confidence,
+        "confidence_pct": confidence_pct,
+        "results":        scored[:5],
+        "message":        message,
+    })
+
+@tools_bp.route("/source-tracer")
+@login_required
+def source_tracer_page():
+    return render_template("source_tracer.html")
