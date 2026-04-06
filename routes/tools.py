@@ -4,7 +4,7 @@ import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Blueprint, render_template, request, jsonify
 from core import (login_required, OPENALEX_URL, reconstruct_abstract,
-                  search_semantic_scholar, search_arxiv, search_pubmed, format_paper)
+                  search_arxiv, search_pubmed, search_crossref, search_europe_pmc, format_paper)
 
 tools_bp = Blueprint("tools", __name__)
 
@@ -110,7 +110,7 @@ def _fetch_answers_from_source(papers_or_func, keyword, ttype, is_openalex=False
 def answer_finder():
     """
     Answer Finder — free, no points deducted.
-    Uses all 4 sources: OpenAlex, Semantic Scholar, arXiv, PubMed.
+    Uses all 5 sources: OpenAlex, arXiv, PubMed, Crossref, Europe PMC.
     Templates: What is, What are, What causes, How does, Why is, Define
     """
     query = request.args.get("q", "").strip()
@@ -137,12 +137,13 @@ def answer_finder():
         except Exception:
             return []
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         futures = {
-            executor.submit(fetch_oa):                                      "openalex",
-            executor.submit(search_semantic_scholar, keyword, 1, 15):       "semantic",
-            executor.submit(search_arxiv, keyword, 1, 15):                  "arxiv",
-            executor.submit(search_pubmed, keyword, 1, 15):                 "pubmed",
+            executor.submit(fetch_oa):                               "openalex",
+            executor.submit(search_arxiv, keyword, 1, 15):           "arxiv",
+            executor.submit(search_pubmed, keyword, 1, 15):          "pubmed",
+            executor.submit(search_crossref, keyword, 1, 15):        "crossref",
+            executor.submit(search_europe_pmc, keyword, 1, 15):      "europepmc",
         }
         for future in as_completed(futures):
             src = futures[future]
@@ -261,12 +262,13 @@ def source_tracer():
         except Exception:
             return []
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         futures = {
-            executor.submit(fetch_oa):                                        "openalex",
-            executor.submit(search_semantic_scholar, search_query, 1, 20):   "semantic",
-            executor.submit(search_arxiv, search_query, 1, 20):              "arxiv",
-            executor.submit(search_pubmed, search_query, 1, 20):             "pubmed",
+            executor.submit(fetch_oa):                                  "openalex",
+            executor.submit(search_arxiv, search_query, 1, 20):         "arxiv",
+            executor.submit(search_pubmed, search_query, 1, 20):        "pubmed",
+            executor.submit(search_crossref, search_query, 1, 20):      "crossref",
+            executor.submit(search_europe_pmc, search_query, 1, 20):    "europepmc",
         }
         for future in as_completed(futures):
             src = futures[future]
