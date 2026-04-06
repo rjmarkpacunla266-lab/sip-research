@@ -246,7 +246,7 @@ function renderTopics(papers, field, query) {
       </div>
       ${abstract ? `<div class="topic-abstract">${esc(abstract)}</div>` : ''}
       <div class="topic-actions">
-        ${p.doi ? `<a href="${esc(p.doi)}" target="_blank" class="btn xs">↗ DOI</a>` : ''}
+        ${p.doi ? `<a href="${esc(p.doi)}" target="_blank" class="btn xs">↗ View Source</a>` : ''}
         ${p.oa_url ? `<a href="${esc(p.oa_url)}" target="_blank" class="btn xs">↗ Read</a>` : ''}
         <button class="btn xs" onclick="copyText('${esc(title).replace(/'/g,"\\'")}')">📋 Copy Title</button>
       </div>

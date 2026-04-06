@@ -701,7 +701,7 @@ function buildCard(item, i) {
       <span class="apa-text" title="${esc(item.apa_reference||'')}">${esc(item.apa_reference||'')}</span>
       <div class="foot-btns">
         <button class="btn xs" onclick="showCitationPicker(${i},${n},event)">📋 Cite</button>
-        ${item.doi?`<a href="${esc(item.doi)}" target="_blank" class="btn xs">DOI</a>`:''}
+        ${item.doi?`<a href="${esc(item.doi)}" target="_blank" class="btn xs">↗ View Source</a>`:''}
         ${item.oa_url?`<a href="${esc(item.oa_url)}" target="_blank" class="btn xs">Full Text</a>`:''}
         <button class="btn xs" onclick="openPaperPage(${i},event)">📄 Read</button>
         <button class="btn xs ${isBookmark?'gold':''}" id="bk-${n}" onclick="toggleBookmark(${i},${n},event)">${isBookmark?'🔖 Saved':'🔖 Save'}</button>

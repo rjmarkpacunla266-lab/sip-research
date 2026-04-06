@@ -244,7 +244,7 @@ function renderResults(data) {
         </div>
         ${r.abstract ? `<div class="result-abstract">${esc(r.abstract)}</div>` : ''}
         <div class="result-actions">
-          ${r.doi ? `<a href="${esc(r.doi)}" target="_blank" class="btn xs">↗ DOI</a>` : ''}
+          ${r.doi ? `<a href="${esc(r.doi)}" target="_blank" class="btn xs">↗ View Source</a>` : ''}
           ${r.oa_url ? `<a href="${esc(r.oa_url)}" target="_blank" class="btn xs">↗ Read</a>` : ''}
           <button class="btn xs" onclick="copyAPA(${i})">📋 Copy APA</button>
         </div>

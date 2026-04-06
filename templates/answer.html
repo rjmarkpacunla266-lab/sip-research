@@ -248,7 +248,7 @@ function renderAnswers(data) {
           <div class="source-meta">${esc(s.journal||s.source||'—')} · ${s.year||'?'} · <span style="color:${cColor}">★ ${cites.toLocaleString()}</span></div>
         </div>
         <div class="source-btns">
-          ${s.doi?`<a href="${esc(s.doi)}" target="_blank" class="btn xs">DOI</a>`:''}
+          ${s.doi?`<a href="${esc(s.doi)}" target="_blank" class="btn xs">↗ View Source</a>`:''}
           ${s.oa_url?`<a href="${esc(s.oa_url)}" target="_blank" class="btn xs">Read</a>`:''}
         </div>
       </div>` : '';

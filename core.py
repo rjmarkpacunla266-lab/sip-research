@@ -410,6 +410,91 @@ def search_pubmed(query, page=1, per_page=RESULTS_PER_SOURCE):
     except Exception:
         return []
 
+
+# ─── CROSSREF ────────────────────────────────────────────────────────
+def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE):
+    offset = (page - 1) * per_page
+    try:
+        resp = requests.get(
+            "https://api.crossref.org/works",
+            params={"query": query, "rows": per_page, "offset": offset,
+                    "select": "title,author,published,container-title,DOI,is-referenced-by-count,abstract,URL,license"},
+            timeout=15,
+            headers={"User-Agent": "Sturch/3.0 (mailto:pacunlarjmark@gmail.com)"})
+        if not resp.ok:
+            return []
+        results = []
+        for p in resp.json().get("message", {}).get("items", []):
+            title   = " ".join(p.get("title") or [""])
+            authors = [f"{a.get('given','')} {a.get('family','')}".strip()
+                       for a in p.get("author") or []]
+            pub     = p.get("published", {}).get("date-parts", [[None]])[0]
+            year    = pub[0] if pub else None
+            journal = " ".join(p.get("container-title") or []) or "Crossref"
+            doi     = p.get("DOI", "")
+            abstract = p.get("abstract", "") or ""
+            # Strip HTML tags from abstract
+            import re as _re2
+            abstract = _re2.sub(r'<[^>]+>', '', abstract).strip()
+            missing = [l for l, v in [("volume",""),("issue",""),("page range","")] if not v]
+            results.append({
+                "title": title, "authors": authors, "year": year, "journal": journal,
+                "abstract": abstract, "citations": p.get("is-referenced-by-count", 0) or 0,
+                "is_oa": False, "oa_url": p.get("URL", ""),
+                "doi": f"https://doi.org/{doi}" if doi else "",
+                "concepts": [], "openalex_id": doi,
+                "volume": "", "issue": "", "pages": "",
+                "apa_reference": _build_apa(authors, year, title, journal, "", "", "", doi),
+                "apa_missing": missing, "data_source": "Crossref (crossref.org)",
+                "ref_warning": "Auto-generated — verify before academic use",
+            })
+        return results
+    except Exception:
+        return []
+
+# ─── EUROPE PMC ──────────────────────────────────────────────────────
+def search_europe_pmc(query, page=1, per_page=RESULTS_PER_SOURCE):
+    try:
+        resp = requests.get(
+            "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
+            params={"query": query, "pageSize": per_page, "page": page,
+                    "format": "json", "resultType": "core", "sort": "CITED desc"},
+            timeout=15,
+            headers={"User-Agent": "Sturch/3.0 (academic research tool)"})
+        if not resp.ok:
+            return []
+        results = []
+        for p in resp.json().get("resultList", {}).get("result", []):
+            title   = p.get("title", "")
+            authors = [a.get("fullName", "") for a in p.get("authorList", {}).get("author", [])]
+            year    = p.get("pubYear")
+            journal = p.get("journalTitle", "") or "Europe PMC"
+            doi     = p.get("doi", "")
+            abstract = p.get("abstractText", "") or ""
+            cites   = p.get("citedByCount", 0) or 0
+            is_oa   = p.get("isOpenAccess", "N") == "Y"
+            oa_url  = f"https://europepmc.org/article/{p.get('source','')}/{p.get('id','')}" if p.get("id") else ""
+            missing = [l for l, v in [("volume", p.get("journalVolume","")),
+                                       ("issue", p.get("issue","")),
+                                       ("page range", p.get("pageInfo",""))] if not v]
+            results.append({
+                "title": title, "authors": authors, "year": year, "journal": journal,
+                "abstract": abstract, "citations": cites,
+                "is_oa": is_oa, "oa_url": oa_url,
+                "doi": f"https://doi.org/{doi}" if doi else "",
+                "concepts": [], "openalex_id": p.get("id", ""),
+                "volume": p.get("journalVolume",""), "issue": p.get("issue",""),
+                "pages": p.get("pageInfo",""),
+                "apa_reference": _build_apa(authors, year, title, journal,
+                                            p.get("journalVolume",""), p.get("issue",""),
+                                            p.get("pageInfo",""), doi),
+                "apa_missing": missing, "data_source": "Europe PMC (europepmc.org)",
+                "ref_warning": "Auto-generated — verify before academic use",
+            })
+        return results
+    except Exception:
+        return []
+
 # ─── EMAIL ───────────────────────────────────────────────────────────
 def send_email(to_email, subject, html_body):
     if not RESEND_API_KEY:
