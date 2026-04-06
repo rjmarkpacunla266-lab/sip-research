@@ -56,7 +56,7 @@ def search():
 
     all_results = []
     total_count = 0
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=6) as executor:
         futures = {
             executor.submit(fetch_openalex):                       "openalex",
             executor.submit(search_semantic_scholar, query, page): "semantic",
@@ -126,7 +126,7 @@ def load_more():
 
     all_results = []
     total_count = 0
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=6) as executor:
         futures = {
             executor.submit(fetch_openalex):                       "openalex",
             executor.submit(search_semantic_scholar, query, page): "semantic",
