@@ -5,8 +5,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Blueprint, render_template, request, session, jsonify
 from core import (login_required, get_user, OPENALEX_URL,
                   RESULTS_PER_SOURCE, format_paper, reconstruct_abstract,
-                  search_semantic_scholar, search_arxiv, search_pubmed,
-                  search_crossref, search_europe_pmc,
+                  search_arxiv, search_pubmed,
                   sb_post, sb_get, _all_citations,
                   BeautifulSoup)
 from bs4 import BeautifulSoup as BS
@@ -56,14 +55,13 @@ def search():
 
     all_results = []
     total_count = 0
-    with ThreadPoolExecutor(max_workers=6) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         futures = {
-            executor.submit(fetch_openalex):                       "openalex",
-            executor.submit(search_semantic_scholar, query, page): "semantic",
-            executor.submit(search_arxiv, query, page):            "arxiv",
-            executor.submit(search_pubmed, query, page):           "pubmed",
-            executor.submit(search_crossref, query, page):         "crossref",
-            executor.submit(search_europe_pmc, query, page):       "europepmc",
+            executor.submit(fetch_openalex):                 "openalex",
+            executor.submit(search_arxiv, query, page):      "arxiv",
+            executor.submit(search_pubmed, query, page):     "pubmed",
+            executor.submit(search_crossref, query, page):   "crossref",
+            executor.submit(search_europe_pmc, query, page): "europepmc",
         }
         for future in as_completed(futures):
             try:
@@ -90,7 +88,7 @@ def search():
     sb_post("search_logs", {"user_id": user["id"], "query": query, "results": len(deduped),
                             "searched_at": datetime.now().isoformat()})
     return jsonify({"results": deduped, "total": total_count, "query": query,
-                    "sources_used": ["OpenAlex", "Semantic Scholar", "arXiv", "PubMed", "Crossref", "Europe PMC"],
+                    "sources_used": ["OpenAlex", "arXiv", "PubMed", "Crossref", "Europe PMC"],
                     "ref_disclaimer": "References auto-generated — verify before academic use"})
 
 # ─── /api/load-more ──────────────────────────────────────────────────
@@ -126,14 +124,13 @@ def load_more():
 
     all_results = []
     total_count = 0
-    with ThreadPoolExecutor(max_workers=6) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         futures = {
-            executor.submit(fetch_openalex):                       "openalex",
-            executor.submit(search_semantic_scholar, query, page): "semantic",
-            executor.submit(search_arxiv, query, page):            "arxiv",
-            executor.submit(search_pubmed, query, page):           "pubmed",
-            executor.submit(search_crossref, query, page):         "crossref",
-            executor.submit(search_europe_pmc, query, page):       "europepmc",
+            executor.submit(fetch_openalex):                 "openalex",
+            executor.submit(search_arxiv, query, page):      "arxiv",
+            executor.submit(search_pubmed, query, page):     "pubmed",
+            executor.submit(search_crossref, query, page):   "crossref",
+            executor.submit(search_europe_pmc, query, page): "europepmc",
         }
         for future in as_completed(futures):
             try:
@@ -160,7 +157,7 @@ def load_more():
     sb_post("search_logs", {"user_id": user["id"], "query": query, "results": len(deduped),
                             "searched_at": datetime.now().isoformat()})
     return jsonify({"results": deduped, "total": total_count, "query": query, "page": page,
-                    "sources_used": ["OpenAlex", "Semantic Scholar", "arXiv", "PubMed", "Crossref", "Europe PMC"]})
+                    "sources_used": ["OpenAlex", "arXiv", "PubMed", "Crossref", "Europe PMC"]})
 
 # ─── /api/history ────────────────────────────────────────────────────
 @search_bp.route("/api/history")

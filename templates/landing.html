@@ -5,7 +5,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Sturch — Your shortcut to academic research</title>
-<meta name="description" content="Find research papers in seconds. Search across 6 major databases simultaneously. Free tools for students and researchers worldwide."/>
+<meta name="description" content="Find research papers in seconds. Search across OpenAlex, Semantic Scholar, arXiv and PubMed. Free for students and researchers worldwide."/>
 <link rel="canonical" href="https://sturch-production.up.railway.app/"/>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Lora:ital,wght@0,600;1,400&display=swap" rel="stylesheet"/>
 <style>
@@ -131,12 +131,12 @@ footer a:hover{color:var(--accent)}
 <div class="hero">
   <div class="hero-badge fadein">🎓 Built for Students & Researchers</div>
   <h1 class="fadein fadein-d1">Find research papers<br><span>in seconds</span></h1>
-  <p class="fadein fadein-d2">Your shortcut to academic research. Search across 250M+ papers from 6 major databases simultaneously — free to start.</p>
+  <p class="fadein fadein-d2">Your shortcut to academic research. Search across 250M+ papers from 4 major databases simultaneously — free to start.</p>
   <div class="hero-btns fadein fadein-d3">
     <a href="/signup" class="btn primary lg">Get Started Free</a>
   </div>
   <div class="sources-note fadein fadein-d3">
-    Searches <span>OpenAlex · Semantic Scholar · arXiv · PubMed · Crossref · Europe PMC</span> at the same time
+    Searches <span>OpenAlex · arXiv · PubMed · Crossref · Europe PMC</span> at the same time
   </div>
 
 
@@ -177,7 +177,7 @@ footer a:hover{color:var(--accent)}
     <div class="feature">
       <div class="icon">🔍</div>
       <h3>4-Source Search</h3>
-      <p>OpenAlex, Semantic Scholar, arXiv, PubMed, Crossref and Europe PMC searched simultaneously — 6 databases in one search.</p>
+      <p>OpenAlex, Semantic Scholar, arXiv and PubMed searched simultaneously.</p>
     </div>
     <div class="feature">
       <div class="icon">📄</div>
@@ -230,21 +230,6 @@ footer a:hover{color:var(--accent)}
       <h3>Mobile Friendly</h3>
       <p>Works on your phone. No laptop needed to do proper academic research.</p>
     </div>
-    <div class="feature">
-      <div class="icon">💡</div>
-      <h3>Answer Finder</h3>
-      <p>Ask questions like "What is photosynthesis?" and get answers extracted directly from academic papers.</p>
-    </div>
-    <div class="feature">
-      <div class="icon">🧭</div>
-      <h3>Topic Finder</h3>
-      <p>Explore real research to help you visualize and develop your own original research topic.</p>
-    </div>
-    <div class="feature">
-      <div class="icon">🔎</div>
-      <h3>Source Tracer</h3>
-      <p>Paste a quote and find its original academic source. Related papers suggested if not found.</p>
-    </div>
   </div>
 </div>
 
@@ -253,15 +238,11 @@ footer a:hover{color:var(--accent)}
 <!-- Sources -->
 <div class="section">
   <div class="section-label">Data Sources</div>
-  <h2>Powered by 4 trusted databases</h2>
+  <h2>Powered by 5 trusted databases</h2>
   <div class="sources-grid">
     <div class="source-card">
       <div class="src-badge src-openalex">OpenAlex</div>
       <p>250M+ papers across all fields. The largest open academic database.</p>
-    </div>
-    <div class="source-card">
-      <div class="src-badge src-semantic">Semantic Scholar</div>
-      <p>200M+ papers. Strong in Computer Science and AI research.</p>
     </div>
     <div class="source-card">
       <div class="src-badge src-arxiv">arXiv</div>
@@ -269,9 +250,15 @@ footer a:hover{color:var(--accent)}
     </div>
     <div class="source-card">
       <div class="src-badge src-pubmed">PubMed</div>
-      <div class="src-badge src-semantic">Crossref</div>
-      <div class="src-badge src-arxiv">Europe PMC</div>
       <p>35M+ biomedical and life science papers from NCBI.</p>
+    </div>
+    <div class="source-card">
+      <div class="src-badge src-semantic">Crossref</div>
+      <p>Complete metadata and DOIs for 140M+ scholarly works. Best for citations.</p>
+    </div>
+    <div class="source-card">
+      <div class="src-badge src-pubmed">Europe PMC</div>
+      <p>40M+ life science papers. Strong in biology, medicine and health research.</p>
     </div>
   </div>
 </div>
@@ -334,32 +321,6 @@ footer a:hover{color:var(--accent)}
 
 <div class="divider"></div>
 
-<!-- Pricing -->
-<div class="section">
-  <div class="section-label">Pricing</div>
-  <h2>Student-friendly pricing</h2>
-  <div class="pricing-box">
-    <div style="font-size:1.9rem;margin-bottom:10px">🆓</div>
-    <div class="price">Free</div>
-    <div class="price-desc">completely free · no credit card</div>
-    <div class="price-features">
-      <div class="pf"><span class="check">✓</span> Completely free — no credit card needed</div>
-      <div class="pf"><span class="check">✓</span> Unlimited searches</div>
-      <div class="pf"><span class="check">✓</span> Load more papers anytime</div>
-      <div class="pf"><span class="check">✓</span> All 4 sources searched</div>
-      <div class="pf"><span class="check">✓</span> APA references + export</div>
-      <div class="pf"><span class="check">✓</span> Bookmarks + Collections</div>
-      <div class="pf"><span class="check">✓</span> Full paper reader</div>
-      <div class="pf"><span class="check">✓</span> Search history</div>
-    </div>
-    <a href="/signup" class="btn primary" style="width:100%;justify-content:center;padding:12px">Get Started Free</a>
-    <div style="margin-top:14px;background:rgba(79,141,232,.07);border:1px solid rgba(79,141,232,.18);border-radius:8px;padding:10px 13px;font-size:.8rem;color:var(--accent);text-align:center">
-      💙 If Sturch helped you, consider <a href="/donate" style="color:var(--accent)">supporting the student who built it</a>.
-    </div>
-
-  </div>
-</div>
-
 <!-- CTA -->
 <div class="cta">
   <h2>Ready to start your research?</h2>
@@ -373,7 +334,6 @@ footer a:hover{color:var(--accent)}
   <p>
     Sturch — Built by a student, for students and researchers everywhere. &nbsp;·&nbsp;
     Data from <a href="https://openalex.org" target="_blank">OpenAlex</a>,
-    <a href="https://www.semanticscholar.org" target="_blank">Semantic Scholar</a>,
     <a href="https://arxiv.org" target="_blank">arXiv</a>,
     <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank">PubMed</a>,
     <a href="https://crossref.org" target="_blank">Crossref</a> &amp;

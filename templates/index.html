@@ -217,7 +217,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 <!-- Notice -->
 <div class="notice" id="noticeBanner">
   <span>⚠️</span>
-  <div><strong>Reference Notice:</strong> Results from OpenAlex, Semantic Scholar, arXiv &amp; PubMed. References are <strong>auto-generated</strong> — always verify before academic submission.</div>
+  <div><strong>Reference Notice:</strong> Results from OpenAlex, arXiv, PubMed, Crossref &amp; Europe PMC. References are <strong>auto-generated</strong> — always verify before academic submission.</div>
   <button class="notice-x" onclick="this.closest('.notice').remove()">✕</button>
 </div>
 
@@ -701,7 +701,7 @@ function buildCard(item, i) {
       <span class="apa-text" title="${esc(item.apa_reference||'')}">${esc(item.apa_reference||'')}</span>
       <div class="foot-btns">
         <button class="btn xs" onclick="showCitationPicker(${i},${n},event)">📋 Cite</button>
-        ${item.doi?`<a href="${esc(item.doi)}" target="_blank" class="btn xs">↗ View Source</a>`:''}
+        ${item.doi?`<a href="${esc(item.doi)}" target="_blank" class="btn xs">DOI</a>`:''}
         ${item.oa_url?`<a href="${esc(item.oa_url)}" target="_blank" class="btn xs">Full Text</a>`:''}
         <button class="btn xs" onclick="openPaperPage(${i},event)">📄 Read</button>
         <button class="btn xs ${isBookmark?'gold':''}" id="bk-${n}" onclick="toggleBookmark(${i},${n},event)">${isBookmark?'🔖 Saved':'🔖 Save'}</button>
@@ -715,9 +715,11 @@ function buildCard(item, i) {
 // ── Source Badge ───────────────────────────────
 function sourceBadge(ds) {
   const s = (ds||'').toLowerCase();
-  if (s.includes('semantic')) return `<span class="src-b src-semantic">S.Scholar</span>`;
-  if (s.includes('arxiv'))    return `<span class="src-b src-arxiv">arXiv</span>`;
-  if (s.includes('pubmed'))   return `<span class="src-b src-pubmed">PubMed</span>`;
+  if (s.includes('arxiv'))       return `<span class="src-b src-arxiv">arXiv</span>`;
+  if (s.includes('pubmed'))      return `<span class="src-b src-pubmed">PubMed</span>`;
+  if (s.includes('crossref'))    return `<span class="src-b src-semantic">Crossref</span>`;
+  if (s.includes('europe'))      return `<span class="src-b src-pubmed">Europe PMC</span>`;
+  if (s.includes('semantic'))    return `<span class="src-b src-semantic">S.Scholar</span>`;
   return `<span class="src-b src-openalex">OpenAlex</span>`;
 }
 
@@ -1043,7 +1045,7 @@ function doExport(fmt) {
   const data = currentResults;
   let content='',filename='',mime='text/plain';
   if (fmt==='json') {
-    content=JSON.stringify({meta:{query:currentQuery,generated:new Date().toISOString(),sources:'OpenAlex,Semantic Scholar,arXiv,PubMed',warning:'References auto-generated — verify before use'},results:data},null,2);
+    content=JSON.stringify({meta:{query:currentQuery,generated:new Date().toISOString(),sources:'OpenAlex,arXiv,PubMed,Crossref,Europe PMC',warning:'References auto-generated — verify before use'},results:data},null,2);
     filename='sturch_export.json';mime='application/json';
   } else if (fmt==='csv') {
     const fields=['title','authors','year','journal','citations','is_oa','data_source','apa_reference','doi','oa_url'];
@@ -1069,7 +1071,7 @@ function doExport(fmt) {
 
 // ── Loading / Error states ─────────────────────
 function showLoading() {
-  document.getElementById('results').innerHTML=`<div class="state"><div class="spinner"></div><h3>Searching 4 sources…</h3><p style="margin-top:5px;font-size:.8rem">OpenAlex · Semantic Scholar · arXiv · PubMed</p></div>`;
+  document.getElementById('results').innerHTML=`<div class="state"><div class="spinner"></div><h3>Searching 5 sources…</h3><p style="margin-top:5px;font-size:.8rem">OpenAlex · arXiv · PubMed · Crossref · Europe PMC</p></div>`;
   ['statsBar','toolbar','loadMoreBar'].forEach(id=>document.getElementById(id).classList.add('hidden'));
 }
 function showError(msg) {
