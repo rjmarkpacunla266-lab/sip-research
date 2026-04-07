@@ -24,10 +24,4 @@ def donate():
 def health():
     return jsonify({"status": "ok", "app": "Sturch", "version": "3.0-blueprints"})
 
-@pages_bp.route("/payment/success")
-def payment_success():
-    return render_template("payment_result.html", success=True, points_added=200)
 
-@pages_bp.route("/payment/failed")
-def payment_failed():
-    return render_template("payment_result.html", success=False)

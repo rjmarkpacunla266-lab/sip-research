@@ -1,13 +1,13 @@
 """routes/search.py — Search, load-more, paper reader, related, history"""
 import requests
+import urllib.parse
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Blueprint, render_template, request, session, jsonify
 from core import (login_required, get_user, OPENALEX_URL,
                   RESULTS_PER_SOURCE, format_paper, reconstruct_abstract,
-                  search_arxiv, search_pubmed,
-                  sb_post, sb_get, _all_citations,
-                  BeautifulSoup)
+                  search_arxiv, search_pubmed, search_crossref, search_europe_pmc,
+                  sb_post, sb_get, sb_patch, _all_citations)
 from bs4 import BeautifulSoup as BS
 
 search_bp = Blueprint("search", __name__)
@@ -21,7 +21,6 @@ def get_me():
         return jsonify({"error": "User not found"}), 404
     return jsonify({
         "email": user["email"],
-        "is_paid": user.get("is_paid", False),
     })
 
 # ─── /api/search ─────────────────────────────────────────────────────
@@ -187,9 +186,8 @@ def related_papers():
     if not user:
         return jsonify({"error": "User not found"}), 404
     results = _openalex_related(query)
-    new_pts = points_used(user) + LOAD_MORE_COST
-    sb_patch("users", f"id=eq.{user['id']}", {"search_count": new_pts})
-    return jsonify({"results": results, "points_remaining": max(0, total_points(user) - new_pts)})
+    sb_patch("users", f"id=eq.{user['id']}", {"search_count": (user.get("search_count") or 0) + 1})
+    return jsonify({"results": results})
 
 # ─── /api/citations ──────────────────────────────────────────────────
 @search_bp.route("/api/citations", methods=["POST"])
@@ -208,17 +206,19 @@ def get_citations():
 @search_bp.route("/api/share", methods=["POST"])
 @login_required
 def share_paper():
-    import urllib.parse
     data  = request.get_json() or {}
     doi   = (data.get("doi") or "").strip()
     oa    = (data.get("oa_url") or "").strip()
     title = (data.get("title") or "").strip()
     if doi:
-        link = doi if doi.startswith("http") else f"https://doi.org/{doi}"; source = "DOI"
+        link   = doi if doi.startswith("http") else f"https://doi.org/{doi}"
+        source = "DOI"
     elif oa:
-        link = oa; source = "Open Access"
+        link   = oa
+        source = "Open Access"
     elif title:
-        link = "https://scholar.google.com/scholar?q=" + urllib.parse.quote(title); source = "Google Scholar"
+        link   = "https://scholar.google.com/scholar?q=" + urllib.parse.quote(title)
+        source = "Google Scholar"
     else:
         return jsonify({"error": "No shareable link available"}), 404
     return jsonify({"url": link, "source": source})
