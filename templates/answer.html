@@ -271,4 +271,30 @@ function renderAnswers(data) {
         <p>Want more? <strong>Search full papers on "${esc(kw)}"</strong></p>
         <a href="/search?q=${encodeURIComponent(kw)}" class="btn primary sm">🔍 Search Papers</a>
       </div>
-    </div>`;
+    </div>`;}
+
+// ── Utilities ──────────────────────────────────
+function esc(str) {
+  return String(str || '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('📋 Copied!')).catch(() => toast('❌ Copy failed'));
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
