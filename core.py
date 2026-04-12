@@ -3,6 +3,7 @@ core.py — Sturch shared utilities
 All blueprints import from here.
 """
 import os
+import re
 import hashlib
 import secrets
 import requests
@@ -434,8 +435,7 @@ def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE):
             doi     = p.get("DOI", "")
             abstract = p.get("abstract", "") or ""
             # Strip HTML tags from abstract
-            import re as _re2
-            abstract = _re2.sub(r'<[^>]+>', '', abstract).strip()
+            abstract = re.sub(r'<[^>]+>', '', abstract).strip()
             missing = [l for l, v in [("volume",""),("issue",""),("page range","")] if not v]
             results.append({
                 "title": title, "authors": authors, "year": year, "journal": journal,

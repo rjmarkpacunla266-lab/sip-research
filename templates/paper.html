@@ -222,7 +222,7 @@ function renderMeta(p) {
       ${p.doi?`<a href="${esc(p.doi)}" target="_blank" class="btn sm primary">↗ View Paper (DOI)</a>`:''}
       ${p.oa_url?`<a href="${esc(p.oa_url)}" target="_blank" class="btn sm">↗ Original Page</a>`:''}
       <button class="btn sm" onclick="copyAPA()">📋 Copy APA</button>
-      <button class="btn sm" id="relatedBtn" onclick="loadRelated()">🔗 Related Papers (5 pts)</button>
+      <button class="btn sm" id="relatedBtn" onclick="loadRelated()">🔗 Related Papers</button>
     </div>
 
     <!-- Citation styles panel -->
@@ -387,7 +387,7 @@ async function loadRelated() {
     }
     section.classList.remove('hidden');
     section.scrollIntoView({behavior:'smooth', block:'start'});
-    toast(`🔗 ${results.length} related papers — 5 pts used`);
+    toast(`🔗 ${results.length} related papers loaded`);
   } catch(e) { toast('⚠️ Could not load related papers'); }
   finally { btn.textContent='🔗 Related Papers (5 pts)'; btn.disabled=false; }
 }

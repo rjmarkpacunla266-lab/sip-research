@@ -503,6 +503,11 @@ async function doSearch(page = 1) {
   currentQuery = query;
   currentPage  = page;
   document.getElementById('suggestWrap').classList.add('hidden');
+
+  // Disable search button
+  const searchBtn = document.querySelector('.btn.primary');
+  if (searchBtn) { searchBtn.disabled = true; searchBtn.textContent = 'Searching…'; }
+
   showLoading();
 
   try {
@@ -520,12 +525,10 @@ async function doSearch(page = 1) {
 
     currentResults = data.results || [];
     totalResults   = data.total   || 0;
-    displayedCount = 0; // reset for new search
+    displayedCount = 0;
 
-    // Client-side OA filter
     if (oaOnly) currentResults = currentResults.filter(p => p.is_oa);
 
-    // Client-side sort
     if (sort === 'recent') {
       currentResults.sort((a,b) => (b.year||0) - (a.year||0));
     }
@@ -545,6 +548,10 @@ async function doSearch(page = 1) {
     renderResults(data);
     loadUserInfo();
   } catch(e) { showError('Connection error. Check your internet and try again.'); }
+  finally {
+    // Re-enable search button
+    if (searchBtn) { searchBtn.disabled = false; searchBtn.textContent = 'Search'; }
+  }
 }
 
 // ── Load More Papers from API (5 pts) ──────────

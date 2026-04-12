@@ -10,4 +10,3 @@ supabase==2.3.0
 beautifulsoup4==4.12.3
 lxml==5.2.1
 gunicorn
-gunicorn

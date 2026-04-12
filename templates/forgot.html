@@ -40,33 +40,10 @@ input::placeholder{color:#3a4060}
   <div class="success" id="successMsg"></div>
 
   <div id="step1">
-    <div class="form-group">
-      <label>Email Address</label>
-      <input type="email" id="email" placeholder="youremail@gmail.com" autocomplete="email"/>
-    </div>
-    <button class="btn" id="sendBtn" onclick="sendCode()">Send Reset Code</button>
-    <div class="hint">
-      We'll send a 6-digit code to your email. It expires in 15 minutes.
-    </div>
-  </div>
-
-  <div id="step2" style="display:none">
-    <div class="form-group">
-      <label>6-Digit Code</label>
-      <input type="text" id="code" placeholder="123456" maxlength="6" inputmode="numeric"
-        style="font-size:1.5rem;letter-spacing:8px;text-align:center;font-family:monospace"/>
-    </div>
-    <div class="form-group">
-      <label>New Password</label>
-      <input type="password" id="newPassword" placeholder="At least 6 characters"/>
-    </div>
-    <div class="form-group">
-      <label>Confirm New Password</label>
-      <input type="password" id="confirmPassword" placeholder="Repeat new password"/>
-    </div>
-    <button class="btn" id="resetBtn" onclick="doReset()">Reset Password</button>
-    <div class="hint">
-      Didn't receive the code? Check your spam folder or <a href="#" onclick="backToStep1()" style="color:#4f8de8">try again</a>.
+    <div style="background:rgba(79,141,232,.07);border:1px solid rgba(79,141,232,.18);border-radius:10px;padding:20px;text-align:center;margin-bottom:16px">
+      <div style="font-size:1.8rem;margin-bottom:10px">🔧</div>
+      <div style="font-size:.95rem;font-weight:600;color:#d8e0f8;margin-bottom:6px">Coming Soon</div>
+      <div style="font-size:.82rem;color:#5a6385;line-height:1.6">Password reset will be available soon.<br>For now, please contact support or create a new account.</div>
     </div>
   </div>
 

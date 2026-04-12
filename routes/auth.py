@@ -56,6 +56,8 @@ def login():
         if not user["password_hash"].startswith("scrypt:"):
             sb_patch("users", f"id=eq.{user['id']}",
                      {"password_hash": hash_password(password)})
+        sb_patch("users", f"id=eq.{user['id']}",
+                 {"last_login": datetime.now().isoformat()})
         session["user_id"]    = user["id"]
         session["user_email"] = user["email"]
         return jsonify({"success": True, "redirect": "/"})
