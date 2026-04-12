@@ -14,6 +14,10 @@
   --text:#d8e0f8;--muted:#5a6385;
   --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;--r:10px;
 }
+[data-theme="light"]{
+  --bg:#f4f6fb;--surf:#ffffff;--surf2:#eef1f8;--surf3:#e2e7f4;
+  --border:rgba(80,100,180,.15);--text:#1a2040;--muted:#6b7599;
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.65}
 #app{max-width:1100px;margin:0 auto;padding:0 18px 80px}
@@ -205,6 +209,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
   <a href="/" class="logo" style="text-decoration:none"><span>Sturch</span><span class="beta">BETA</span></a>
   <div class="header-right">
     <span class="user-pill" id="userEmail">…</span>
+    <button class="btn sm" id="themeBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
     <button class="btn sm" onclick="openHistory()">🕐</button>
     <button class="btn sm" onclick="openSaved()">🔖</button>
     <button class="btn sm" onclick="openCollections()">📚</button>
@@ -271,7 +276,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 <div class="stats-bar hidden" id="statsBar">
   <div class="stat"><div><div class="val" id="s_total">—</div><div class="lbl">Total found</div></div></div>
   <div class="stat"><div><div class="val" id="s_shown">—</div><div class="lbl">Showing</div></div></div>
-  <div class="stat"><div><div class="val" id="s_sources">4</div><div class="lbl">Sources</div></div></div>
+  <div class="stat"><div><div class="val" id="s_sources">5</div><div class="lbl">Sources</div></div></div>
 </div>
 
 <!-- Toolbar -->
@@ -319,7 +324,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
       <div class="icon">💎</div>
       <div class="txt">
         <strong>Sturch is completely free</strong>
-        <span>Search 250M+ papers across 4 databases. Load more anytime. All free.</span>
+        <span>Search 250M+ papers across 5 databases. Load more anytime. All free.</span>
       </div>
     </div>
     <div class="t-step">
@@ -372,6 +377,26 @@ let citeCopiedCount = 0;
 let oaOnly         = false;
 let displayedCount = 0;   // how many results currently shown on screen
 const DISPLAY_PER_PAGE = 10; // show 10 at a time
+
+// ── Theme Toggle ───────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') !== 'light';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('sturch_theme', isDark ? 'light' : 'dark');
+}
+// Load saved theme
+(function() {
+  const saved = localStorage.getItem('sturch_theme');
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('themeBtn');
+      if (btn) btn.textContent = '☀️';
+    });
+  }
+})();
 
 // ── Init ──────────────────────────────────────
 // Handle quick access panel from home
@@ -554,7 +579,7 @@ async function doSearch(page = 1) {
   }
 }
 
-// ── Load More Papers from API (5 pts) ──────────
+// ── Load More Papers from API ──────────
 async function loadMorePapers() {
   if (!currentQuery) return;
   const btn = document.getElementById('loadMoreBtn');

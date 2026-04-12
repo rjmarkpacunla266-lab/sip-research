@@ -14,6 +14,10 @@
   --text:#d8e0f8;--muted:#5a6385;
   --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;
 }
+[data-theme="light"]{
+  --bg:#f4f6fb;--surf:#ffffff;--surf2:#eef1f8;--surf3:#e2e7f4;
+  --border:rgba(80,100,180,.15);--text:#1a2040;--muted:#6b7599;
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.65}
 a{color:var(--accent);text-decoration:none}
@@ -103,6 +107,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
   <div class="logo"><span>Sturch</span></div>
   <div class="header-right">
     <span class="user-pill" id="userEmail">Loading…</span>
+    <button class="btn sm" id="themeBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
     <a href="/donate" class="btn sm donate">💙 Donate</a>
     <a href="/logout" class="btn sm danger">Logout</a>
   </div>
@@ -125,12 +130,13 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
     <span class="tool-badge badge-free">FREE</span>
     <span class="tool-icon">🔍</span>
     <div class="tool-name">Search Papers</div>
-    <div class="tool-desc">Search 250M+ academic papers across 4 databases simultaneously.</div>
+    <div class="tool-desc">Search 250M+ academic papers across 5 databases simultaneously.</div>
     <div class="tool-features">
       <span class="tool-feat">OpenAlex</span>
       <span class="tool-feat">arXiv</span>
       <span class="tool-feat">PubMed</span>
       <span class="tool-feat">Crossref</span>
+      <span class="tool-feat">Europe PMC</span>
     </div>
   </a>
 
@@ -156,7 +162,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
     <div class="tool-desc">Paste a quote and find its original academic source. Related papers suggested if not found.</div>
     <div class="tool-features">
       <span class="tool-feat">Quote lookup</span>
-      <span class="tool-feat">4 databases</span>
+      <span class="tool-feat">5 databases</span>
     </div>
   </a>
 
@@ -207,6 +213,25 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 </div>
 
 <script>
+// ── Theme Toggle ───────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') !== 'light';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('sturch_theme', isDark ? 'light' : 'dark');
+}
+(function() {
+  const saved = localStorage.getItem('sturch_theme');
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('themeBtn');
+      if (btn) btn.textContent = '☀️';
+    });
+  }
+})();
+
 // ── Greeting ──────────────────────────────────
 const h = new Date().getHours();
 document.getElementById('timeGreet').textContent =

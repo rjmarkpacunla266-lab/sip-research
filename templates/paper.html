@@ -14,6 +14,10 @@
   --text:#d8e0f8;--muted:#5a6385;
   --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;--r:10px;
 }
+[data-theme="light"]{
+  --bg:#f4f6fb;--surf:#ffffff;--surf2:#eef1f8;--surf3:#e2e7f4;
+  --border:rgba(80,100,180,.15);--text:#1a2040;--muted:#6b7599;
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.65}
 a{color:var(--accent);text-decoration:none}
@@ -112,6 +116,7 @@ mark.hit.active{background:rgba(232,184,75,.6);color:#fff;outline:2px solid var(
   <div class="logo"><span>Sturch</span><span class="beta">BETA</span></div>
   <div style="display:flex;gap:6px;flex-wrap:wrap">
     <a href="/" class="btn sm">← Back</a>
+    <button class="btn sm" id="themeBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
     <button class="btn sm" id="bkBtn" onclick="toggleBookmark()">🔖 Save</button>
     <button class="btn sm" onclick="window.print()">🖨 Print</button>
   </div>
@@ -159,7 +164,29 @@ mark.hit.active{background:rgba(232,184,75,.6);color:#fff;outline:2px solid var(
 let paper = null, matchNodes = [], matchIndex = -1, findTimer = null;
 let bookmarkId = null;
 
-// ── Init ──────────────────────────────────────
+// ── Theme Toggle ───────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') !== 'light';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('sturch_theme', isDark ? 'light' : 'dark');
+}
+(function() {
+  const saved = localStorage.getItem('sturch_theme');
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('themeBtn');
+      if (btn) btn.textContent = '☀️';
+    });
+  }
+})();
+
+// ── Get consistent paper ID (must match index.html logic) ────
+function getPaperId(p) {
+  return ((p.openalex_id || p.doi || (p.title||'').slice(0,60)) + '').trim();
+}
 window.addEventListener('load', () => {
   const raw = sessionStorage.getItem('sturch_paper');
   if (!raw) { renderError('No paper data found. Please go back and click a result.'); return; }
@@ -319,7 +346,7 @@ function renderFullText(data) {
 // ── Check Bookmark ────────────────────────────
 async function checkBookmark() {
   if (!paper) return;
-  const paperId = (paper.openalex_id||paper.doi||(paper.title||'').slice(0,60)).trim();
+  const paperId = getPaperId(paper);
   try {
     const resp = await fetch('/api/bookmarks');
     const bms  = await resp.json();
@@ -335,7 +362,7 @@ async function checkBookmark() {
 // ── Toggle Bookmark ───────────────────────────
 async function toggleBookmark() {
   if (!paper) return;
-  const paperId = (paper.openalex_id||paper.doi||(paper.title||'').slice(0,60)).trim();
+  const paperId = getPaperId(paper);
   const btn     = document.getElementById('bkBtn');
   if (bookmarkId) {
     await fetch(`/api/bookmarks/${bookmarkId}`, {method:'DELETE'});
@@ -389,7 +416,7 @@ async function loadRelated() {
     section.scrollIntoView({behavior:'smooth', block:'start'});
     toast(`🔗 ${results.length} related papers loaded`);
   } catch(e) { toast('⚠️ Could not load related papers'); }
-  finally { btn.textContent='🔗 Related Papers (5 pts)'; btn.disabled=false; }
+  finally { btn.textContent='🔗 Related Papers'; btn.disabled=false; }
 }
 
 function openRelatedPaper(idx) {
