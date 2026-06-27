@@ -4,9 +4,102 @@
 <meta name="google-site-verification" content="oZpY9svmka-mPNF1Bp2Wr7GkmhslZ315Jik_dEEYQL0" />
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Sturch — Your shortcut to academic research</title>
-<meta name="description" content="Find research papers in seconds. Search across OpenAlex, Semantic Scholar, arXiv and PubMed. Free for students and researchers worldwide."/>
-<link rel="canonical" href="https://sturch-production.up.railway.app/"/>
+  <!-- ═══════════════════════════════════════════════════
+       SEO — searchability & visibility
+  ═══════════════════════════════════════════════════ -->
+  <title>Sturch — Free Academic Research Search Engine for Students</title>
+  <meta name="description"  content="Search 200M+ academic papers instantly. Free research tool for students and academics. Access papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC — no paywall."/>
+  <meta name="keywords"     content="academic research search, free research papers, find research papers, student research tool, academic paper search, arxiv search, pubmed search, scientific papers, literature review, free academic database"/>
+  <meta name="author"       content="Sturch"/>
+  <meta name="robots"       content="index, follow"/>
+  <meta name="theme-color"  content="#0b0d12"/>
+  <link rel="canonical"     href="https://sturch-production.up.railway.app/"/>
+
+  <!-- Open Graph — social sharing preview -->
+  <meta property="og:type"        content="website"/>
+  <meta property="og:site_name"   content="Sturch"/>
+  <meta property="og:title"       content="Sturch — Free Academic Research Search Engine for Students"/>
+  <meta property="og:description" content="Search 200M+ academic papers instantly. Free research tool for students and academics. Access papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC — no paywall."/>
+  <meta property="og:url"         content="https://sturch-production.up.railway.app/"/>
+  <meta property="og:image"       content="https://sturch-production.up.railway.app/static/og-image.png"/>
+  <meta property="og:image:width"  content="1200"/>
+  <meta property="og:image:height" content="630"/>
+  <meta property="og:locale"      content="en_US"/>
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image"/>
+  <meta name="twitter:site"        content="@sturch_app"/>
+  <meta name="twitter:title"       content="Sturch — Free Academic Research Search Engine for Students"/>
+  <meta name="twitter:description" content="Search 200M+ academic papers instantly. Free research tool for students and academics. Access papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC — no paywall."/>
+  <meta name="twitter:image"       content="https://sturch-production.up.railway.app/static/og-image.png"/>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "@id": "https://sturch-production.up.railway.app/#webapp",
+        "name": "Sturch",
+        "url": "https://sturch-production.up.railway.app",
+        "description": "Free academic research search engine. Search 200M+ papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC.",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Web",
+        "inLanguage": "en",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "Search 200M+ academic papers",
+          "APA, MLA, Chicago, Vancouver citation generator",
+          "Answer Finder — research-backed question answering",
+          "Source Tracer — verify academic claims",
+          "Bookmark and organize papers",
+          "Export to CSV and BibTeX"
+        ],
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://sturch-production.up.railway.app/search?q={{search_term_string}}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://sturch-production.up.railway.app/#org",
+        "name": "Sturch",
+        "url": "https://sturch-production.up.railway.app",
+        "description": "Free academic research search tool for students and researchers."
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://sturch-production.up.railway.app/#website",
+        "url": "https://sturch-production.up.railway.app",
+        "name": "Sturch",
+        "publisher": {"@id": "https://sturch-production.up.railway.app/#org"},
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://sturch-production.up.railway.app/search?q={{search_term_string}}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      }
+    ]
+  }
+  </script>
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- Browser search engine autodiscovery -->
+  <link rel="search" type="application/opensearchdescription+xml"
+        title="Sturch — Search Academic Papers" href="/opensearch.xml"/>
+  <!-- Preconnect hints for faster font loading -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Lora:ital,wght@0,600;1,400&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}

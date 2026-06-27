@@ -68,4 +68,8 @@ def logout():
     session.clear()
     return redirect(url_for("auth.login"))
 
+@auth_bp.route("/forgot-password")
+def forgot_password():
+    return render_template("forgot.html")
+
 

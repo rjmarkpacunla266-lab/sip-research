@@ -4,7 +4,36 @@
 <meta name="google-site-verification" content="oZpY9svmka-mPNF1Bp2Wr7GkmhslZ315Jik_dEEYQL0" />
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Source Tracer — Sturch</title>
+  <!-- ═══════════════════════════════════════════════════
+       SEO — searchability & visibility
+  ═══════════════════════════════════════════════════ -->
+  <title>Source Tracer — Find the Origin of a Quote | Sturch</title>
+  <meta name="description"  content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses AI similarity scoring across 5 academic databases."/>
+  <meta name="keywords"     content="source tracer, find quote source, academic fact checker, trace research quote, verify citation, plagiarism checker academic"/>
+  <meta name="author"       content="Sturch"/>
+  <meta name="robots"       content="noindex, nofollow"/>
+  <meta name="theme-color"  content="#0b0d12"/>
+  <link rel="canonical"     href="https://sturch-production.up.railway.app/source-tracer"/>
+
+  <!-- Open Graph — social sharing preview -->
+  <meta property="og:type"        content="website"/>
+  <meta property="og:site_name"   content="Sturch"/>
+  <meta property="og:title"       content="Source Tracer — Find the Origin of a Quote | Sturch"/>
+  <meta property="og:description" content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses AI similarity scoring across 5 academic databases."/>
+  <meta property="og:url"         content="https://sturch-production.up.railway.app/source-tracer"/>
+  <meta property="og:image"       content="https://sturch-production.up.railway.app/static/og-image.png"/>
+  <meta property="og:image:width"  content="1200"/>
+  <meta property="og:image:height" content="630"/>
+  <meta property="og:locale"      content="en_US"/>
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image"/>
+  <meta name="twitter:site"        content="@sturch_app"/>
+  <meta name="twitter:title"       content="Source Tracer — Find the Origin of a Quote | Sturch"/>
+  <meta name="twitter:description" content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses AI similarity scoring across 5 academic databases."/>
+  <meta name="twitter:image"       content="https://sturch-production.up.railway.app/static/og-image.png"/>
+
+  <!-- ═══════════════════════════════════════════════ -->
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root{
@@ -41,6 +70,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 .input-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;display:block}
 textarea{width:100%;padding:12px 14px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:.93rem;outline:none;transition:border-color .2s;resize:vertical;min-height:100px;line-height:1.6}
 textarea:focus{border-color:var(--accent)}
+textarea.error{border-color:var(--red)!important}
 textarea::placeholder{color:var(--muted)}
 .char-count{font-size:.7rem;color:var(--muted);text-align:right;margin-top:4px}
 .examples-label{font-size:.7rem;color:var(--muted);margin:10px 0 6px}
@@ -154,8 +184,11 @@ document.getElementById('quoteInput').addEventListener('keydown', e => {
 
 async function traceSource() {
   const quote = document.getElementById('quoteInput').value.trim();
-  if (!quote) { toast('⚠️ Paste a quote first'); return; }
-  if (quote.length < 10) { toast('⚠️ Quote is too short'); return; }
+  const ta = document.getElementById('quoteInput');
+  ta.classList.remove('error');
+
+  if (!quote) { ta.classList.add('error'); toast('⚠️ Paste a quote first'); return; }
+  if (quote.length < 10) { ta.classList.add('error'); toast('⚠️ Quote is too short'); return; }
 
   const results = document.getElementById('results');
   results.innerHTML = '<div class="spinner"></div>';
