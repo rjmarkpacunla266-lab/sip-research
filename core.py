@@ -307,6 +307,34 @@ def _terms(query):
 def _year_bounds(year_from, year_to):
     return (str(year_from) if year_from else None, str(year_to) if year_to else None)
 
+# ─── OPENALEX ────────────────────────────────────────────────────────
+def search_openalex(query, page=1, per_page=RESULTS_PER_SOURCE,
+                    year_from=None, year_to=None, oa_only=False, sort="cited"):
+    """Returns (papers, total). Matches title+abstract only, so papers that merely
+    mention the topic somewhere in their full text don't flood the citation sort."""
+    terms  = _terms(re.sub(r"[,|:]", " ", query or ""))
+    strict = " AND ".join(terms) if terms else query
+    base = []
+    if year_from: base.append(f"from_publication_date:{year_from}-01-01")
+    if year_to:   base.append(f"to_publication_date:{year_to}-12-31")
+    if oa_only:   base.append("is_oa:true")
+    sort_by  = "publication_date:desc" if sort == "recent" else "cited_by_count:desc"
+    attempts = [
+        {"filter": ",".join(base + [f"title_and_abstract.search:{strict}"])},
+        {"search": query, "filter": ",".join(base)},          # safety net
+    ]
+    for extra in attempts:
+        params = {"per-page": per_page, "page": page, "sort": sort_by}
+        params.update({k: v for k, v in extra.items() if v})
+        try:
+            resp = requests.get(OPENALEX_URL, params=params, timeout=15)
+            data = resp.json()
+        except Exception:
+            continue
+        if resp.ok and data.get("results"):
+            return [format_paper(p) for p in data["results"]], data.get("meta", {}).get("count", 0)
+    return [], 0
+
 # ─── SEMANTIC SCHOLAR ────────────────────────────────────────────────
 def search_semantic_scholar(query, page=1, per_page=RESULTS_PER_SOURCE):
     offset = (page - 1) * per_page

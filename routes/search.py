@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Blueprint, render_template, request, session, jsonify
 from core import (login_required, get_user, OPENALEX_URL,
                   RESULTS_PER_SOURCE, format_paper, reconstruct_abstract,
-                  search_arxiv, search_pubmed, search_crossref, search_europe_pmc,
+                  search_arxiv, search_pubmed, search_crossref, search_europe_pmc, search_openalex,
                   sb_post, sb_get, sb_patch, _all_citations)
 from bs4 import BeautifulSoup as BS
 
@@ -46,20 +46,8 @@ def _read_filters():
     }
 
 def _fetch_openalex(query, page, f):
-    params = {"search": query, "per-page": RESULTS_PER_SOURCE, "page": page,
-              "sort": "publication_date:desc" if f["sort"] == "recent" else "cited_by_count:desc"}
-    flt = []
-    if f["year_from"]: flt.append(f"from_publication_date:{f['year_from']}-01-01")
-    if f["year_to"]:   flt.append(f"to_publication_date:{f['year_to']}-12-31")
-    if f["oa_only"]:   flt.append("is_oa:true")
-    if flt:
-        params["filter"] = ",".join(flt)
-    try:
-        resp = requests.get(OPENALEX_URL, params=params, timeout=15)
-        data = resp.json()
-        return [format_paper(p) for p in data.get("results", [])], data.get("meta", {}).get("count", 0)
-    except Exception:
-        return [], 0
+    return search_openalex(query, page, RESULTS_PER_SOURCE, year_from=f["year_from"],
+                           year_to=f["year_to"], oa_only=f["oa_only"], sort=f["sort"])
 
 def _merge_dedupe(papers):
     """One entry per paper. Same DOI/title in several sources -> keep the most-cited copy."""
