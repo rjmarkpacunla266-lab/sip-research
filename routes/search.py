@@ -68,6 +68,14 @@ def _merge_dedupe(papers):
         best[key] = keep
     return list(best.values())
 
+def _sort_date(p):
+    """ISO date for ordering; year-only papers sort as 'YYYY-00-00' (before dated ones that year)."""
+    d = (p.get("date") or "").strip()
+    if d:
+        return d
+    y = _to_int(p.get("year"))
+    return f"{y:04d}-00-00" if y else ""
+
 def _apply_filters_and_sort(papers, f):
     """Safety net: sources that ignore year/OA params are filtered here."""
     out = []
@@ -78,7 +86,7 @@ def _apply_filters_and_sort(papers, f):
         if f["oa_only"] and not p.get("is_oa"):                  continue
         out.append(p)
     if f["sort"] == "recent":
-        out.sort(key=lambda x: (_to_int(x.get("year")) or 0, x.get("citations") or 0), reverse=True)
+        out.sort(key=lambda x: (_sort_date(x), x.get("citations") or 0), reverse=True)
     else:
         out.sort(key=lambda x: x.get("citations") or 0, reverse=True)
     return out

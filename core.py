@@ -265,7 +265,7 @@ def format_paper(paper):
     ]
     abstract   = reconstruct_abstract(paper.get("abstract_inverted_index"))
     year       = paper.get("publication_year", "n.d.")
-    title      = paper.get("title", "")
+    title      = clean_text(paper.get("title", ""))
     journal    = source.get("display_name", "")
     doi        = paper.get("doi", "")
     volume     = biblio.get("volume", "")
@@ -275,7 +275,7 @@ def format_paper(paper):
     pages      = f"{first_page}\u2013{last_page}" if first_page and last_page else ""
     missing    = [l for l, v in [("volume", volume), ("issue", issue), ("page range", pages), ("DOI", doi)] if not v]
     return {
-        "title": title, "authors": authors, "year": year, "journal": journal,
+        "title": title, "date": paper.get("publication_date") or "", "authors": authors, "year": year, "journal": journal,
         "abstract": abstract, "citations": paper.get("cited_by_count", 0),
         "is_oa": oa.get("is_oa", False), "oa_url": oa.get("oa_url", ""),
         "doi": doi, "concepts": concepts, "openalex_id": paper.get("id", ""),
@@ -289,17 +289,34 @@ def format_paper(paper):
 _JUNK_MARKERS = ("share add to", "export ris", "exportris", "get e-alerts", "return to issue",
                  "view author information", "add full text with reference", "add description")
 
-def clean_abstract(text):
-    """Strip HTML/JATS tags and drop scraped page junk (publisher menus, 'Export RIS', etc.)."""
+def clean_text(text):
+    """Unescape HTML entities, strip tags (incl. escaped ones like &lt;i&gt;), collapse spaces."""
     if not text:
         return ""
-    text = re.sub(r"<[^>]+>", " ", str(text))
+    text = _html.unescape(str(text))
+    text = re.sub(r"</?(?:sub|sup|i|b|em|strong|u|italic|bold|jats:italic|jats:bold|jats:sub|jats:sup)\b[^>]*>", "", text)
+    text = re.sub(r"</?[a-zA-Z][^>]*>", " ", text)
     text = _html.unescape(text)
     text = re.sub(r"\s+", " ", text).strip()
+    return re.sub(r"\s+([,.;:)])", r"\1", text)
+
+def clean_abstract(text):
+    """clean_text + drop scraped page junk (publisher menus, 'Export RIS', etc.)."""
+    text = clean_text(text)
     low = text.lower()
     if any(m in low for m in _JUNK_MARKERS):
         return ""
     return re.sub(r"^(abstract|summary)\b[:.\s]*", "", text, flags=re.I).strip()
+
+def _fmt_date(parts):
+    """Crossref date-parts [y, m, d] -> 'YYYY-MM-DD' (0 for unknown month/day)."""
+    try:
+        y = int(parts[0])
+        m = int(parts[1]) if len(parts) > 1 and parts[1] else 0
+        d = int(parts[2]) if len(parts) > 2 and parts[2] else 0
+        return f"{y:04d}-{m:02d}-{d:02d}"
+    except Exception:
+        return ""
 
 def _terms(query):
     return [t for t in re.split(r"\s+", (query or "").strip()) if t]
@@ -392,7 +409,7 @@ def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE,
         ns      = {"atom": "http://www.w3.org/2005/Atom"}
         results = []
         for entry in root.findall("atom:entry", ns):
-            title     = (entry.findtext("atom:title", "", ns) or "").strip().replace("\n", " ")
+            title     = clean_text(entry.findtext("atom:title", "", ns) or "")
             abstract  = clean_abstract(entry.findtext("atom:summary", "", ns) or "")
             authors   = [a.findtext("atom:name", "", ns) for a in entry.findall("atom:author", ns)]
             published = entry.findtext("atom:published", "", ns) or ""
@@ -402,7 +419,7 @@ def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE,
                 if link.get("title") == "doi": doi_link = link.get("href", "")
                 elif link.get("type") == "text/html" or link.get("rel") == "alternate": page_link = link.get("href", "")
             results.append({
-                "title": title, "authors": authors, "year": year, "journal": "arXiv",
+                "title": title, "date": published[:10], "authors": authors, "year": year, "journal": "arXiv",
                 "abstract": abstract, "citations": 0, "is_oa": True, "oa_url": page_link,
                 "doi": doi_link, "concepts": [], "openalex_id": page_link,
                 "volume": "", "issue": "", "pages": "",
@@ -450,7 +467,7 @@ def search_pubmed(query, page=1, per_page=RESULTS_PER_SOURCE,
             p = summary_data.get(pmid, {})
             if not p or not isinstance(p, dict):
                 continue
-            title   = p.get("title", "")
+            title   = clean_text(p.get("title", ""))
             authors = [a.get("name", "") for a in p.get("authors", [])]
             journal = p.get("fulljournalname", "") or p.get("source", "")
             volume  = p.get("volume", "")
@@ -461,7 +478,7 @@ def search_pubmed(query, page=1, per_page=RESULTS_PER_SOURCE,
             doi = next((a.get("value", "") for a in p.get("articleids", []) if a.get("idtype") == "doi"), "")
             missing = [l for l, v in [("volume", volume), ("issue", issue), ("page range", pages), ("DOI", doi)] if not v]
             results.append({
-                "title": title, "authors": authors, "year": year, "journal": journal,
+                "title": title, "date": (p.get("sortpubdate", "") or "")[:10].replace("/", "-"), "authors": authors, "year": year, "journal": journal,
                 "abstract": "", "citations": 0, "is_oa": bool(oa_only),
                 "oa_url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
                 "doi": f"https://doi.org/{doi}" if doi else "",
@@ -499,7 +516,7 @@ def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE,
             return []
         results = []
         for p in resp.json().get("message", {}).get("items", []):
-            title   = " ".join(p.get("title") or [""])
+            title   = clean_text(" ".join(p.get("title") or [""]))
             authors = [f"{a.get('given','')} {a.get('family','')}".strip()
                        for a in p.get("author") or []]
             pub     = p.get("published", {}).get("date-parts", [[None]])[0]
@@ -509,7 +526,7 @@ def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE,
             abstract = clean_abstract(p.get("abstract", "") or "")
             missing = [l for l, v in [("volume",""),("issue",""),("page range","")] if not v]
             results.append({
-                "title": title, "authors": authors, "year": year, "journal": journal,
+                "title": title, "date": _fmt_date(pub), "authors": authors, "year": year, "journal": journal,
                 "abstract": abstract, "citations": p.get("is-referenced-by-count", 0) or 0,
                 "is_oa": False, "oa_url": p.get("URL", ""),
                 "doi": f"https://doi.org/{doi}" if doi else "",
@@ -554,7 +571,7 @@ def search_europe_pmc(query, page=1, per_page=RESULTS_PER_SOURCE,
             items = resp.json().get("resultList", {}).get("result", []) if resp.ok else []
         results = []
         for p in items:
-            title   = p.get("title", "")
+            title   = clean_text(p.get("title", ""))
             authors = [a.get("fullName", "") for a in p.get("authorList", {}).get("author", [])]
             year    = p.get("pubYear")
             journal = p.get("journalTitle", "") or "Europe PMC"
@@ -567,7 +584,7 @@ def search_europe_pmc(query, page=1, per_page=RESULTS_PER_SOURCE,
                                        ("issue", p.get("issue","")),
                                        ("page range", p.get("pageInfo",""))] if not v]
             results.append({
-                "title": title, "authors": authors, "year": year, "journal": journal,
+                "title": title, "date": p.get("firstPublicationDate") or "", "authors": authors, "year": year, "journal": journal,
                 "abstract": abstract, "citations": cites,
                 "is_oa": is_oa, "oa_url": oa_url,
                 "doi": f"https://doi.org/{doi}" if doi else "",

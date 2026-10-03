@@ -295,7 +295,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
     </div>
     <div class="filter-group">
       <label>Sort</label>
-      <select id="sortBy" class="filter-input" style="width:110px" onchange="applyView()">
+      <select id="sortBy" class="filter-input" style="width:110px" onchange="onSortChange()">
         <option value="cited">Most Cited</option>
         <option value="recent">Most Recent</option>
       </select>
@@ -448,7 +448,8 @@ function applyView() {
   if (lastYf) r = r.filter(p => p.year && +p.year >= +lastYf);
   if (lastYt) r = r.filter(p => p.year && +p.year <= +lastYt);
   const sort = document.getElementById('sortBy').value;
-  if (sort === 'recent') r.sort((a,b) => (b.year||0)-(a.year||0) || (b.citations||0)-(a.citations||0));
+  const dkey = p => p.date || (p.year ? String(p.year).padStart(4,'0') + '-00-00' : '');
+  if (sort === 'recent') r.sort((a,b) => dkey(b).localeCompare(dkey(a)) || (b.citations||0)-(a.citations||0));
   else                   r.sort((a,b) => (b.citations||0)-(a.citations||0));
   currentResults = r;
   if (!r.length) {
@@ -517,7 +518,10 @@ function toggleOA() {
   const el = document.getElementById('oaToggle');
   el.classList.toggle('active', oaOnly);
   toast(oaOnly ? '🔓 Open Access only ON' : '🔓 Open Access filter OFF');
-  applyView();
+  if (currentQuery) doSearch(); else applyView();   // re-fetch so the result pool matches
+}
+function onSortChange() {
+  if (currentQuery) doSearch(); else applyView();
 }
 
 // ── Quick topic search ─────────────────────────
