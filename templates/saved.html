@@ -233,7 +233,7 @@ async function load(){
     const data = await resp.json();
     if (!resp.ok) { showError(data.error || 'Could not load saved papers', data.detail); return; }
     items = (Array.isArray(data) ? data : []).map(b => ({
-      id: b.id, paperId: b.paper_id, p: (b.paper_data && typeof b.paper_data === 'object') ? b.paper_data : {},
+      id: String(b.id), paperId: b.paper_id, p: (b.paper_data && typeof b.paper_data === 'object') ? b.paper_data : {},
       saved: Date.parse(b.created_at) || 0
     }));
     $('error').innerHTML = '';

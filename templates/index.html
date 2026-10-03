@@ -174,7 +174,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 
 
 /* ── Toast ── */
-#toast{position:fixed;bottom:20px;right:20px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:9px 15px;font-size:.83rem;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:300;transform:translateY(50px);opacity:0;transition:all .3s;max-width:280px}
+#toast{position:fixed;bottom:20px;right:20px;pointer-events:auto;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:9px 15px;font-size:.83rem;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:300;transform:translateY(50px);opacity:0;transition:all .3s;max-width:280px}
 #toast.show{transform:translateY(0);opacity:1}
 
 /* ── Modal ── */
@@ -243,7 +243,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
     <span class="user-pill" id="userEmail">…</span>
     <button class="btn sm" id="themeBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
     <button class="btn sm" onclick="openHistory()">🕐</button>
-    <button class="btn sm" onclick="openSaved()">🔖</button>
+    <a href="/saved" class="btn sm" title="Saved papers">🔖</a>
     <button class="btn sm" onclick="openCollections()">📚</button>
     <button class="btn sm" onclick="showExportMenu()">↓ Export</button>
     <a href="/donate" class="btn sm" style="background:linear-gradient(135deg,rgba(79,141,232,.15),rgba(157,110,245,.15));border-color:rgba(157,110,245,.3);color:#9d6ef5">💙 Donate</a>
@@ -872,21 +872,30 @@ async function toggleBookmark(idx, cardNum, e) {
   if (!item) return;
   const paperId = getPaperId(item);
   const btn     = document.getElementById('bk-'+cardNum);
-  if (bookmarkMap[paperId]) {
-    await fetch(`/api/bookmarks/${bookmarkMap[paperId]}`, {method:'DELETE'});
-    delete bookmarkMap[paperId];
-    if (btn) { btn.textContent='🔖 Save'; btn.classList.remove('gold'); }
-    toast('Bookmark removed');
-  } else {
-    const resp = await fetch('/api/bookmarks', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(item)
-    });
-    const data = await resp.json();
-    if (data.error && data.error !== 'already_bookmarked') { toast('⚠️ Could not save'); return; }
-    bookmarkMap[paperId] = data.id || 'saved';
-    if (btn) { btn.textContent='🔖 Saved'; btn.classList.add('gold'); }
-    toast('🔖 Paper saved!');
-  }
+  try {
+    if (bookmarkMap[paperId]) {
+      const r = await fetch(`/api/bookmarks/${encodeURIComponent(bookmarkMap[paperId])}`, {method:'DELETE'});
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.success) { toast('⚠️ ' + (d.error || 'Could not remove bookmark')); return; }
+      delete bookmarkMap[paperId];
+      if (btn) { btn.textContent='🔖 Save'; btn.classList.remove('gold'); }
+      toast('Bookmark removed');
+    } else {
+      const resp = await fetch('/api/bookmarks', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(item)
+      });
+      const data    = await resp.json().catch(() => ({}));
+      const already = data.error === 'already_bookmarked';
+      if (!data.success && !already) {
+        if (data.detail) console.warn('Save failed:', data.detail);
+        toast('⚠️ ' + (data.error || 'Could not save — try logging in again'), data.detail ? '/saved' : '', 'Details');
+        return;
+      }
+      if (data.id) bookmarkMap[paperId] = data.id; else await loadBookmarkState();
+      if (btn) { btn.textContent='🔖 Saved'; btn.classList.add('gold'); }
+      toast(already ? '🔖 Already in your saved papers' : '🔖 Paper saved!', '/saved', 'View saved →');
+    }
+  } catch(err) { toast('⚠️ Connection problem. Try again.'); }
 }
 
 // ── Add to Collection ──────────────────────────
@@ -954,46 +963,7 @@ function reRunSearch(query) {
 }
 
 // ── Saved Papers ───────────────────────────────
-async function openSaved() {
-  document.getElementById('modalContent').innerHTML = `<h2>🔖 Saved Papers</h2><div class="spinner" style="margin:20px auto"></div>`;
-  document.getElementById('modalOverlay').classList.remove('hidden');
-  try {
-    const resp  = await fetch('/api/bookmarks');
-    const items = await resp.json();
-    if (!items.length) {
-      document.getElementById('modalContent').innerHTML = `<h2>🔖 Saved Papers</h2><div class="panel-empty"><div class="big">🔖</div>No saved papers yet.<br>Tap 🔖 Save on any result.</div>`;
-      return;
-    }
-    document.getElementById('modalContent').innerHTML = `
-      <h2>🔖 Saved Papers <span style="font-size:.73rem;color:var(--muted)">${items.length} saved</span></h2>
-      ${items.map(b => {
-        const p = b.paper_data||{};
-        return `<div class="saved-card">
-          <div class="saved-card-title">${esc(stripTags(p.title||'Untitled'))}</div>
-          <div class="saved-card-meta">${esc((p.authors||[]).slice(0,2).join(', '))} · ${p.year||'?'} · ${esc(p.journal||'—')}</div>
-          <div class="saved-card-actions">
-            <button class="btn xs" onclick="openSavedPaper('${esc(b.id)}')">📄 Read</button>
-            <button class="btn xs" onclick="copyAPAText('${esc((p.apa_reference||'').replace(/'/g,"\\'"))}')">📋 APA</button>
-            <button class="btn xs danger" onclick="removeSaved('${esc(b.id)}','${esc(b.paper_id)}',this)">🗑</button>
-          </div>
-        </div>`;
-      }).join('')}`;
-  } catch(e) { document.getElementById('modalContent').innerHTML = `<h2>🔖 Saved</h2><p style="color:var(--red)">Could not load.</p>`; }
-}
-async function openSavedPaper(bmId) {
-  const resp  = await fetch('/api/bookmarks');
-  const items = await resp.json();
-  const bm    = items.find(b => b.id === bmId);
-  if (!bm) return;
-  sessionStorage.setItem('sturch_paper', JSON.stringify(bm.paper_data));
-  window.location.href = '/paper';
-}
-async function removeSaved(bmId, paperId, btn) {
-  await fetch(`/api/bookmarks/${bmId}`, {method:'DELETE'});
-  delete bookmarkMap[paperId];
-  btn.closest('.saved-card').remove();
-  toast('Bookmark removed');
-}
+function openSaved() { window.location.href = '/saved'; }
 
 // ── Collections ────────────────────────────────
 async function openCollections() {
@@ -1204,10 +1174,17 @@ function showError(msg) {
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function stripTags(s){return String(s||'').replace(/<[^>]*>/g,'');}
 let toastTimer;
-function toast(msg){
+function toast(msg, href, label){
   const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
-  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+  t.textContent=msg;
+  if (href) {
+    const a=document.createElement('a');
+    a.href=href; a.textContent=label||'Open';
+    a.style.cssText='color:var(--accent);font-weight:600;margin-left:8px;white-space:nowrap';
+    t.appendChild(a);
+  }
+  t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),href?5000:2600);
 }
 </script>
 </body>
