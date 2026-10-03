@@ -300,6 +300,14 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
         <option value="recent">Most Recent</option>
       </select>
     </div>
+    <div class="filter-group">
+      <label>Word in</label>
+      <select id="fieldBy" class="filter-input" style="width:130px" onchange="onSortChange()">
+        <option value="both">Title or abstract</option>
+        <option value="title">Title only</option>
+        <option value="abstract">Abstract only</option>
+      </select>
+    </div>
     <span class="filter-hint">Enter = add tag · Search = find papers</span>
   </div>
   <div class="src-row" id="srcRow">
@@ -432,11 +440,13 @@ function filterQS() {
   const yt = document.getElementById('yearTo').value.trim();
   const sort = document.getElementById('sortBy').value;
   const src = selectedSources();
+  const field = document.getElementById('fieldBy').value;
   let qs = '';
   if (yf) qs += `&year_from=${yf}`;
   if (yt) qs += `&year_to=${yt}`;
   if (oaOnly) qs += '&oa=1';
   if (sort) qs += `&sort=${sort}`;
+  if (field && field !== 'both') qs += `&field=${field}`;
   if (src.length) qs += `&sources=${src.join(',')}`;
   return qs;
 }

@@ -1,12 +1,14 @@
 """routes/search.py — Search, load-more, paper reader, related, history"""
+import re
 import requests
+import unicodedata
 import urllib.parse
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Blueprint, render_template, request, session, jsonify
 from core import (login_required, get_user, OPENALEX_URL,
                   RESULTS_PER_SOURCE, format_paper, reconstruct_abstract,
-                  search_arxiv, search_pubmed, search_crossref, search_europe_pmc, search_openalex,
+                  search_arxiv, search_pubmed, search_crossref, search_europe_pmc, search_openalex, _safe_terms,
                   sb_post, sb_get, sb_patch, _all_citations)
 from bs4 import BeautifulSoup as BS
 
@@ -43,11 +45,12 @@ def _read_filters():
         "year_to":   _to_int(request.args.get("year_to")),
         "oa_only":   request.args.get("oa") == "1",
         "sort":      request.args.get("sort", "cited"),
+        "field":     request.args.get("field", "both") if request.args.get("field") in ("title", "abstract", "both") else "both",
     }
 
 def _fetch_openalex(query, page, f):
     return search_openalex(query, page, RESULTS_PER_SOURCE, year_from=f["year_from"],
-                           year_to=f["year_to"], oa_only=f["oa_only"], sort=f["sort"])
+                           year_to=f["year_to"], oa_only=f["oa_only"], sort=f["sort"], field=f["field"])
 
 def _merge_dedupe(papers):
     """One entry per paper. Same DOI/title in several sources -> keep the most-cited copy."""
@@ -76,10 +79,61 @@ def _sort_date(p):
     y = _to_int(p.get("year"))
     return f"{y:04d}-00-00" if y else ""
 
-def _apply_filters_and_sort(papers, f):
-    """Safety net: sources that ignore year/OA params are filtered here."""
+def _norm(text):
+    """Lowercase and strip accents (é -> e)."""
+    text = unicodedata.normalize("NFKD", text or "")
+    return "".join(c for c in text if not unicodedata.combining(c)).lower()
+
+def _compact(text):
+    """Letters+digits only (spaces, - _ / . etc. removed), plus a flag per character
+    saying whether it begins a word in the original text."""
+    chars, starts, new_word = [], [], True
+    for c in _norm(text):
+        if c.isalnum():
+            chars.append(c); starts.append(new_word); new_word = False
+        else:
+            new_word = True
+    return "".join(chars), starts
+
+def _term_in(text, term):
+    """Is the word in the text? Handles plurals, accents and spelling variants such as
+    'bio-fuel', 'bio fuel', 'bio_fuel' for 'biofuel'. A compact match must begin at the
+    start of a word, so 'heart' does not match 'the art'."""
+    t = _norm(term)
+    if t and t in _norm(text):
+        return True
+    ct = "".join(c for c in t if c.isalnum())
+    if not ct:
+        return False
+    comp, starts = _compact(text)
+    i = comp.find(ct)
+    while i != -1:
+        if starts[i]:
+            return True
+        i = comp.find(ct, i + 1)
+    return False
+
+def _matches_field(p, terms, field):
+    """Check that every search word really sits in the chosen part of the paper."""
+    title    = p.get("title") or ""
+    abstract = p.get("abstract") or ""
+    if field == "title":
+        return all(_term_in(title, t) for t in terms)
+    if abstract:
+        if field == "abstract":
+            return all(_term_in(abstract, t) for t in terms)
+        return all(_term_in(title, t) or _term_in(abstract, t) for t in terms)
+    if "pubmed" in (p.get("data_source") or "").lower():
+        return True                    # PubMed matched in its own index; it sends no abstract
+    return field == "both" and all(_term_in(title, t) for t in terms)
+
+def _apply_filters_and_sort(papers, f, query=""):
+    """Safety net: sources that ignore year/OA/field options are filtered here."""
+    terms = _safe_terms(query)
     out = []
     for p in papers:
+        if f.get("field") in ("title", "abstract") and terms and not _matches_field(p, terms, f["field"]):
+            continue
         y = _to_int(p.get("year"))
         if f["year_from"] and (y is None or y < f["year_from"]): continue
         if f["year_to"]   and (y is None or y > f["year_to"]):   continue
@@ -94,7 +148,7 @@ def _apply_filters_and_sort(papers, f):
 def _run_search(query, page, user, log=True):
     f = _read_filters()
     jobs = {}
-    kw   = dict(year_from=f["year_from"], year_to=f["year_to"], oa_only=f["oa_only"], sort=f["sort"])
+    kw   = dict(year_from=f["year_from"], year_to=f["year_to"], oa_only=f["oa_only"], sort=f["sort"], field=f["field"])
     with ThreadPoolExecutor(max_workers=5) as ex:
         if "openalex" in f["sources"]:  jobs[ex.submit(_fetch_openalex, query, page, f)] = "openalex"
         if "arxiv" in f["sources"]:     jobs[ex.submit(search_arxiv, query, page, RESULTS_PER_SOURCE, **kw)]      = "arxiv"
@@ -113,7 +167,7 @@ def _run_search(query, page, user, log=True):
                     raw.extend(res)
             except Exception:
                 pass
-    results = _apply_filters_and_sort(_merge_dedupe(raw), f)
+    results = _apply_filters_and_sort(_merge_dedupe(raw), f, query)
     if log:
         sb_post("search_logs", {"user_id": user["id"], "query": query, "results": len(results),
                                 "searched_at": datetime.now().isoformat()})
