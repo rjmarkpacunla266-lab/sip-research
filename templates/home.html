@@ -137,6 +137,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
   <div class="header-right">
     <span class="user-pill" id="userEmail">Loading…</span>
     <button class="btn sm" id="themeBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
+    <a href="/saved" class="btn sm" title="Your saved papers">🔖 Saved</a>
     <a href="/donate" class="btn sm donate">💙 Donate</a>
     <a href="/logout" class="btn sm danger">Logout</a>
   </div>
@@ -212,7 +213,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 <!-- Quick actions -->
 <div class="quick-label">Quick Access</div>
 <div class="quick-grid">
-  <a href="/search" class="quick-card" style="animation-delay:.05s" onclick="openSavedFromHome()">
+  <a href="/saved" class="quick-card" style="animation-delay:.05s">
     <span class="quick-icon">🔖</span>
     <span class="quick-name">Saved Papers</span>
   </a>
@@ -278,9 +279,6 @@ window.addEventListener('load', async () => {
 });
 
 // ── Quick access — store intent then redirect ──
-function openSavedFromHome() {
-  sessionStorage.setItem('sturch_open_panel', 'saved');
-}
 function openCollectionsFromHome() {
   sessionStorage.setItem('sturch_open_panel', 'collections');
 }
