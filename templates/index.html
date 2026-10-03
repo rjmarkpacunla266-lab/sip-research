@@ -111,6 +111,9 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 .oa-toggle{display:flex;align-items:center;gap:5px;font-size:.76rem;color:var(--muted);cursor:pointer;padding:4px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surf);transition:all .15s}
 .oa-toggle:hover,.oa-toggle.active{border-color:var(--green);color:var(--green);background:rgba(62,207,142,.06)}
 .filter-hint{font-size:.7rem;color:var(--muted)}
+.src-row{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.src-chip{font-size:.74rem;padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:var(--surf);color:var(--muted);cursor:pointer;transition:all .15s;user-select:none}
+.src-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(79,141,232,.08)}
 
 /* ── Stats bar ── */
 .stats-bar{display:flex;gap:6px;margin:14px 0;flex-wrap:wrap}
@@ -281,23 +284,31 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
   <div class="filters-row">
     <div class="filter-group">
       <label>From</label>
-      <input type="number" id="yearFrom" class="filter-input" placeholder="2015" min="1800" max="2026"/>
+      <input type="number" id="yearFrom" class="filter-input" placeholder="Any" min="1800" max="2026"/>
     </div>
     <div class="filter-group">
       <label>To</label>
-      <input type="number" id="yearTo" class="filter-input" placeholder="2024" min="1800" max="2026"/>
+      <input type="number" id="yearTo" class="filter-input" placeholder="Any" min="1800" max="2026"/>
     </div>
     <div class="oa-toggle" id="oaToggle" onclick="toggleOA()" title="Open Access only">
       🔓 OA Only
     </div>
     <div class="filter-group">
       <label>Sort</label>
-      <select id="sortBy" class="filter-input" style="width:110px">
+      <select id="sortBy" class="filter-input" style="width:110px" onchange="applyView()">
         <option value="cited">Most Cited</option>
         <option value="recent">Most Recent</option>
       </select>
     </div>
     <span class="filter-hint">Enter = add tag · Search = find papers</span>
+  </div>
+  <div class="src-row" id="srcRow">
+    <span class="filter-hint">Sources:</span>
+    <span class="src-chip active" data-src="openalex"  onclick="toggleSource(this)">OpenAlex</span>
+    <span class="src-chip active" data-src="arxiv"     onclick="toggleSource(this)">arXiv</span>
+    <span class="src-chip active" data-src="pubmed"    onclick="toggleSource(this)">PubMed</span>
+    <span class="src-chip active" data-src="crossref"  onclick="toggleSource(this)">Crossref</span>
+    <span class="src-chip active" data-src="europepmc" onclick="toggleSource(this)">Europe PMC</span>
   </div>
 </div>
 
@@ -404,6 +415,48 @@ let totalResults   = 0;
 let bookmarkMap    = {};  // paperId → bookmark UUID
 let citeCopiedCount = 0;
 let oaOnly         = false;
+let rawResults     = [];   // everything the server returned (unfiltered view source)
+let lastYf = null, lastYt = null, lastSources = [];
+function selectedSources() {
+  const on = [...document.querySelectorAll('.src-chip.active')].map(c => c.dataset.src);
+  return on.length === 5 ? [] : on;   // empty = all (server default)
+}
+function toggleSource(el) {
+  const active = document.querySelectorAll('.src-chip.active');
+  if (el.classList.contains('active') && active.length === 1) { toast('⚠️ Keep at least one source on'); return; }
+  el.classList.toggle('active');
+  if (currentQuery) doSearch();   // re-run with the new source selection
+}
+function filterQS() {
+  const yf = document.getElementById('yearFrom').value.trim();
+  const yt = document.getElementById('yearTo').value.trim();
+  const sort = document.getElementById('sortBy').value;
+  const src = selectedSources();
+  let qs = '';
+  if (yf) qs += `&year_from=${yf}`;
+  if (yt) qs += `&year_to=${yt}`;
+  if (oaOnly) qs += '&oa=1';
+  if (sort) qs += `&sort=${sort}`;
+  if (src.length) qs += `&sources=${src.join(',')}`;
+  return qs;
+}
+// Re-filter + re-sort what we already have (no new request)
+function applyView() {
+  if (!rawResults.length) return;
+  let r = rawResults.slice();
+  if (oaOnly) r = r.filter(p => p.is_oa);
+  if (lastYf) r = r.filter(p => p.year && +p.year >= +lastYf);
+  if (lastYt) r = r.filter(p => p.year && +p.year <= +lastYt);
+  const sort = document.getElementById('sortBy').value;
+  if (sort === 'recent') r.sort((a,b) => (b.year||0)-(a.year||0) || (b.citations||0)-(a.citations||0));
+  else                   r.sort((a,b) => (b.citations||0)-(a.citations||0));
+  currentResults = r;
+  if (!r.length) {
+    document.getElementById('results').innerHTML = '<div class="state"><div class="big">🔍</div><h3>No results match these filters</h3></div>';
+    return;
+  }
+  renderResults({results: r, total: totalResults, sources_used: lastSources});
+}
 let displayedCount = 0;   // how many results currently shown on screen
 const DISPLAY_PER_PAGE = 10; // show 10 at a time
 
@@ -464,6 +517,7 @@ function toggleOA() {
   const el = document.getElementById('oaToggle');
   el.classList.toggle('active', oaOnly);
   toast(oaOnly ? '🔓 Open Access only ON' : '🔓 Open Access filter OFF');
+  applyView();
 }
 
 // ── Quick topic search ─────────────────────────
@@ -489,9 +543,11 @@ function restoreLastSearch() {
     const yt = sessionStorage.getItem('sturch_last_yearTo');
     if (yf) document.getElementById('yearFrom').value = yf;
     if (yt) document.getElementById('yearTo').value   = yt;
+    rawResults     = data.results;
     currentResults = data.results;
     totalResults   = data.total || 0;
     currentQuery   = query;
+    lastYf = yf; lastYt = yt; lastSources = data.sources_used || [];
     renderResults(data);
     toast('📋 Results restored');
   } catch(e) { sessionStorage.removeItem('sturch_last_results'); }
@@ -567,25 +623,18 @@ async function doSearch(page = 1) {
   try {
     const yf   = document.getElementById('yearFrom').value.trim();
     const yt   = document.getElementById('yearTo').value.trim();
-    const sort = document.getElementById('sortBy').value;
-    let url = `/api/search?q=${encodeURIComponent(query)}&page=${page}`;
-    if (yf) url += `&year_from=${yf}`;
-    if (yt) url += `&year_to=${yt}`;
+    let url = `/api/search?q=${encodeURIComponent(query)}&page=${page}` + filterQS();
 
     const resp = await fetch(url);
     const data = await resp.json();
 
     if (!resp.ok) { showError(data.error || 'Search failed'); return; }
 
-    currentResults = data.results || [];
+    rawResults     = data.results || [];
     totalResults   = data.total   || 0;
+    lastYf = yf; lastYt = yt; lastSources = data.sources_used || [];
     displayedCount = 0;
-
-    if (oaOnly) currentResults = currentResults.filter(p => p.is_oa);
-
-    if (sort === 'recent') {
-      currentResults.sort((a,b) => (b.year||0) - (a.year||0));
-    }
+    currentResults = rawResults.slice();
 
     if (!currentResults.length) {
       document.getElementById('results').innerHTML = `<div class="state"><div class="big">🔍</div><h3>No results found</h3><p style="margin-top:6px;font-size:.83rem">Try different keywords or remove the OA filter</p></div>`;
@@ -599,7 +648,7 @@ async function doSearch(page = 1) {
     sessionStorage.setItem('sturch_last_yearFrom', yf);
     sessionStorage.setItem('sturch_last_yearTo', yt);
 
-    renderResults(data);
+    applyView();
     loadUserInfo();
   } catch(e) { showError('Connection error. Check your internet and try again.'); }
   finally {
@@ -614,11 +663,8 @@ async function loadMorePapers() {
   const btn = document.getElementById('loadMoreBtn');
   btn.textContent = 'Loading…'; btn.disabled = true;
   try {
-    const yf = document.getElementById('yearFrom').value.trim();
-    const yt = document.getElementById('yearTo').value.trim();
     let url  = `/api/load-more?q=${encodeURIComponent(currentQuery)}&page=${currentPage + 1}`;
-    if (yf) url += `&year_from=${yf}`;
-    if (yt) url += `&year_to=${yt}`;
+    url += `&year_from=${lastYf||''}&year_to=${lastYt||''}` + filterQS().replace(/&year_(from|to)=[^&]*/g, '');
 
     const resp = await fetch(url);
     const data = await resp.json();
@@ -629,6 +675,7 @@ async function loadMorePapers() {
     if (!newPapers.length) { toast('No more papers found.'); return; }
 
     currentPage++;
+    rawResults     = [...rawResults, ...(data.results || [])];
     currentResults = [...currentResults, ...newPapers];
 
     // Show first 10 of new batch

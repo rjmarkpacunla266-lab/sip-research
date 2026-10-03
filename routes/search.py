@@ -23,84 +23,127 @@ def get_me():
         "email": user["email"],
     })
 
+# ─── Shared search engine ────────────────────────────────────────────
+ALL_SOURCES = ["openalex", "arxiv", "pubmed", "crossref", "europepmc"]
+SOURCE_LABELS = {"openalex": "OpenAlex", "arxiv": "arXiv", "pubmed": "PubMed",
+                 "crossref": "Crossref", "europepmc": "Europe PMC"}
+
+def _to_int(v):
+    try:
+        return int(v)
+    except (ValueError, TypeError):
+        return None
+
+def _read_filters():
+    """Read sources / year / OA / sort from the query string."""
+    chosen  = [s for s in request.args.get("sources", "").split(",") if s in ALL_SOURCES]
+    return {
+        "sources": chosen or ALL_SOURCES,
+        "year_from": _to_int(request.args.get("year_from")),
+        "year_to":   _to_int(request.args.get("year_to")),
+        "oa_only":   request.args.get("oa") == "1",
+        "sort":      request.args.get("sort", "cited"),
+    }
+
+def _fetch_openalex(query, page, f):
+    params = {"search": query, "per-page": RESULTS_PER_SOURCE, "page": page,
+              "sort": "publication_date:desc" if f["sort"] == "recent" else "cited_by_count:desc"}
+    flt = []
+    if f["year_from"]: flt.append(f"from_publication_date:{f['year_from']}-01-01")
+    if f["year_to"]:   flt.append(f"to_publication_date:{f['year_to']}-12-31")
+    if f["oa_only"]:   flt.append("is_oa:true")
+    if flt:
+        params["filter"] = ",".join(flt)
+    try:
+        resp = requests.get(OPENALEX_URL, params=params, timeout=15)
+        data = resp.json()
+        return [format_paper(p) for p in data.get("results", [])], data.get("meta", {}).get("count", 0)
+    except Exception:
+        return [], 0
+
+def _merge_dedupe(papers):
+    """One entry per paper. Same DOI/title in several sources -> keep the most-cited copy."""
+    best = {}
+    for p in papers:
+        doi = (p.get("doi") or "").strip().lower().replace("https://doi.org/", "")
+        key = doi or (p.get("title") or "").strip().lower()[:60]
+        if not key:
+            continue
+        old = best.get(key)
+        if old is None:
+            best[key] = p
+            continue
+        keep, other = (p, old) if (p.get("citations") or 0) > (old.get("citations") or 0) else (old, p)
+        if other.get("is_oa") and not keep.get("is_oa"):
+            keep["is_oa"] = True
+            keep["oa_url"] = keep.get("oa_url") or other.get("oa_url")
+        best[key] = keep
+    return list(best.values())
+
+def _apply_filters_and_sort(papers, f):
+    """Safety net: sources that ignore year/OA params are filtered here."""
+    out = []
+    for p in papers:
+        y = _to_int(p.get("year"))
+        if f["year_from"] and (y is None or y < f["year_from"]): continue
+        if f["year_to"]   and (y is None or y > f["year_to"]):   continue
+        if f["oa_only"] and not p.get("is_oa"):                  continue
+        out.append(p)
+    if f["sort"] == "recent":
+        out.sort(key=lambda x: (_to_int(x.get("year")) or 0, x.get("citations") or 0), reverse=True)
+    else:
+        out.sort(key=lambda x: x.get("citations") or 0, reverse=True)
+    return out
+
+def _run_search(query, page, user, log=True):
+    f = _read_filters()
+    jobs = {}
+    kw   = dict(year_from=f["year_from"], year_to=f["year_to"], oa_only=f["oa_only"], sort=f["sort"])
+    with ThreadPoolExecutor(max_workers=5) as ex:
+        if "openalex" in f["sources"]:  jobs[ex.submit(_fetch_openalex, query, page, f)] = "openalex"
+        if "arxiv" in f["sources"]:     jobs[ex.submit(search_arxiv, query, page, RESULTS_PER_SOURCE, **kw)]      = "arxiv"
+        if "pubmed" in f["sources"]:    jobs[ex.submit(search_pubmed, query, page, RESULTS_PER_SOURCE, **kw)]     = "pubmed"
+        if "crossref" in f["sources"]:  jobs[ex.submit(search_crossref, query, page, RESULTS_PER_SOURCE, **kw)]   = "crossref"
+        if "europepmc" in f["sources"]: jobs[ex.submit(search_europe_pmc, query, page, RESULTS_PER_SOURCE, **kw)] = "europepmc"
+        raw, total = [], 0
+        for fut in as_completed(jobs):
+            try:
+                res = fut.result()
+                if jobs[fut] == "openalex":
+                    papers, count = res
+                    total += count
+                    raw.extend(papers)
+                else:
+                    raw.extend(res)
+            except Exception:
+                pass
+    results = _apply_filters_and_sort(_merge_dedupe(raw), f)
+    if log:
+        sb_post("search_logs", {"user_id": user["id"], "query": query, "results": len(results),
+                                "searched_at": datetime.now().isoformat()})
+    return {"results": results, "total": total or len(results), "query": query, "page": page,
+            "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
+            "ref_disclaimer": "References auto-generated — verify before academic use"}
+
 # ─── /api/search ─────────────────────────────────────────────────────
 @search_bp.route("/api/search")
 @login_required
 def search():
-    query     = request.args.get("q", "").strip()
-    try:
-        page  = max(1, int(request.args.get("page", 1)))
-    except (ValueError, TypeError):
-        page  = 1
-    year_from = request.args.get("year_from", "")
-    year_to   = request.args.get("year_to", "")
+    query = request.args.get("q", "").strip()
+    page  = max(1, _to_int(request.args.get("page")) or 1)
     if not query:
         return jsonify({"error": "Please enter a search query"}), 400
     user = get_user(session["user_id"])
     if not user:
         return jsonify({"error": "User not found"}), 404
-
-    def fetch_openalex():
-        params = {"search": query, "per-page": RESULTS_PER_SOURCE, "page": page, "sort": "cited_by_count:desc"}
-        if year_from and year_to:  params["filter"] = f"publication_year:{year_from}-{year_to}"
-        elif year_from:            params["filter"] = f"publication_year:{year_from}-"
-        elif year_to:              params["filter"] = f"publication_year:-{year_to}"
-        try:
-            resp = requests.get(OPENALEX_URL, params=params, timeout=15)
-            data = resp.json()
-            return [format_paper(p) for p in data.get("results", [])], data.get("meta", {}).get("count", 0)
-        except Exception:
-            return [], 0
-
-    all_results = []
-    total_count = 0
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {
-            executor.submit(fetch_openalex):                 "openalex",
-            executor.submit(search_arxiv, query, page):      "arxiv",
-            executor.submit(search_pubmed, query, page):     "pubmed",
-            executor.submit(search_crossref, query, page):   "crossref",
-            executor.submit(search_europe_pmc, query, page): "europepmc",
-        }
-        for future in as_completed(futures):
-            try:
-                result = future.result()
-                if futures[future] == "openalex":
-                    papers, count = result
-                    total_count += count
-                    all_results.extend(papers)
-                else:
-                    all_results.extend(result)
-            except Exception:
-                pass
-
-    seen_dois = set(); seen_titles = set(); deduped = []
-    for paper in all_results:
-        doi = (paper.get("doi") or "").strip().lower()
-        tk  = (paper.get("title") or "").strip().lower()[:60]
-        if (doi and doi in seen_dois) or (tk and tk in seen_titles):
-            continue
-        if doi: seen_dois.add(doi)
-        if tk:  seen_titles.add(tk)
-        deduped.append(paper)
-    deduped.sort(key=lambda x: x.get("citations", 0) or 0, reverse=True)
-    sb_post("search_logs", {"user_id": user["id"], "query": query, "results": len(deduped),
-                            "searched_at": datetime.now().isoformat()})
-    return jsonify({"results": deduped, "total": total_count, "query": query,
-                    "sources_used": ["OpenAlex", "arXiv", "PubMed", "Crossref", "Europe PMC"],
-                    "ref_disclaimer": "References auto-generated — verify before academic use"})
+    return jsonify(_run_search(query, page, user, log=True))
 
 # ─── /api/load-more ──────────────────────────────────────────────────
 @search_bp.route("/api/load-more")
 @login_required
 def load_more():
-    query     = request.args.get("q", "").strip()
-    try:
-        page  = max(1, int(request.args.get("page", 2)))
-    except (ValueError, TypeError):
-        page  = 2
-    year_from = request.args.get("year_from", "")
-    year_to   = request.args.get("year_to", "")
+    query = request.args.get("q", "").strip()
+    page  = max(1, _to_int(request.args.get("page")) or 2)
     if not query:
         return jsonify({"error": "Query required"}), 400
     if page < 2:
@@ -108,55 +151,7 @@ def load_more():
     user = get_user(session["user_id"])
     if not user:
         return jsonify({"error": "User not found"}), 404
-
-    def fetch_openalex():
-        params = {"search": query, "per-page": RESULTS_PER_SOURCE, "page": page, "sort": "cited_by_count:desc"}
-        if year_from and year_to:  params["filter"] = f"publication_year:{year_from}-{year_to}"
-        elif year_from:            params["filter"] = f"publication_year:{year_from}-"
-        elif year_to:              params["filter"] = f"publication_year:-{year_to}"
-        try:
-            resp = requests.get(OPENALEX_URL, params=params, timeout=15)
-            data = resp.json()
-            return [format_paper(p) for p in data.get("results", [])], data.get("meta", {}).get("count", 0)
-        except Exception:
-            return [], 0
-
-    all_results = []
-    total_count = 0
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {
-            executor.submit(fetch_openalex):                 "openalex",
-            executor.submit(search_arxiv, query, page):      "arxiv",
-            executor.submit(search_pubmed, query, page):     "pubmed",
-            executor.submit(search_crossref, query, page):   "crossref",
-            executor.submit(search_europe_pmc, query, page): "europepmc",
-        }
-        for future in as_completed(futures):
-            try:
-                result = future.result()
-                if futures[future] == "openalex":
-                    papers, count = result
-                    total_count += count
-                    all_results.extend(papers)
-                else:
-                    all_results.extend(result)
-            except Exception:
-                pass
-
-    seen_dois = set(); seen_titles = set(); deduped = []
-    for paper in all_results:
-        doi = (paper.get("doi") or "").strip().lower()
-        tk  = (paper.get("title") or "").strip().lower()[:60]
-        if (doi and doi in seen_dois) or (tk and tk in seen_titles):
-            continue
-        if doi: seen_dois.add(doi)
-        if tk:  seen_titles.add(tk)
-        deduped.append(paper)
-    deduped.sort(key=lambda x: x.get("citations", 0) or 0, reverse=True)
-    sb_post("search_logs", {"user_id": user["id"], "query": query, "results": len(deduped),
-                            "searched_at": datetime.now().isoformat()})
-    return jsonify({"results": deduped, "total": total_count, "query": query, "page": page,
-                    "sources_used": ["OpenAlex", "arXiv", "PubMed", "Crossref", "Europe PMC"]})
+    return jsonify(_run_search(query, page, user, log=False))
 
 # ─── /api/history ────────────────────────────────────────────────────
 @search_bp.route("/api/history")

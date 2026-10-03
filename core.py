@@ -4,6 +4,7 @@ All blueprints import from here.
 """
 import os
 import re
+import html as _html
 import hashlib
 import secrets
 import requests
@@ -284,6 +285,28 @@ def format_paper(paper):
         "ref_warning": "Auto-generated — verify before academic use",
     }
 
+# ─── SEARCH HELPERS ──────────────────────────────────────────────────
+_JUNK_MARKERS = ("share add to", "export ris", "exportris", "get e-alerts", "return to issue",
+                 "view author information", "add full text with reference", "add description")
+
+def clean_abstract(text):
+    """Strip HTML/JATS tags and drop scraped page junk (publisher menus, 'Export RIS', etc.)."""
+    if not text:
+        return ""
+    text = re.sub(r"<[^>]+>", " ", str(text))
+    text = _html.unescape(text)
+    text = re.sub(r"\s+", " ", text).strip()
+    low = text.lower()
+    if any(m in low for m in _JUNK_MARKERS):
+        return ""
+    return re.sub(r"^(abstract|summary)\b[:.\s]*", "", text, flags=re.I).strip()
+
+def _terms(query):
+    return [t for t in re.split(r"\s+", (query or "").strip()) if t]
+
+def _year_bounds(year_from, year_to):
+    return (str(year_from) if year_from else None, str(year_to) if year_to else None)
+
 # ─── SEMANTIC SCHOLAR ────────────────────────────────────────────────
 def search_semantic_scholar(query, page=1, per_page=RESULTS_PER_SOURCE):
     offset = (page - 1) * per_page
@@ -322,10 +345,17 @@ def search_semantic_scholar(query, page=1, per_page=RESULTS_PER_SOURCE):
         return []
 
 # ─── ARXIV ───────────────────────────────────────────────────────────
-def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE):
-    start  = (page - 1) * per_page
-    params = {"search_query": f"all:{query}", "start": start, "max_results": per_page,
-              "sortBy": "relevance", "sortOrder": "descending"}
+def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE,
+                 year_from=None, year_to=None, oa_only=False, sort="cited"):
+    start = (page - 1) * per_page
+    q     = " AND ".join(f"all:{t}" for t in _terms(query)) or f"all:{query}"
+    if year_from or year_to:
+        lo = f"{year_from or 1991}01010000"
+        hi = f"{year_to or 2100}12312359"
+        q += f" AND submittedDate:[{lo} TO {hi}]"
+    params = {"search_query": q, "start": start, "max_results": per_page,
+              "sortBy": "submittedDate" if sort == "recent" else "relevance",
+              "sortOrder": "descending"}
     try:
         resp = requests.get("https://export.arxiv.org/api/query", params=params, timeout=15)
         if not resp.ok:
@@ -335,7 +365,7 @@ def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE):
         results = []
         for entry in root.findall("atom:entry", ns):
             title     = (entry.findtext("atom:title", "", ns) or "").strip().replace("\n", " ")
-            abstract  = (entry.findtext("atom:summary", "", ns) or "").strip().replace("\n", " ")
+            abstract  = clean_abstract(entry.findtext("atom:summary", "", ns) or "")
             authors   = [a.findtext("atom:name", "", ns) for a in entry.findall("atom:author", ns)]
             published = entry.findtext("atom:published", "", ns) or ""
             year      = int(published[:4]) if published and published[:4].isdigit() else None
@@ -358,13 +388,19 @@ def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE):
         return []
 
 # ─── PUBMED ──────────────────────────────────────────────────────────
-def search_pubmed(query, page=1, per_page=RESULTS_PER_SOURCE):
+def search_pubmed(query, page=1, per_page=RESULTS_PER_SOURCE,
+                  year_from=None, year_to=None, oa_only=False, sort="cited"):
     retstart = (page - 1) * per_page
+    term     = f"({query}) AND free full text[sb]" if oa_only else query
+    es_params = {"db": "pubmed", "term": term, "retmax": per_page, "retstart": retstart,
+                 "retmode": "json", "sort": "pub_date" if sort == "recent" else "relevance"}
+    if year_from or year_to:
+        es_params.update({"datetype": "pdat",
+                          "mindate": str(year_from or 1800), "maxdate": str(year_to or 2100)})
     try:
         search_resp = requests.get(
             "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
-            params={"db": "pubmed", "term": query, "retmax": per_page,
-                    "retstart": retstart, "retmode": "json", "sort": "relevance"},
+            params=es_params,
             timeout=15, headers={"User-Agent": "Sturch/2.0 (academic research tool)"})
         if not search_resp.ok:
             return []
@@ -398,7 +434,7 @@ def search_pubmed(query, page=1, per_page=RESULTS_PER_SOURCE):
             missing = [l for l, v in [("volume", volume), ("issue", issue), ("page range", pages), ("DOI", doi)] if not v]
             results.append({
                 "title": title, "authors": authors, "year": year, "journal": journal,
-                "abstract": "", "citations": 0, "is_oa": False,
+                "abstract": "", "citations": 0, "is_oa": bool(oa_only),
                 "oa_url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
                 "doi": f"https://doi.org/{doi}" if doi else "",
                 "concepts": [], "openalex_id": f"pmid:{pmid}",
@@ -413,13 +449,22 @@ def search_pubmed(query, page=1, per_page=RESULTS_PER_SOURCE):
 
 
 # ─── CROSSREF ────────────────────────────────────────────────────────
-def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE):
+def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE,
+                    year_from=None, year_to=None, oa_only=False, sort="cited"):
     offset = (page - 1) * per_page
+    cr_params = {"query": query, "rows": per_page, "offset": offset,
+                 "sort": "published" if sort == "recent" else "is-referenced-by-count",
+                 "order": "desc",
+                 "select": "title,author,published,container-title,DOI,is-referenced-by-count,abstract,URL,license"}
+    flt = []
+    if year_from: flt.append(f"from-pub-date:{year_from}-01-01")
+    if year_to:   flt.append(f"until-pub-date:{year_to}-12-31")
+    if flt:
+        cr_params["filter"] = ",".join(flt)
     try:
         resp = requests.get(
             "https://api.crossref.org/works",
-            params={"query": query, "rows": per_page, "offset": offset,
-                    "select": "title,author,published,container-title,DOI,is-referenced-by-count,abstract,URL,license"},
+            params=cr_params,
             timeout=15,
             headers={"User-Agent": "Sturch/3.0 (mailto:pacunlarjmark@gmail.com)"})
         if not resp.ok:
@@ -433,9 +478,7 @@ def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE):
             year    = pub[0] if pub else None
             journal = " ".join(p.get("container-title") or []) or "Crossref"
             doi     = p.get("DOI", "")
-            abstract = p.get("abstract", "") or ""
-            # Strip HTML tags from abstract
-            abstract = re.sub(r'<[^>]+>', '', abstract).strip()
+            abstract = clean_abstract(p.get("abstract", "") or "")
             missing = [l for l, v in [("volume",""),("issue",""),("page range","")] if not v]
             results.append({
                 "title": title, "authors": authors, "year": year, "journal": journal,
@@ -453,24 +496,42 @@ def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE):
         return []
 
 # ─── EUROPE PMC ──────────────────────────────────────────────────────
-def search_europe_pmc(query, page=1, per_page=RESULTS_PER_SOURCE):
-    try:
-        resp = requests.get(
+def _epmc_query(query, year_from, year_to, oa_only, strict):
+    if strict:
+        parts = [f'(TITLE:"{t}" OR ABSTRACT:"{t}")' for t in _terms(query)]
+        q = " AND ".join(parts) or query
+    else:
+        q = f"({query})"
+    if year_from or year_to:
+        q += f" AND (PUB_YEAR:[{year_from or 1800} TO {year_to or 2100}])"
+    if oa_only:
+        q += " AND OPEN_ACCESS:y"
+    return q
+
+def search_europe_pmc(query, page=1, per_page=RESULTS_PER_SOURCE,
+                      year_from=None, year_to=None, oa_only=False, sort="cited"):
+    sort_by = "P_PDATE_D desc" if sort == "recent" else "CITED desc"
+    def _call(strict):
+        return requests.get(
             "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
-            params={"query": query, "pageSize": per_page, "page": page,
-                    "format": "json", "resultType": "core", "sort": "CITED desc"},
-            timeout=15,
-            headers={"User-Agent": "Sturch/3.0 (academic research tool)"})
-        if not resp.ok:
-            return []
+            params={"query": _epmc_query(query, year_from, year_to, oa_only, strict),
+                    "pageSize": per_page, "page": page, "format": "json",
+                    "resultType": "core", "sort": sort_by},
+            timeout=15, headers={"User-Agent": "Sturch/3.0 (academic research tool)"})
+    try:
+        resp  = _call(True)           # title/abstract matches only (no full-text noise)
+        items = resp.json().get("resultList", {}).get("result", []) if resp.ok else []
+        if not items:                 # safety net: plain query + same filters
+            resp  = _call(False)
+            items = resp.json().get("resultList", {}).get("result", []) if resp.ok else []
         results = []
-        for p in resp.json().get("resultList", {}).get("result", []):
+        for p in items:
             title   = p.get("title", "")
             authors = [a.get("fullName", "") for a in p.get("authorList", {}).get("author", [])]
             year    = p.get("pubYear")
             journal = p.get("journalTitle", "") or "Europe PMC"
             doi     = p.get("doi", "")
-            abstract = p.get("abstractText", "") or ""
+            abstract = clean_abstract(p.get("abstractText", "") or "")
             cites   = p.get("citedByCount", 0) or 0
             is_oa   = p.get("isOpenAccess", "N") == "Y"
             oa_url  = f"https://europepmc.org/article/{p.get('source','')}/{p.get('id','')}" if p.get("id") else ""
