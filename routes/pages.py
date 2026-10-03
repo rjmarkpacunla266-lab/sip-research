@@ -15,6 +15,11 @@ def home():
 def search_page():
     return render_template("index.html")
 
+@pages_bp.route("/saved")
+@login_required
+def saved_page():
+    return render_template("saved.html")
+
 @pages_bp.route("/donate")
 def donate():
     return render_template("donate.html")

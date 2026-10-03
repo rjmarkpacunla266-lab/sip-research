@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Saved Papers — Sturch</title>
+<meta name="robots" content="noindex, nofollow"/>
+<meta name="theme-color" content="#0b0d12"/>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
+  --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
+  --gold:#e8b84b;--green:#3ecf8e;--red:#f06a6a;--orange:#f0914b;
+  --text:#d8e0f8;--muted:#5a6385;
+  --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;
+}
+[data-theme="light"]{
+  --bg:#f4f6fb;--surf:#ffffff;--surf2:#eef1f8;--surf3:#e2e7f4;
+  --border:rgba(80,100,180,.15);--text:#1a2040;--muted:#6b7599;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6}
+a{color:var(--accent);text-decoration:none}
+.hidden{display:none!important}
+#app{max-width:900px;margin:0 auto;padding:0 16px 70px}
+
+/* header */
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+.logo{font-family:var(--serif);font-size:1.4rem;display:flex;align-items:center;gap:6px}
+.logo a{color:var(--accent)}
+.beta{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;font-family:var(--mono)}
+.header-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:10px;font-family:var(--sans);font-size:.8rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .18s;white-space:nowrap;text-decoration:none}
+.btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
+.btn.sm{padding:5px 10px;font-size:.76rem}
+.btn.xs{padding:4px 9px;font-size:.72rem;border-radius:8px}
+.btn.danger{background:rgba(240,106,106,.08);border-color:rgba(240,106,106,.2);color:var(--red)}
+.btn.gold{background:rgba(232,184,75,.1);border-color:rgba(232,184,75,.3);color:var(--gold)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* title */
+.page-title{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:22px 0 12px}
+.page-title h1{font-family:var(--serif);font-size:1.45rem}
+.count{font-size:.78rem;color:var(--muted);font-family:var(--mono)}
+
+/* toolbar */
+.toolbar{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:12px}
+.search-box{position:relative}
+.search-box input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--sans);font-size:.9rem;padding:10px 12px 10px 34px;outline:none}
+.search-box input:focus{border-color:var(--accent)}
+.search-box span{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:.85rem;color:var(--muted)}
+.filters{display:flex;flex-wrap:wrap;gap:8px 10px;margin-top:10px;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.fg input,.fg select{background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.76rem;padding:6px 8px;outline:none}
+.fg input{width:74px}
+.fg select{max-width:150px}
+.fg input:focus,.fg select:focus{border-color:var(--accent)}
+.toggle{font-size:.76rem;padding:6px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surf2);color:var(--muted);cursor:pointer;font-family:var(--sans)}
+.toggle.on{border-color:var(--green);color:var(--green);background:rgba(62,207,142,.08)}
+.src-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px}
+.src-row .lbl{font-size:.7rem;color:var(--muted)}
+.chip{font-size:.74rem;padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:var(--surf);color:var(--muted);cursor:pointer;user-select:none}
+.chip.active{border-color:var(--accent);color:var(--accent);background:rgba(79,141,232,.08)}
+.sumbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:14px 0 8px}
+.sumbar .info{font-size:.76rem;color:var(--muted);font-family:var(--mono)}
+.sumbar .acts{display:flex;gap:6px;flex-wrap:wrap}
+
+/* cards */
+.card{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-bottom:9px;animation:fadeUp .25s ease both}
+.c-title{font-family:var(--serif);font-size:.98rem;line-height:1.35;margin-bottom:4px;word-break:break-word}
+.c-meta{font-size:.76rem;color:var(--muted);line-height:1.5}
+.c-meta i{color:var(--muted)}
+.c-badges{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:7px;font-size:.7rem;font-family:var(--mono)}
+.cites{color:var(--gold)}
+.badge{padding:1px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
+.badge.oa{color:var(--green);border-color:rgba(62,207,142,.3);background:rgba(62,207,142,.08)}
+.badge.src{color:var(--accent);border-color:rgba(79,141,232,.3);background:rgba(79,141,232,.08)}
+.savedon{color:var(--muted)}
+details{margin-top:8px}
+summary{cursor:pointer;font-size:.74rem;color:var(--accent);list-style:none}
+summary::-webkit-details-marker{display:none}
+details p{font-size:.8rem;color:var(--text);opacity:.85;line-height:1.6;margin-top:6px}
+.c-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+
+/* states */
+.state{text-align:center;padding:50px 16px;color:var(--muted)}
+.state .big{font-size:2.4rem;margin-bottom:8px}
+.state h3{font-family:var(--serif);color:var(--text);font-size:1.05rem;margin-bottom:6px}
+.state p{font-size:.82rem;margin-bottom:14px}
+.errbox{background:rgba(240,106,106,.07);border:1px solid rgba(240,106,106,.2);border-radius:12px;padding:14px;color:var(--red);font-size:.84rem;margin-top:14px}
+.errbox code{display:block;margin-top:8px;font-family:var(--mono);font-size:.7rem;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+.spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto}
+.more{display:block;margin:14px auto 0}
+#toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,60px);background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:9px 16px;font-size:.82rem;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:300;opacity:0;transition:all .3s;max-width:90vw;text-align:center}
+#toast.show{transform:translate(-50%,0);opacity:1}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<header>
+  <div class="logo"><a href="/">Sturch</a><span class="beta">BETA</span></div>
+  <div class="header-right">
+    <a href="/" class="btn sm">🏠 Home</a>
+    <a href="/search" class="btn sm">🔍 Search</a>
+    <button class="btn sm" id="themeBtn" onclick="toggleTheme()" title="Dark / light">🌙</button>
+    <a href="/logout" class="btn sm danger">Logout</a>
+  </div>
+</header>
+
+<div class="page-title">
+  <h1>🔖 Saved Papers</h1>
+  <span class="count" id="totalCount"></span>
+</div>
+
+<div class="toolbar" id="toolbar">
+  <div class="search-box">
+    <span>🔍</span>
+    <input type="text" id="q" placeholder="Search your saved papers…" autocomplete="off"/>
+  </div>
+  <div class="filters">
+    <div class="fg"><label>Sort</label>
+      <select id="sortBy">
+        <option value="saved_desc">Recently saved</option>
+        <option value="saved_asc">Oldest saved</option>
+        <option value="cited">Most cited</option>
+        <option value="recent">Newest published</option>
+        <option value="title">Title A–Z</option>
+      </select></div>
+    <div class="fg"><label>Word in</label>
+      <select id="fieldBy">
+        <option value="both">Title or abstract</option>
+        <option value="title">Title only</option>
+        <option value="abstract">Abstract only</option>
+        <option value="any">Anywhere</option>
+      </select></div>
+    <div class="fg"><label>From</label><input type="number" id="yf" placeholder="Any" inputmode="numeric"/></div>
+    <div class="fg"><label>To</label><input type="number" id="yt" placeholder="Any" inputmode="numeric"/></div>
+    <button class="toggle" id="oaBtn" onclick="toggleOA()">🔓 OA only</button>
+  </div>
+  <div class="src-row hidden" id="srcRow"><span class="lbl">Sources:</span><span id="srcChips"></span></div>
+</div>
+
+<div class="sumbar hidden" id="sumbar">
+  <span class="info" id="info"></span>
+  <span class="acts">
+    <button class="btn xs" onclick="clearFilters()">✕ Clear filters</button>
+    <button class="btn xs" onclick="copyAll()">📋 Copy all APA</button>
+    <button class="btn xs" onclick="exportCSV()">⬇ CSV</button>
+  </span>
+</div>
+
+<div id="error"></div>
+<div id="list"><div class="spinner"></div></div>
+<button class="btn more hidden" id="moreBtn" onclick="showMore()">Show more</button>
+
+</div>
+<div id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const PAGE = 20;
+let items = [];            // [{id, paperId, p, saved}]
+let shown = PAGE;
+let oaOnly = false;
+const offSrc = new Set();  // sources the user switched off
+let view = [];             // currently visible (filtered + sorted) items
+
+/* ── helpers ───────────────────────────── */
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function safeUrl(u){ u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? u : ''; }
+function doiUrl(d){ d = String(d || '').trim(); if (!d) return ''; if (/^https?:\/\//i.test(d)) return safeUrl(d); return /^10\./.test(d) ? 'https://doi.org/' + d : ''; }
+let toastT;
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+function toggleTheme(){
+  const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+  document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+  $('themeBtn').textContent = dark ? '☀️' : '🌙';
+  try { localStorage.setItem('sturch_theme', dark ? 'light' : 'dark'); } catch(e) {}
+}
+(function(){ try { if (localStorage.getItem('sturch_theme') === 'light') { document.documentElement.setAttribute('data-theme','light'); document.addEventListener('DOMContentLoaded', () => { $('themeBtn').textContent = '☀️'; }); } } catch(e) {} })();
+
+/* ── word matching (same rules as the search page) ── */
+const isAlnum = c => /[\p{L}\p{N}]/u.test(c);
+const norm = s => String(s == null ? '' : s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function compact(text){
+  const chars = [], starts = []; let nw = true;
+  for (const c of norm(text)) {
+    if (isAlnum(c)) { for (let k = 0; k < c.length; k++) { chars.push(c[k]); starts.push(nw && k === 0); } nw = false; }
+    else nw = true;
+  }
+  return [chars.join(''), starts];
+}
+function termIn(text, term){
+  const t = norm(term);
+  if (t && norm(text).includes(t)) return true;
+  const ct = [...t].filter(isAlnum).join('');
+  if (!ct) return false;
+  const [comp, starts] = compact(text);
+  let i = comp.indexOf(ct);
+  while (i !== -1) { if (starts[i]) return true; i = comp.indexOf(ct, i + 1); }
+  return false;
+}
+function matches(p, terms, field){
+  const title = p.title || '', abs = p.abstract || '';
+  if (field === 'title')    return terms.every(t => termIn(title, t));
+  if (field === 'abstract') return terms.every(t => termIn(abs, t));
+  if (field === 'any') {
+    const all = [title, abs, (p.authors || []).join(' '), p.journal || '', (p.concepts || []).join(' ')].join(' ');
+    return terms.every(t => termIn(all, t));
+  }
+  return terms.every(t => termIn(title, t) || termIn(abs, t));
+}
+function srcLabel(ds){
+  const s = norm(ds);
+  if (s.includes('openalex')) return 'OpenAlex';
+  if (s.includes('arxiv'))    return 'arXiv';
+  if (s.includes('pubmed'))   return 'PubMed';
+  if (s.includes('crossref')) return 'Crossref';
+  if (s.includes('europe'))   return 'Europe PMC';
+  return 'Other';
+}
+
+/* ── load ──────────────────────────────── */
+async function load(){
+  try {
+    const resp = await fetch('/api/bookmarks', {headers: {'Accept': 'application/json'}});
+    if (resp.status === 401 || resp.redirected || !(resp.headers.get('content-type') || '').includes('json')) { window.location.href = '/login'; return; }
+    const data = await resp.json();
+    if (!resp.ok) { showError(data.error || 'Could not load saved papers', data.detail); return; }
+    items = (Array.isArray(data) ? data : []).map(b => ({
+      id: b.id, paperId: b.paper_id, p: (b.paper_data && typeof b.paper_data === 'object') ? b.paper_data : {},
+      saved: Date.parse(b.created_at) || 0
+    }));
+    $('error').innerHTML = '';
+    render(true);
+  } catch(e) { showError('Connection problem. Check your internet and try again.', String(e)); }
+}
+function showError(msg, detail){
+  $('list').innerHTML = '';
+  $('error').innerHTML = `<div class="errbox">⚠️ ${esc(msg)}. Please try again in a moment.
+    <button class="btn xs" style="margin-left:8px" onclick="location.reload()">Retry</button>
+    ${detail ? `<details><summary style="color:var(--muted)">Technical details</summary><code>${esc(detail)}</code></details>` : ''}</div>`;
+  $('toolbar').classList.add('hidden');
+}
+
+/* ── filter + sort ─────────────────────── */
+function computeView(){
+  const terms = $('q').value.trim().split(/\s+/).filter(Boolean);
+  const field = $('fieldBy').value;
+  const yf = parseInt($('yf').value, 10) || null, yt = parseInt($('yt').value, 10) || null;
+  let list = items.filter(it => {
+    const p = it.p;
+    if (offSrc.has(srcLabel(p.data_source))) return false;
+    if (oaOnly && !p.is_oa) return false;
+    const y = parseInt(p.year, 10) || null;
+    if (yf && (!y || y < yf)) return false;
+    if (yt && (!y || y > yt)) return false;
+    if (terms.length && !matches(p, terms, field)) return false;
+    return true;
+  });
+  const dkey = p => p.date || (p.year ? String(p.year).padStart(4, '0') + '-00-00' : '');
+  const sort = $('sortBy').value;
+  list.sort((a, b) => {
+    if (sort === 'saved_asc') return a.saved - b.saved;
+    if (sort === 'cited')     return (b.p.citations || 0) - (a.p.citations || 0) || b.saved - a.saved;
+    if (sort === 'recent')    return dkey(b.p).localeCompare(dkey(a.p)) || (b.p.citations || 0) - (a.p.citations || 0);
+    if (sort === 'title')     return String(a.p.title || '').localeCompare(String(b.p.title || ''));
+    return b.saved - a.saved;
+  });
+  return list;
+}
+function buildChips(){
+  const counts = {};
+  items.forEach(it => { const l = srcLabel(it.p.data_source); counts[l] = (counts[l] || 0) + 1; });
+  const labels = Object.keys(counts).sort();
+  $('srcRow').classList.toggle('hidden', labels.length < 2);
+  $('srcChips').innerHTML = labels.map(l =>
+    `<span class="chip ${offSrc.has(l) ? '' : 'active'}" data-src="${esc(l)}" onclick="toggleSrc(this)">${esc(l)} · ${counts[l]}</span>`).join(' ');
+}
+function toggleSrc(el){
+  const l = el.dataset.src;
+  if (offSrc.has(l)) offSrc.delete(l); else offSrc.add(l);
+  el.classList.toggle('active', !offSrc.has(l));
+  shown = PAGE; render(false);
+}
+function toggleOA(){ oaOnly = !oaOnly; $('oaBtn').classList.toggle('on', oaOnly); shown = PAGE; render(false); }
+function clearFilters(){
+  $('q').value = ''; $('yf').value = ''; $('yt').value = ''; $('fieldBy').value = 'both';
+  oaOnly = false; $('oaBtn').classList.remove('on'); offSrc.clear();
+  shown = PAGE; render(true);
+}
+
+/* ── render ────────────────────────────── */
+function apaOf(p){
+  if (p.apa_reference) return p.apa_reference;
+  const au = (p.authors || []).slice(0, 6).join(', ');
+  return `${au ? au + ' ' : ''}(${p.year || 'n.d.'}). ${p.title || 'Untitled'}.${p.journal ? ' ' + p.journal + '.' : ''}${p.doi ? ' ' + (doiUrl(p.doi) || p.doi) : ''}`;
+}
+function cardHTML(it){
+  const p = it.p;
+  const au = (p.authors || []);
+  const authors = au.slice(0, 3).join(', ') + (au.length > 3 ? ' et al.' : '');
+  const parts = [];
+  if (authors)   parts.push(esc(authors));
+  if (p.journal) parts.push(`<i>${esc(p.journal)}</i>`);
+  if (p.year)    parts.push(esc(p.year));
+  const metaHtml = parts.join(' · ');
+  const doi = doiUrl(p.doi), full = safeUrl(p.oa_url);
+  const date = it.saved ? new Date(it.saved).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}) : '';
+  return `<div class="card" data-id="${esc(it.id)}">
+    <div class="c-title">${esc(p.title || 'Untitled')}</div>
+    <div class="c-meta">${metaHtml}</div>
+    <div class="c-badges">
+      ${p.citations ? `<span class="cites">★ ${Number(p.citations).toLocaleString()}</span>` : ''}
+      ${p.is_oa ? '<span class="badge oa">OA</span>' : ''}
+      <span class="badge src">${esc(srcLabel(p.data_source))}</span>
+      ${date ? `<span class="savedon">saved ${esc(date)}</span>` : ''}
+    </div>
+    ${p.abstract ? `<details><summary>Show abstract</summary><p>${esc(p.abstract)}</p></details>` : ''}
+    <div class="c-actions">
+      <button class="btn xs primary" data-act="read" data-id="${esc(it.id)}">📄 Read</button>
+      <button class="btn xs" data-act="cite" data-id="${esc(it.id)}">📋 Cite</button>
+      ${doi ? `<a class="btn xs" href="${esc(doi)}" target="_blank" rel="noopener noreferrer">DOI</a>` : ''}
+      ${full ? `<a class="btn xs" href="${esc(full)}" target="_blank" rel="noopener noreferrer">Full text</a>` : ''}
+      <button class="btn xs danger" data-act="remove" data-id="${esc(it.id)}">🗑 Remove</button>
+    </div>
+  </div>`;
+}
+function render(rebuildChips){
+  if (rebuildChips) buildChips();
+  $('totalCount').textContent = items.length ? `${items.length} saved` : '';
+  if (!items.length) {
+    $('sumbar').classList.add('hidden'); $('moreBtn').classList.add('hidden');
+    $('list').innerHTML = `<div class="state"><div class="big">🔖</div><h3>No saved papers yet</h3>
+      <p>Tap <b>🔖 Save</b> on any search result and it will appear here.</p>
+      <a class="btn primary" href="/search">🔍 Find papers</a></div>`;
+    return;
+  }
+  view = computeView();
+  $('sumbar').classList.remove('hidden');
+  $('info').textContent = `Showing ${Math.min(shown, view.length)} of ${view.length}` + (view.length !== items.length ? ` (filtered from ${items.length})` : '');
+  if (!view.length) {
+    $('moreBtn').classList.add('hidden');
+    $('list').innerHTML = `<div class="state"><div class="big">🔍</div><h3>No saved papers match these filters</h3>
+      <p>Try different words or clear the filters.</p><button class="btn" onclick="clearFilters()">✕ Clear filters</button></div>`;
+    return;
+  }
+  $('list').innerHTML = view.slice(0, shown).map(cardHTML).join('');
+  $('moreBtn').classList.toggle('hidden', view.length <= shown);
+  $('moreBtn').textContent = `Show next ${Math.min(PAGE, view.length - shown)} (${view.length - shown} remaining)`;
+}
+function showMore(){ shown += PAGE; render(false); }
+
+/* ── actions ───────────────────────────── */
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); return true; } catch(e) {}
+  try {
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok;
+  } catch(e) { return false; }
+}
+function copyAll(){
+  if (!view.length) return;
+  copyText(view.map(it => apaOf(it.p)).join('\n\n')).then(ok => toast(ok ? `📋 Copied ${view.length} reference${view.length > 1 ? 's' : ''}` : '⚠️ Could not copy'));
+}
+function exportCSV(){
+  if (!view.length) return;
+  const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const rows = [['Title','Authors','Year','Journal','Citations','Open Access','DOI','Source','Saved']];
+  view.forEach(it => { const p = it.p; rows.push([p.title, (p.authors || []).join('; '), p.year, p.journal, p.citations || 0, p.is_oa ? 'Yes' : 'No', p.doi, srcLabel(p.data_source), it.saved ? new Date(it.saved).toISOString().slice(0, 10) : '']); });
+  const csv = '\ufeff' + rows.map(r => r.map(q).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8'}));
+  a.download = 'sturch-saved-papers.csv'; document.body.appendChild(a); a.click(); a.remove();
+  toast(`⬇ Exported ${view.length} paper${view.length > 1 ? 's' : ''}`);
+}
+async function removeItem(id){
+  const it = items.find(x => x.id === id); if (!it) return;
+  if (!confirm('Remove this paper from your saved list?')) return;
+  try {
+    const resp = await fetch('/api/bookmarks/' + encodeURIComponent(id), {method: 'DELETE'});
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || data.error) { toast('⚠️ ' + (data.error || 'Could not remove')); return; }
+    items = items.filter(x => x.id !== id);
+    toast('Removed'); render(true);
+  } catch(e) { toast('⚠️ Connection problem'); }
+}
+$('list').addEventListener('click', e => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const it = items.find(x => x.id === b.dataset.id); if (!it) return;
+  if (b.dataset.act === 'read') {
+    try { sessionStorage.setItem('sturch_paper', JSON.stringify(it.p)); } catch(err) {}
+    window.location.href = '/paper';
+  } else if (b.dataset.act === 'cite') {
+    copyText(apaOf(it.p)).then(ok => toast(ok ? '📋 APA reference copied' : '⚠️ Could not copy'));
+  } else if (b.dataset.act === 'remove') { removeItem(it.id); }
+});
+
+/* ── events ────────────────────────────── */
+let typeT;
+$('q').addEventListener('input', () => { clearTimeout(typeT); typeT = setTimeout(() => { shown = PAGE; render(false); }, 150); });
+['sortBy', 'fieldBy', 'yf', 'yt'].forEach(id => $(id).addEventListener('input', () => { shown = PAGE; render(false); }));
+window.addEventListener('load', load);
+</script>
+</body>
+</html>

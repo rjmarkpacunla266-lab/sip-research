@@ -65,6 +65,25 @@ def sb_delete(table, filters):
     resp = requests.delete(url, headers=sb_headers())
     return resp.ok
 
+def sb_try(method, table, filters="", data=None):
+    """Supabase call that REPORTS failures instead of hiding them.
+    Returns (ok, payload, error_text). Errors are also printed to the server log."""
+    url = f"{SUPABASE_URL}/rest/v1/{table}" + (f"?{filters}" if filters else "")
+    try:
+        resp = requests.request(method, url, headers=sb_headers(), json=data, timeout=15)
+    except Exception as e:
+        print(f"[supabase] {method} {table} failed: {e}", flush=True)
+        return False, None, str(e)
+    if not resp.ok:
+        err = (resp.text or "")[:300]
+        print(f"[supabase] {method} {table} -> {resp.status_code}: {err}", flush=True)
+        return False, None, err
+    try:
+        payload = resp.json() if resp.text else []
+    except ValueError:
+        payload = []
+    return True, payload, ""
+
 # ─── AUTH HELPERS ────────────────────────────────────────────────────
 def normalize_email(email):
     email = email.strip().lower()
