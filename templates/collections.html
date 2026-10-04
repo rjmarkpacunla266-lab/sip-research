@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Collections — Sturch</title>
+<meta name="robots" content="noindex, nofollow"/>
+<meta name="theme-color" content="#0b0d12"/>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
+  --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
+  --gold:#e8b84b;--green:#3ecf8e;--red:#f06a6a;
+  --text:#d8e0f8;--muted:#5a6385;
+  --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;
+}
+[data-theme="light"]{
+  --bg:#f4f6fb;--surf:#ffffff;--surf2:#eef1f8;--surf3:#e2e7f4;
+  --border:rgba(80,100,180,.15);--text:#1a2040;--muted:#6b7599;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6}
+a{color:var(--accent);text-decoration:none}
+.hidden{display:none!important}
+#app{max-width:900px;margin:0 auto;padding:0 16px 70px}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+.logo{font-family:var(--serif);font-size:1.4rem;display:flex;align-items:center;gap:6px}
+.beta{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;font-family:var(--mono)}
+.header-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:10px;font-family:var(--sans);font-size:.8rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .18s;white-space:nowrap;text-decoration:none}
+.btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:5px 10px;font-size:.76rem}
+.btn.xs{padding:4px 9px;font-size:.72rem;border-radius:8px}
+.btn.danger{background:rgba(240,106,106,.08);border-color:rgba(240,106,106,.2);color:var(--red)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.page-title{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:22px 0 12px}
+.page-title h1{font-family:var(--serif);font-size:1.45rem;word-break:break-word}
+.count{font-size:.78rem;color:var(--muted);font-family:var(--mono)}
+
+.create{display:flex;gap:8px;margin-bottom:14px}
+.create input{flex:1;min-width:0;background:var(--surf);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--sans);font-size:.9rem;padding:10px 12px;outline:none}
+.create input:focus{border-color:var(--accent)}
+.col-card{display:flex;align-items:center;gap:12px;background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s;animation:fadeUp .25s ease both}
+.col-card:hover{border-color:var(--accent)}
+.col-card .ico{font-size:1.5rem}
+.col-card .nm{font-family:var(--serif);font-size:1rem;word-break:break-word}
+.col-card .ct{font-size:.74rem;color:var(--muted);font-family:var(--mono)}
+.col-card .go{margin-left:auto;color:var(--muted)}
+
+.toolbar{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:12px}
+.search-box{position:relative}
+.search-box input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--sans);font-size:.9rem;padding:10px 12px 10px 34px;outline:none}
+.search-box input:focus{border-color:var(--accent)}
+.search-box span{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:.85rem;color:var(--muted)}
+.filters{display:flex;flex-wrap:wrap;gap:8px 10px;margin-top:10px;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.fg select{background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.76rem;padding:6px 8px;outline:none;max-width:160px}
+.bar{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 6px}
+.info{font-size:.76rem;color:var(--muted);font-family:var(--mono);margin:8px 2px}
+
+.card{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-bottom:9px;animation:fadeUp .25s ease both}
+.c-title{font-family:var(--serif);font-size:.98rem;line-height:1.35;margin-bottom:4px;word-break:break-word}
+.c-meta{font-size:.76rem;color:var(--muted);line-height:1.5}
+.c-badges{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:7px;font-size:.7rem;font-family:var(--mono)}
+.cites{color:var(--gold)}
+.badge{padding:1px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
+.badge.oa{color:var(--green);border-color:rgba(62,207,142,.3);background:rgba(62,207,142,.08)}
+.badge.src{color:var(--accent);border-color:rgba(79,141,232,.3);background:rgba(79,141,232,.08)}
+details{margin-top:8px}
+summary{cursor:pointer;font-size:.74rem;color:var(--accent);list-style:none}
+summary::-webkit-details-marker{display:none}
+details p{font-size:.8rem;opacity:.85;line-height:1.6;margin-top:6px}
+.c-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+
+.state{text-align:center;padding:46px 16px;color:var(--muted)}
+.state .big{font-size:2.4rem;margin-bottom:8px}
+.state h3{font-family:var(--serif);color:var(--text);font-size:1.05rem;margin-bottom:6px}
+.state p{font-size:.82rem;margin-bottom:14px}
+.errbox{background:rgba(240,106,106,.07);border:1px solid rgba(240,106,106,.2);border-radius:12px;padding:14px;color:var(--red);font-size:.84rem;margin-top:14px}
+.errbox code{display:block;margin-top:8px;font-family:var(--mono);font-size:.7rem;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+.errbox summary{color:var(--muted);margin-top:8px}
+.spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto}
+
+/* picker modal */
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center;z-index:200}
+.sheet{background:var(--surf);border:1px solid var(--border);border-radius:16px 16px 0 0;width:100%;max-width:640px;max-height:86vh;display:flex;flex-direction:column;padding:16px}
+.sheet h2{font-family:var(--serif);font-size:1.1rem;margin-bottom:10px}
+.sheet .list{overflow:auto;flex:1;margin:10px 0}
+.pick{display:flex;gap:10px;align-items:flex-start;padding:9px 6px;border-bottom:1px solid var(--border);cursor:pointer}
+.pick input{margin-top:4px;accent-color:var(--accent)}
+.pick.dis{opacity:.5;cursor:default}
+.pick .t{font-size:.86rem;line-height:1.35;word-break:break-word}
+.pick .m{font-size:.7rem;color:var(--muted)}
+.sheet .foot{display:flex;gap:8px;justify-content:space-between;align-items:center}
+#toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,60px);background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:9px 16px;font-size:.82rem;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:300;opacity:0;transition:all .3s;max-width:90vw;text-align:center}
+#toast.show{transform:translate(-50%,0);opacity:1}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<header>
+  <a href="/" class="logo" style="text-decoration:none"><span style="color:var(--accent)">Sturch</span><span class="beta">BETA</span></a>
+  <div class="header-right">
+    <a href="/" class="btn sm">🏠 Home</a>
+    <a href="/search" class="btn sm">🔍 Search</a>
+    <a href="/saved" class="btn sm">🔖 Saved</a>
+    <a href="/citations" class="btn sm">📋 Citations</a>
+    <button class="btn sm" id="themeBtn" onclick="toggleTheme()" title="Dark / light">🌙</button>
+    <a href="/logout" class="btn sm danger">Logout</a>
+  </div>
+</header>
+
+<div id="error"></div>
+
+<!-- LIST VIEW -->
+<div id="listView">
+  <div class="page-title"><h1>📚 Collections</h1><span class="count" id="listCount"></span></div>
+  <div class="create">
+    <input type="text" id="newName" maxlength="100" placeholder="New collection name…" autocomplete="off"/>
+    <button class="btn primary" id="createBtn" onclick="createCol()">+ Create</button>
+  </div>
+  <div id="cols"><div class="spinner"></div></div>
+</div>
+
+<!-- DETAIL VIEW -->
+<div id="detailView" class="hidden">
+  <div style="padding-top:14px"><button class="btn sm" onclick="goList()">← All collections</button></div>
+  <div class="page-title"><h1 id="detTitle">📁</h1><span class="count" id="detCount"></span></div>
+  <div class="bar">
+    <button class="btn xs" onclick="openPicker()">➕ Add from Saved</button>
+    <button class="btn xs" onclick="renameCol()">✏️ Rename</button>
+    <button class="btn xs" onclick="copyAll()">📋 Copy all APA</button>
+    <button class="btn xs" onclick="exportCSV()">⬇ CSV</button>
+    <a class="btn xs" id="citeLink" href="/citations">📋 Make bibliography</a>
+    <button class="btn xs danger" onclick="deleteCol()">🗑 Delete</button>
+  </div>
+  <div class="toolbar" id="toolbar">
+    <div class="search-box"><span>🔍</span><input type="text" id="q" placeholder="Search this collection…" autocomplete="off"/></div>
+    <div class="filters">
+      <div class="fg"><label>Sort</label>
+        <select id="sortBy">
+          <option value="added_desc">Recently added</option>
+          <option value="added_asc">Oldest added</option>
+          <option value="cited">Most cited</option>
+          <option value="recent">Newest published</option>
+          <option value="title">Title A–Z</option>
+        </select></div>
+      <div class="fg"><label>Word in</label>
+        <select id="fieldBy">
+          <option value="both">Title or abstract</option>
+          <option value="title">Title only</option>
+          <option value="abstract">Abstract only</option>
+        </select></div>
+    </div>
+  </div>
+  <div class="info" id="info"></div>
+  <div id="papers"></div>
+</div>
+
+</div>
+
+<div id="modal" class="hidden" onclick="if(event.target.id==='modal')closePicker()">
+  <div class="sheet">
+    <h2>➕ Add from your Saved papers</h2>
+    <div class="search-box"><span>🔍</span><input type="text" id="pq" placeholder="Search saved papers…" autocomplete="off"/></div>
+    <div class="list" id="pickList"><div class="spinner"></div></div>
+    <div class="foot">
+      <button class="btn" onclick="closePicker()">Cancel</button>
+      <button class="btn primary" id="addSel" onclick="addSelected()" disabled>Add selected</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let collections = [];       // [{id, name}]
+let counts = {};            // collection id -> number of papers
+let current = null;         // {id, name}
+let items = [];             // [{entryId, paperId, p, added}]
+let view = [];
+let saved = [];             // bookmarks for the picker
+const picked = new Set();
+
+/* ── helpers ───────────────────────────── */
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function safeUrl(u){ u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? u : ''; }
+function doiUrl(d){ d = String(d || '').trim(); if (!d) return ''; if (/^https?:\/\//i.test(d)) return safeUrl(d); return /^10\./.test(d) ? 'https://doi.org/' + d : ''; }
+let toastT;
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+function toggleTheme(){
+  const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+  document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+  $('themeBtn').textContent = dark ? '☀️' : '🌙';
+  try { localStorage.setItem('sturch_theme', dark ? 'light' : 'dark'); } catch(e) {}
+}
+(function(){ try { if (localStorage.getItem('sturch_theme') === 'light') { document.documentElement.setAttribute('data-theme','light'); document.addEventListener('DOMContentLoaded', () => { $('themeBtn').textContent = '☀️'; }); } } catch(e) {} })();
+
+const isAlnum = c => /[\p{L}\p{N}]/u.test(c);
+const norm = s => String(s == null ? '' : s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function compact(text){
+  const chars = [], starts = []; let nw = true;
+  for (const c of norm(text)) {
+    if (isAlnum(c)) { for (let k = 0; k < c.length; k++) { chars.push(c[k]); starts.push(nw && k === 0); } nw = false; } else nw = true;
+  }
+  return [chars.join(''), starts];
+}
+function termIn(text, term){
+  const t = norm(term);
+  if (t && norm(text).includes(t)) return true;
+  const ct = [...t].filter(isAlnum).join('');
+  if (!ct) return false;
+  const [comp, starts] = compact(text);
+  let i = comp.indexOf(ct);
+  while (i !== -1) { if (starts[i]) return true; i = comp.indexOf(ct, i + 1); }
+  return false;
+}
+function matches(p, terms, field){
+  const title = p.title || '', abs = p.abstract || '';
+  if (field === 'title')    return terms.every(t => termIn(title, t));
+  if (field === 'abstract') return terms.every(t => termIn(abs, t));
+  return terms.every(t => termIn(title, t) || termIn(abs, t));
+}
+function srcLabel(ds){
+  const s = norm(ds);
+  if (s.includes('openalex')) return 'OpenAlex';
+  if (s.includes('arxiv')) return 'arXiv';
+  if (s.includes('pubmed')) return 'PubMed';
+  if (s.includes('crossref')) return 'Crossref';
+  if (s.includes('europe')) return 'Europe PMC';
+  return 'Other';
+}
+async function api(url, opts){
+  const resp = await fetch(url, Object.assign({headers: {'Accept': 'application/json'}}, opts || {}));
+  if (resp.status === 401 || resp.redirected || !(resp.headers.get('content-type') || '').includes('json')) { window.location.href = '/login'; throw new Error('login'); }
+  const data = await resp.json().catch(() => ({}));
+  return {ok: resp.ok && !data.error, data};
+}
+function showError(msg, detail){
+  $('error').innerHTML = `<div class="errbox">⚠️ ${esc(msg)}.
+    <button class="btn xs" style="margin-left:8px" onclick="location.reload()">Retry</button>
+    ${detail ? `<details><summary>Technical details</summary><code>${esc(detail)}</code></details>` : ''}</div>`;
+  $('listView').classList.add('hidden'); $('detailView').classList.add('hidden');
+}
+
+/* ── list view ─────────────────────────── */
+async function loadList(){
+  try {
+    const [c, s] = await Promise.all([api('/api/collections'), api('/api/collections/summary')]);
+    if (!c.ok) { showError(c.data.error || 'Could not load collections', c.data.detail); return false; }
+    collections = Array.isArray(c.data) ? c.data : [];
+    counts = s.ok && s.data && typeof s.data === 'object' ? s.data : {};
+    $('error').innerHTML = '';
+    return true;
+  } catch(e) { if (e.message !== 'login') showError('Connection problem. Check your internet and try again.', String(e)); return false; }
+}
+function renderList(){
+  $('listCount').textContent = collections.length ? `${collections.length} collection${collections.length === 1 ? '' : 's'}` : '';
+  if (!collections.length) {
+    $('cols').innerHTML = `<div class="state"><div class="big">📚</div><h3>No collections yet</h3>
+      <p>Create one above to group papers by subject, chapter or project.</p></div>`;
+    return;
+  }
+  $('cols').innerHTML = collections.map(c => {
+    const n = counts[String(c.id)] || 0;
+    return `<div class="col-card" data-id="${esc(c.id)}"><span class="ico">📁</span>
+      <div><div class="nm">${esc(c.name)}</div><div class="ct">${n} paper${n === 1 ? '' : 's'}</div></div><span class="go">›</span></div>`;
+  }).join('');
+}
+$('cols').addEventListener('click', e => { const c = e.target.closest('.col-card'); if (c) location.hash = encodeURIComponent(c.dataset.id); });
+async function createCol(){
+  const name = $('newName').value.trim();
+  if (!name) { toast('⚠️ Enter a name'); return; }
+  $('createBtn').disabled = true;
+  try {
+    const r = await api('/api/collections', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name})});
+    if (!r.ok || !r.data.id) { toast('⚠️ ' + (r.data.error || 'Could not create collection')); return; }
+    $('newName').value = '';
+    toast(`📚 "${name}" created`);
+    await loadList(); renderList();
+  } catch(e) { if (e.message !== 'login') toast('⚠️ Connection problem'); }
+  finally { $('createBtn').disabled = false; }
+}
+$('newName').addEventListener('keydown', e => { if (e.key === 'Enter') createCol(); });
+
+/* ── detail view ───────────────────────── */
+function goList(){ history.pushState(null, '', location.pathname); route(); }
+async function route(){
+  const id = decodeURIComponent(location.hash.replace(/^#/, ''));
+  const col = id && collections.find(c => String(c.id) === id);
+  if (!col) { current = null; $('detailView').classList.add('hidden'); $('listView').classList.remove('hidden'); renderList(); return; }
+  current = col;
+  $('listView').classList.add('hidden'); $('detailView').classList.remove('hidden');
+  $('detTitle').textContent = '📁 ' + col.name;
+  $('citeLink').href = '/citations#c:' + encodeURIComponent(col.id);
+  $('papers').innerHTML = '<div class="spinner"></div>'; $('info').textContent = '';
+  await loadItems();
+}
+async function loadItems(){
+  if (!current) return;
+  try {
+    const r = await api(`/api/collections/${encodeURIComponent(current.id)}/papers`);
+    if (!r.ok) { showError(r.data.error || 'Could not load this collection', r.data.detail); return; }
+    items = (Array.isArray(r.data) ? r.data : []).map(x => ({
+      entryId: String(x.id), paperId: String(x.paper_id || ''),
+      p: (x.paper_data && typeof x.paper_data === 'object') ? x.paper_data : {}, added: Date.parse(x.created_at) || 0 }));
+    counts[String(current.id)] = items.length;
+    renderItems();
+  } catch(e) { if (e.message !== 'login') showError('Connection problem. Check your internet and try again.', String(e)); }
+}
+function computeView(){
+  const terms = $('q').value.trim().split(/\s+/).filter(Boolean), field = $('fieldBy').value, sort = $('sortBy').value;
+  const list = items.filter(it => !terms.length || matches(it.p, terms, field));
+  const dkey = p => p.date || (p.year ? String(p.year).padStart(4, '0') + '-00-00' : '');
+  list.sort((a, b) => {
+    if (sort === 'added_asc') return a.added - b.added;
+    if (sort === 'cited')  return (b.p.citations || 0) - (a.p.citations || 0) || b.added - a.added;
+    if (sort === 'recent') return dkey(b.p).localeCompare(dkey(a.p)) || (b.p.citations || 0) - (a.p.citations || 0);
+    if (sort === 'title')  return String(a.p.title || '').localeCompare(String(b.p.title || ''));
+    return b.added - a.added;
+  });
+  return list;
+}
+function apaOf(p){
+  if (p.apa_reference) return p.apa_reference;
+  const au = (p.authors || []).slice(0, 6).join(', ');
+  return `${au ? au + ' ' : ''}(${p.year || 'n.d.'}). ${p.title || 'Untitled'}.${p.journal ? ' ' + p.journal + '.' : ''}${p.doi ? ' ' + (doiUrl(p.doi) || p.doi) : ''}`;
+}
+function cardHTML(it){
+  const p = it.p, au = p.authors || [];
+  const authors = au.slice(0, 3).join(', ') + (au.length > 3 ? ' et al.' : '');
+  const parts = [];
+  if (authors) parts.push(esc(authors)); if (p.journal) parts.push(`<i>${esc(p.journal)}</i>`); if (p.year) parts.push(esc(p.year));
+  const doi = doiUrl(p.doi), full = safeUrl(p.oa_url);
+  return `<div class="card">
+    <div class="c-title">${esc(p.title || 'Untitled')}</div>
+    <div class="c-meta">${parts.join(' · ')}</div>
+    <div class="c-badges">${p.citations ? `<span class="cites">★ ${Number(p.citations).toLocaleString()}</span>` : ''}
+      ${p.is_oa ? '<span class="badge oa">OA</span>' : ''}<span class="badge src">${esc(srcLabel(p.data_source))}</span></div>
+    ${p.abstract ? `<details><summary>Show abstract</summary><p>${esc(p.abstract)}</p></details>` : ''}
+    <div class="c-actions">
+      <button class="btn xs primary" data-act="read" data-id="${esc(it.entryId)}">📄 Read</button>
+      <button class="btn xs" data-act="cite" data-id="${esc(it.entryId)}">📋 Cite</button>
+      ${doi ? `<a class="btn xs" href="${esc(doi)}" target="_blank" rel="noopener noreferrer">DOI</a>` : ''}
+      ${full ? `<a class="btn xs" href="${esc(full)}" target="_blank" rel="noopener noreferrer">Full text</a>` : ''}
+      <button class="btn xs danger" data-act="remove" data-id="${esc(it.entryId)}">✕ Remove</button>
+    </div></div>`;
+}
+function renderItems(){
+  $('detCount').textContent = `${items.length} paper${items.length === 1 ? '' : 's'}`;
+  $('toolbar').classList.toggle('hidden', !items.length);
+  view = computeView();
+  if (!items.length) {
+    $('info').textContent = '';
+    $('papers').innerHTML = `<div class="state"><div class="big">📁</div><h3>This collection is empty</h3>
+      <p>Add papers from your Saved list, or tap 📚+ on any search result.</p>
+      <button class="btn primary" onclick="openPicker()">➕ Add from Saved</button></div>`;
+    return;
+  }
+  $('info').textContent = `Showing ${view.length} of ${items.length}`;
+  $('papers').innerHTML = view.length ? view.map(cardHTML).join('') : `<div class="state"><div class="big">🔍</div><h3>No papers match</h3></div>`;
+}
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); return true; } catch(e) {}
+  try { const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch(e) { return false; }
+}
+function copyAll(){ if (!view.length) return toast('Nothing to copy'); copyText(view.map(i => apaOf(i.p)).join('\n\n')).then(ok => toast(ok ? `📋 Copied ${view.length} reference${view.length > 1 ? 's' : ''}` : '⚠️ Could not copy')); }
+function exportCSV(){
+  if (!view.length) return toast('Nothing to export');
+  const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const rows = [['Title','Authors','Year','Journal','Citations','Open Access','DOI','Source']];
+  view.forEach(it => { const p = it.p; rows.push([p.title, (p.authors || []).join('; '), p.year, p.journal, p.citations || 0, p.is_oa ? 'Yes' : 'No', p.doi, srcLabel(p.data_source)]); });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.map(r => r.map(q).join(',')).join('\r\n')], {type: 'text/csv;charset=utf-8'}));
+  a.download = 'sturch-' + (current.name || 'collection').replace(/[^\w-]+/g, '_') + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+  toast(`⬇ Exported ${view.length} paper${view.length > 1 ? 's' : ''}`);
+}
+async function renameCol(){
+  const name = (prompt('Rename collection:', current.name) || '').trim();
+  if (!name || name === current.name) return;
+  try {
+    const r = await api('/api/collections/' + encodeURIComponent(current.id), {method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name})});
+    if (!r.ok) { toast('⚠️ ' + (r.data.error || 'Could not rename')); return; }
+    current.name = name; const c = collections.find(x => x.id === current.id); if (c) c.name = name;
+    $('detTitle').textContent = '📁 ' + name; toast('Renamed');
+  } catch(e) { if (e.message !== 'login') toast('⚠️ Connection problem'); }
+}
+async function deleteCol(){
+  if (!confirm(`Delete "${current.name}" and remove its ${items.length} paper${items.length === 1 ? '' : 's'} from it? Your Saved list is not affected.`)) return;
+  try {
+    const r = await api('/api/collections/' + encodeURIComponent(current.id), {method: 'DELETE'});
+    if (!r.ok) { toast('⚠️ ' + (r.data.error || 'Could not delete')); return; }
+    const cid = current.id; collections = collections.filter(c => c.id !== cid);
+    toast('Collection deleted'); goList();
+  } catch(e) { if (e.message !== 'login') toast('⚠️ Connection problem'); }
+}
+$('papers').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const it = items.find(x => x.entryId === b.dataset.id); if (!it) return;
+  if (b.dataset.act === 'read') { try { sessionStorage.setItem('sturch_paper', JSON.stringify(it.p)); } catch(err) {} window.location.href = '/paper'; }
+  else if (b.dataset.act === 'cite') copyText(apaOf(it.p)).then(ok => toast(ok ? '📋 APA reference copied' : '⚠️ Could not copy'));
+  else if (b.dataset.act === 'remove') {
+    if (!confirm('Remove this paper from the collection?')) return;
+    try {
+      const r = await api(`/api/collections/${encodeURIComponent(current.id)}/papers/${encodeURIComponent(it.entryId)}`, {method: 'DELETE'});
+      if (!r.ok) { toast('⚠️ ' + (r.data.error || 'Could not remove')); return; }
+      items = items.filter(x => x !== it); counts[String(current.id)] = items.length; toast('Removed'); renderItems();
+    } catch(err) { if (err.message !== 'login') toast('⚠️ Connection problem'); }
+  }
+});
+let typeT;
+$('q').addEventListener('input', () => { clearTimeout(typeT); typeT = setTimeout(renderItems, 150); });
+['sortBy', 'fieldBy'].forEach(id => $(id).addEventListener('input', renderItems));
+
+/* ── add from Saved ───────────────────── */
+async function openPicker(){
+  picked.clear(); $('pq').value = ''; $('addSel').disabled = true; $('addSel').textContent = 'Add selected';
+  $('modal').classList.remove('hidden'); $('pickList').innerHTML = '<div class="spinner"></div>';
+  try {
+    const r = await api('/api/bookmarks');
+    if (!r.ok) { $('pickList').innerHTML = `<div class="state"><p>⚠️ ${esc(r.data.error || 'Could not load saved papers')}</p></div>`; return; }
+    saved = (Array.isArray(r.data) ? r.data : []).map(b => ({id: String(b.id), paperId: String(b.paper_id || ''), p: (b.paper_data && typeof b.paper_data === 'object') ? b.paper_data : {}}));
+    renderPicker();
+  } catch(e) { if (e.message !== 'login') $('pickList').innerHTML = '<div class="state"><p>⚠️ Connection problem</p></div>'; }
+}
+function closePicker(){ $('modal').classList.add('hidden'); }
+function renderPicker(){
+  const have = new Set(items.map(i => i.paperId));
+  const terms = $('pq').value.trim().split(/\s+/).filter(Boolean);
+  const list = saved.filter(s => !terms.length || matches(s.p, terms, 'both'));
+  if (!saved.length) { $('pickList').innerHTML = `<div class="state"><p>You have no saved papers yet. Save some from Search first.</p></div>`; return; }
+  $('pickList').innerHTML = list.length ? list.map(s => {
+    const inCol = have.has(s.paperId);
+    return `<label class="pick ${inCol ? 'dis' : ''}"><input type="checkbox" data-id="${esc(s.id)}" ${inCol ? 'disabled checked' : ''} ${picked.has(s.id) ? 'checked' : ''}/>
+      <span><div class="t">${esc(s.p.title || 'Untitled')}</div><div class="m">${esc((s.p.authors || []).slice(0, 2).join(', '))}${s.p.year ? ' · ' + esc(s.p.year) : ''}${inCol ? ' · already in this collection' : ''}</div></span></label>`;
+  }).join('') : '<div class="state"><p>No saved papers match.</p></div>';
+}
+$('pickList').addEventListener('change', e => {
+  const cb = e.target.closest('input[type=checkbox]'); if (!cb || cb.disabled) return;
+  if (cb.checked) picked.add(cb.dataset.id); else picked.delete(cb.dataset.id);
+  $('addSel').disabled = !picked.size; $('addSel').textContent = picked.size ? `Add selected (${picked.size})` : 'Add selected';
+});
+$('pq').addEventListener('input', renderPicker);
+async function addSelected(){
+  const chosen = saved.filter(s => picked.has(s.id)); if (!chosen.length || !current) return;
+  $('addSel').disabled = true; let added = 0, failed = 0;
+  for (let i = 0; i < chosen.length; i++) {
+    $('addSel').textContent = `Adding ${i + 1}/${chosen.length}…`;
+    try {
+      const r = await api(`/api/collections/${encodeURIComponent(current.id)}/papers`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(chosen[i].p)});
+      if (r.ok && r.data.success) added++; else failed++;
+    } catch(e) { if (e.message === 'login') return; failed++; }
+  }
+  closePicker();
+  toast(failed ? `Added ${added}, ${failed} failed` : `➕ Added ${added} paper${added === 1 ? '' : 's'}`);
+  await loadItems();
+}
+
+/* ── start ─────────────────────────────── */
+window.addEventListener('hashchange', route);
+window.addEventListener('load', async () => { if (await loadList()) route(); });
+</script>
+</body>
+</html>

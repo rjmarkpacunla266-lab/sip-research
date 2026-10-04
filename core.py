@@ -147,104 +147,148 @@ def get_user_by_email(email):
     return result[0] if result else None
 
 # ─── CITATION BUILDERS ───────────────────────────────────────────────
+def _dot(text):
+    """Add a full stop unless the text already ends with one (avoids 'et al..' and 'Q..')."""
+    text = (text or "").strip()
+    return text if text.endswith((".", "?", "!")) else text + "."
+
+def _name_parts(name):
+    """-> (family, given_tokens, initials_only).
+    Understands 'Jane Q. Smith', 'Smith, Jane Q.' and the 'Waterhouse A' / 'Smith JK' style
+    that Europe PMC and PubMed use (family name first, initials last)."""
+    name = (name or "").strip()
+    if not name:
+        return "", [], False
+    if "," in name:
+        fam, _, giv = name.partition(",")
+        toks = giv.split()
+        return fam.strip(), toks, all(len(t.strip(".")) <= 3 and t.strip(".").isupper() for t in toks) if toks else False
+    parts = name.split()
+    if len(parts) == 1:
+        return parts[0], [], False
+    last = parts[-1]
+    if re.fullmatch(r"[A-Z]{1,2}", last) and any(c.islower() for c in "".join(parts[:-1])):
+        return " ".join(parts[:-1]), [last], True          # 'Waterhouse A', 'Smith JK'
+    return parts[-1], parts[:-1], False                     # 'Jane Q. Smith'
+
+def _initials(given, initials_only):
+    out = []
+    for tok in given:
+        t = tok.strip(".")
+        if not t:
+            continue
+        if initials_only and t.isupper() and len(t) <= 3:
+            out.extend(f"{c}." for c in t)                  # 'JK' -> J. K.
+        else:
+            out.append("-".join(f"{p[0].upper()}." for p in t.split("-") if p))
+    return " ".join(out)
+
+def _people(authors):
+    return [_name_parts(a) for a in (authors or []) if a and a.strip()]
+
+def _first_last(p):      # 'Smith, Jane Q.'
+    fam, given, ini = p
+    g = _initials(given, True) if ini else " ".join(given)
+    return f"{fam}, {g}" if g else fam
+
+def _natural(p):         # 'Jane Q. Smith'
+    fam, given, ini = p
+    g = _initials(given, True) if ini else " ".join(given)
+    return f"{g} {fam}".strip()
+
+def _doi_url(doi):
+    doi = (doi or "").strip()
+    return "" if not doi else (doi if doi.startswith("http") else f"https://doi.org/{doi}")
+
 def _build_apa(authors, year, title, journal, volume, issue, pages, doi):
-    apa_authors = []
-    for name in (authors or [])[:3]:
-        parts = name.strip().split()
-        if len(parts) >= 2:
-            apa_authors.append(f"{parts[-1]}, {parts[0][0]}.")
-        elif name.strip():
-            apa_authors.append(name.strip())
-    if len(authors or []) > 3:
-        apa_authors.append("et al.")
+    ppl  = _people(authors)
+    names = [f"{fam}, {_initials(giv, ini)}".rstrip(", ") if giv else fam for fam, giv, ini in ppl]
+    if not names:
+        author_str = "Unknown"
+    elif len(names) == 1:
+        author_str = names[0]
+    elif len(names) <= 6:
+        author_str = ", ".join(names[:-1]) + ", & " + names[-1]
+    else:
+        author_str = ", ".join(names[:6]) + ", et al."
     vol_issue  = f", {volume}({issue})" if volume and issue else (f", {volume}" if volume else "")
     pages_part = f", {pages}" if pages else ""
-    if doi and not doi.startswith("http"):
-        doi_part = f" https://doi.org/{doi}"
-    elif doi:
-        doi_part = f" {doi}"
-    else:
-        doi_part = ""
-    return (
-        f"{', '.join(apa_authors) or 'Unknown'} "
-        f"({year or 'n.d.'}). "
-        f"{title}. "
-        f"{journal}{vol_issue}{pages_part}.{doi_part}"
-    )
+    out = f"{_dot(author_str)} ({year or 'n.d.'}). {_dot((title or '').strip() or 'Untitled')}"
+    if journal:
+        out += f" {journal}{vol_issue}{pages_part}."
+    d = _doi_url(doi)
+    return out + (f" {d}" if d else "")
 
 def _build_mla(authors, year, title, journal, volume, issue, pages, doi):
-    mla_authors = []
-    for i, name in enumerate((authors or [])[:3]):
-        parts = name.strip().split()
-        if len(parts) >= 2:
-            mla_authors.append(f"{parts[-1]}, {' '.join(parts[:-1])}" if i == 0 else name.strip())
-        elif name.strip():
-            mla_authors.append(name.strip())
-    if not mla_authors:
+    ppl = _people(authors)
+    if not ppl:
         author_str = "Unknown"
-    elif len(mla_authors) == 1:
-        author_str = mla_authors[0] + (", et al" if len(authors or []) > 1 else "")
+    elif len(ppl) == 1:
+        author_str = _first_last(ppl[0])
+    elif len(ppl) == 2:
+        author_str = f"{_first_last(ppl[0])}, and {_natural(ppl[1])}"
     else:
-        author_str = ", and ".join(mla_authors) + (", et al" if len(authors or []) > 3 else "")
-    ref = f'{author_str}. "{title}."'
-    if journal: ref += f" {journal}"
-    if volume:  ref += f", vol. {volume}"
-    if issue:   ref += f", no. {issue}"
-    if year:    ref += f", {year}"
-    if pages:   ref += f", pp. {pages}"
-    ref += "."
-    if doi:
-        ref += f" {doi if doi.startswith('http') else 'https://doi.org/' + doi}."
-    return ref
+        author_str = f"{_first_last(ppl[0])}, et al"
+    bits = []
+    if journal: bits.append(journal)
+    if volume:  bits.append(f"vol. {volume}")
+    if issue:   bits.append(f"no. {issue}")
+    if year:    bits.append(str(year))
+    if pages:   bits.append(f"pp. {pages}")
+    ref = f'{_dot(author_str)} "{_dot((title or "").strip() or "Untitled")}"'
+    if bits:
+        ref += " " + _dot(", ".join(bits))
+    d = _doi_url(doi)
+    return ref + (f" {d}." if d else "")
 
 def _build_chicago(authors, year, title, journal, volume, issue, pages, doi):
-    chi_authors = []
-    for i, name in enumerate((authors or [])[:3]):
-        parts = name.strip().split()
-        if len(parts) >= 2:
-            chi_authors.append(f"{parts[-1]}, {' '.join(parts[:-1])}" if i == 0 else name.strip())
-        elif name.strip():
-            chi_authors.append(name.strip())
-    if not chi_authors:
+    ppl = _people(authors)
+    if not ppl:
         author_str = "Unknown"
-    elif len(chi_authors) == 1:
-        author_str = chi_authors[0] + (", et al." if len(authors or []) > 1 else "")
     else:
-        author_str = ", ".join(chi_authors) + (", et al." if len(authors or []) > 3 else "")
+        shown = ppl if len(ppl) <= 10 else ppl[:7]
+        names = [_first_last(shown[0])] + [_natural(p) for p in shown[1:]]
+        if len(ppl) > 10:
+            author_str = ", ".join(names) + ", et al."
+        elif len(names) == 1:
+            author_str = names[0]
+        elif len(names) == 2:
+            author_str = f"{names[0]}, and {names[1]}"
+        else:
+            author_str = ", ".join(names[:-1]) + ", and " + names[-1]
     y   = str(year) if year else "n.d."
-    ref = f'{author_str}. {y}. "{title}."'
-    if journal: ref += f" {journal}"
+    ref = f'{_dot(author_str)} {_dot(y)} "{_dot((title or "").strip() or "Untitled")}"'
+    tail = journal or ""
     if volume:
-        ref += f" {volume}"
-        if issue: ref += f" ({issue})"
-    if pages: ref += f": {pages}"
-    ref += "."
-    if doi:
-        ref += f" {doi if doi.startswith('http') else 'https://doi.org/' + doi}."
-    return ref
+        tail += f" {volume}"
+        if issue: tail += f" ({issue})"
+    if pages: tail += f": {pages}"
+    if tail.strip():
+        ref += " " + _dot(tail.strip())
+    d = _doi_url(doi)
+    return ref + (f" {d}." if d else "")
 
 def _build_harvard(authors, year, title, journal, volume, issue, pages, doi):
-    harv_authors = []
-    for name in (authors or [])[:3]:
-        parts = name.strip().split()
-        if len(parts) >= 2:
-            initials = ". ".join(p[0].upper() for p in parts[:-1] if p) + "."
-            harv_authors.append(f"{parts[-1]}, {initials}")
-        elif name.strip():
-            harv_authors.append(name.strip())
-    if len(authors or []) > 3:
-        harv_authors.append("et al.")
-    author_str = ", ".join(harv_authors) if harv_authors else "Unknown"
+    ppl   = _people(authors)
+    names = [f"{fam}, {_initials(giv, ini)}".rstrip(", ") if giv else fam for fam, giv, ini in ppl]
+    if not names:
+        author_str = "Unknown"
+    elif len(names) == 1:
+        author_str = names[0]
+    elif len(names) <= 3:
+        author_str = ", ".join(names[:-1]) + " and " + names[-1]
+    else:
+        author_str = names[0] + " et al."
     y   = str(year) if year else "n.d."
-    ref = f"{author_str} ({y}) '{title}'"
+    ref = f"{author_str} ({y}) '{(title or '').strip() or 'Untitled'}'"
     if journal: ref += f", {journal}"
     if volume:
         ref += f", {volume}"
         if issue: ref += f"({issue})"
     if pages: ref += f", pp. {pages}"
     ref += "."
-    if doi:
-        d = doi if doi.startswith("http") else f"https://doi.org/{doi}"
+    d = _doi_url(doi)
+    if d:
         ref += f" Available at: {d} (Accessed: {datetime.now().strftime('%d %B %Y')})."
     return ref
 

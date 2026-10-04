@@ -9,7 +9,7 @@ from flask import Blueprint, render_template, request, session, jsonify
 from core import (login_required, get_user, OPENALEX_URL,
                   RESULTS_PER_SOURCE, format_paper, reconstruct_abstract,
                   search_arxiv, search_pubmed, search_crossref, search_europe_pmc, search_openalex, _safe_terms,
-                  sb_post, sb_get, sb_patch, _all_citations)
+                  sb_post, sb_get, sb_patch, sb_try, _all_citations)
 from bs4 import BeautifulSoup as BS
 
 search_bp = Blueprint("search", __name__)
@@ -29,6 +29,10 @@ def get_me():
 ALL_SOURCES = ["openalex", "arxiv", "pubmed", "crossref", "europepmc"]
 SOURCE_LABELS = {"openalex": "OpenAlex", "arxiv": "arXiv", "pubmed": "PubMed",
                  "crossref": "Crossref", "europepmc": "Europe PMC"}
+
+def _q(value):
+    """URL-encode a value for a PostgREST filter."""
+    return urllib.parse.quote(str(value), safe="")
 
 def _to_int(v):
     try:
@@ -145,6 +149,21 @@ def _apply_filters_and_sort(papers, f, query=""):
         out.sort(key=lambda x: x.get("citations") or 0, reverse=True)
     return out
 
+def _log_search(user, query, count, f, tags_raw):
+    """Save one history row. The filters are stored too, so 'Search again' restores them.
+    If the optional `filters` column doesn't exist yet, fall back to saving without it."""
+    tags = [x.strip()[:80] for x in (tags_raw or "").split("|") if x.strip()][:10]
+    every_source = set(f["sources"]) == set(ALL_SOURCES)
+    row = {"user_id": user["id"], "query": query[:300], "results": count,
+           "searched_at": datetime.now().isoformat(),
+           "filters": {"tags": tags, "sources": [] if every_source else f["sources"],
+                       "year_from": f["year_from"], "year_to": f["year_to"],
+                       "oa": f["oa_only"], "sort": f["sort"], "field": f["field"]}}
+    ok, _, _ = sb_try("POST", "search_logs", data=row)
+    if not ok:
+        row.pop("filters")
+        sb_try("POST", "search_logs", data=row)
+
 def _run_search(query, page, user, log=True):
     f = _read_filters()
     jobs = {}
@@ -169,8 +188,7 @@ def _run_search(query, page, user, log=True):
                 pass
     results = _apply_filters_and_sort(_merge_dedupe(raw), f, query)
     if log:
-        sb_post("search_logs", {"user_id": user["id"], "query": query, "results": len(results),
-                                "searched_at": datetime.now().isoformat()})
+        _log_search(user, query, len(results), f, request.args.get("tg", ""))
     return {"results": results, "total": total or len(results), "query": query, "page": page,
             "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
             "ref_disclaimer": "References auto-generated — verify before academic use"}
@@ -207,8 +225,33 @@ def load_more():
 @search_bp.route("/api/history")
 @login_required
 def get_history():
-    logs = sb_get("search_logs", f"user_id=eq.{session['user_id']}&order=searched_at.desc&limit=50")
-    return jsonify(logs or [])
+    ok, rows, err = sb_try("GET", "search_logs",
+                           f"user_id=eq.{_q(session['user_id'])}&order=searched_at.desc&limit=300")
+    if not ok:
+        return jsonify({"error": "Could not load search history", "detail": err}), 500
+    return jsonify(rows)
+
+@search_bp.route("/api/history", methods=["DELETE"])
+@login_required
+def clear_history():
+    ok, _, err = sb_try("DELETE", "search_logs", f"user_id=eq.{_q(session['user_id'])}")
+    if not ok:
+        return jsonify({"error": "Could not clear history", "detail": err}), 500
+    return jsonify({"success": True})
+
+@search_bp.route("/api/history/delete", methods=["POST"])
+@login_required
+def delete_history_items():
+    data = request.get_json(silent=True) or {}
+    ids  = [str(i) for i in (data.get("ids") or [])][:200]
+    ids  = [i for i in ids if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", i)]
+    if not ids:
+        return jsonify({"error": "No valid ids"}), 400
+    ok, _, err = sb_try("DELETE", "search_logs",
+                        f"id=in.({','.join(ids)})&user_id=eq.{_q(session['user_id'])}")
+    if not ok:
+        return jsonify({"error": "Could not delete", "detail": err}), 500
+    return jsonify({"success": True})
 
 # ─── /api/related ────────────────────────────────────────────────────
 def _openalex_related(query):
@@ -246,6 +289,28 @@ def get_citations():
         data.get("title") or "", data.get("journal") or "",
         data.get("volume") or "", data.get("issue") or "",
         data.get("pages") or "", data.get("doi") or ""))
+
+# ─── /api/citations/bulk ─────────────────────────────────────────────
+@search_bp.route("/api/citations/bulk", methods=["POST"])
+@login_required
+def citations_bulk():
+    data   = request.get_json(silent=True) or {}
+    papers = data.get("papers")
+    if not isinstance(papers, list) or not papers:
+        return jsonify({"error": "papers list required"}), 400
+    out = []
+    for p in papers[:300]:
+        try:
+            if not isinstance(p, dict):
+                raise ValueError("bad paper")
+            authors = [str(a)[:120] for a in (p.get("authors") or []) if a][:30] if isinstance(p.get("authors"), list) else []
+            out.append(_all_citations(authors, str(p.get("year") or "n.d."), str(p.get("title") or ""),
+                                      str(p.get("journal") or ""), str(p.get("volume") or ""),
+                                      str(p.get("issue") or ""), str(p.get("pages") or ""),
+                                      str(p.get("doi") or "")))
+        except Exception:
+            out.append({})        # the page falls back to its own formatting for this one
+    return jsonify({"citations": out})
 
 # ─── /api/share ──────────────────────────────────────────────────────
 @search_bp.route("/api/share", methods=["POST"])

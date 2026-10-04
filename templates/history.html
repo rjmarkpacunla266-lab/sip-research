@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Search History — Sturch</title>
+<meta name="robots" content="noindex, nofollow"/>
+<meta name="theme-color" content="#0b0d12"/>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
+  --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
+  --gold:#e8b84b;--green:#3ecf8e;--red:#f06a6a;
+  --text:#d8e0f8;--muted:#5a6385;
+  --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;
+}
+[data-theme="light"]{
+  --bg:#f4f6fb;--surf:#ffffff;--surf2:#eef1f8;--surf3:#e2e7f4;
+  --border:rgba(80,100,180,.15);--text:#1a2040;--muted:#6b7599;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6}
+a{color:var(--accent);text-decoration:none}
+.hidden{display:none!important}
+#app{max-width:900px;margin:0 auto;padding:0 16px 70px}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+.logo{font-family:var(--serif);font-size:1.4rem;display:flex;align-items:center;gap:6px}
+.beta{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;font-family:var(--mono)}
+.header-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:10px;font-family:var(--sans);font-size:.8rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .18s;white-space:nowrap;text-decoration:none}
+.btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
+.btn.sm{padding:5px 10px;font-size:.76rem}
+.btn.xs{padding:4px 9px;font-size:.72rem;border-radius:8px}
+.btn.danger{background:rgba(240,106,106,.08);border-color:rgba(240,106,106,.2);color:var(--red)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.page-title{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:22px 0 12px}
+.page-title h1{font-family:var(--serif);font-size:1.45rem}
+.count{font-size:.78rem;color:var(--muted);font-family:var(--mono)}
+
+.toolbar{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:12px}
+.search-box{position:relative}
+.search-box input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--sans);font-size:.9rem;padding:10px 12px 10px 34px;outline:none}
+.search-box input:focus{border-color:var(--accent)}
+.search-box span{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:.85rem;color:var(--muted)}
+.filters{display:flex;flex-wrap:wrap;gap:8px 10px;margin-top:10px;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.fg select{background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.76rem;padding:6px 8px;outline:none;max-width:170px}
+.fg select:focus{border-color:var(--accent)}
+
+.sumbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:14px 0 6px}
+.sumbar .info{font-size:.76rem;color:var(--muted);font-family:var(--mono)}
+
+.day{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:16px 2px 8px}
+.card{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;animation:fadeUp .25s ease both}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:.82rem;padding:3px 11px;border-radius:20px;background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.25);color:var(--accent);word-break:break-word}
+.meta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:8px;font-size:.72rem;color:var(--muted);font-family:var(--mono)}
+.badge{padding:1px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
+.badge.oa{color:var(--green);border-color:rgba(62,207,142,.3);background:rgba(62,207,142,.08)}
+.times{color:var(--gold)}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+
+.state{text-align:center;padding:50px 16px;color:var(--muted)}
+.state .big{font-size:2.4rem;margin-bottom:8px}
+.state h3{font-family:var(--serif);color:var(--text);font-size:1.05rem;margin-bottom:6px}
+.state p{font-size:.82rem;margin-bottom:14px}
+.errbox{background:rgba(240,106,106,.07);border:1px solid rgba(240,106,106,.2);border-radius:12px;padding:14px;color:var(--red);font-size:.84rem;margin-top:14px}
+.errbox code{display:block;margin-top:8px;font-family:var(--mono);font-size:.7rem;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+.errbox summary{cursor:pointer;color:var(--muted);font-size:.74rem;margin-top:8px}
+.spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto}
+.more{display:block;margin:14px auto 0}
+#toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,60px);background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:9px 16px;font-size:.82rem;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:300;opacity:0;transition:all .3s;max-width:90vw;text-align:center}
+#toast.show{transform:translate(-50%,0);opacity:1}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<header>
+  <a href="/" class="logo" style="text-decoration:none"><span style="color:var(--accent)">Sturch</span><span class="beta">BETA</span></a>
+  <div class="header-right">
+    <a href="/" class="btn sm">🏠 Home</a>
+    <a href="/search" class="btn sm">🔍 Search</a>
+    <a href="/saved" class="btn sm">🔖 Saved</a>
+    <button class="btn sm" id="themeBtn" onclick="toggleTheme()" title="Dark / light">🌙</button>
+    <a href="/logout" class="btn sm danger">Logout</a>
+  </div>
+</header>
+
+<div class="page-title">
+  <h1>🕐 Search History</h1>
+  <span class="count" id="totalCount"></span>
+</div>
+
+<div class="toolbar hidden" id="toolbar">
+  <div class="search-box">
+    <span>🔍</span>
+    <input type="text" id="q" placeholder="Search your history…" autocomplete="off"/>
+  </div>
+  <div class="filters">
+    <div class="fg"><label>Sort</label>
+      <select id="sortBy">
+        <option value="new">Newest first</option>
+        <option value="old">Oldest first</option>
+        <option value="most">Most searched</option>
+      </select></div>
+  </div>
+</div>
+
+<div class="sumbar hidden" id="sumbar">
+  <span class="info" id="info"></span>
+  <button class="btn xs danger" onclick="clearAll()">🗑 Clear all</button>
+</div>
+
+<div id="error"></div>
+<div id="list"><div class="spinner"></div></div>
+<button class="btn more hidden" id="moreBtn" onclick="showMore()">Show more</button>
+
+</div>
+<div id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const PAGE = 30;
+const SRC_NAMES = {openalex: 'OpenAlex', arxiv: 'arXiv', pubmed: 'PubMed', crossref: 'Crossref', europepmc: 'Europe PMC'};
+let groups = [];   // [{key, ids[], query, tags[], filters, count, last, results}]
+let shown = PAGE;
+let view = [];
+
+/* ── helpers ───────────────────────────── */
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let toastT;
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+function toggleTheme(){
+  const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+  document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+  $('themeBtn').textContent = dark ? '☀️' : '🌙';
+  try { localStorage.setItem('sturch_theme', dark ? 'light' : 'dark'); } catch(e) {}
+}
+(function(){ try { if (localStorage.getItem('sturch_theme') === 'light') { document.documentElement.setAttribute('data-theme','light'); document.addEventListener('DOMContentLoaded', () => { $('themeBtn').textContent = '☀️'; }); } } catch(e) {} })();
+
+/* same word matching rules as the search and saved pages */
+const isAlnum = c => /[\p{L}\p{N}]/u.test(c);
+const norm = s => String(s == null ? '' : s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function compact(text){
+  const chars = [], starts = []; let nw = true;
+  for (const c of norm(text)) {
+    if (isAlnum(c)) { for (let k = 0; k < c.length; k++) { chars.push(c[k]); starts.push(nw && k === 0); } nw = false; }
+    else nw = true;
+  }
+  return [chars.join(''), starts];
+}
+function termIn(text, term){
+  const t = norm(term);
+  if (t && norm(text).includes(t)) return true;
+  const ct = [...t].filter(isAlnum).join('');
+  if (!ct) return false;
+  const [comp, starts] = compact(text);
+  let i = comp.indexOf(ct);
+  while (i !== -1) { if (starts[i]) return true; i = comp.indexOf(ct, i + 1); }
+  return false;
+}
+
+/* ── turn raw rows into groups ─────────── */
+function cleanFilters(f){
+  if (typeof f === 'string') { try { f = JSON.parse(f); } catch(e) { f = null; } }
+  if (!f || typeof f !== 'object' || Array.isArray(f)) f = {};
+  const yr = v => { v = parseInt(v, 10); return v > 1000 && v < 3000 ? v : null; };
+  return {
+    tags: Array.isArray(f.tags) ? f.tags.map(String).filter(Boolean).slice(0, 10) : [],
+    sources: Array.isArray(f.sources) ? f.sources.filter(s => SRC_NAMES[s]) : [],
+    year_from: yr(f.year_from), year_to: yr(f.year_to),
+    oa: f.oa === true,
+    sort: f.sort === 'recent' ? 'recent' : 'cited',
+    field: ['title', 'abstract'].includes(f.field) ? f.field : 'both'
+  };
+}
+function buildGroups(rows){
+  const map = new Map();
+  rows.forEach(r => {
+    const query = String(r.query || '').trim();
+    if (!query) return;
+    const f = cleanFilters(r.filters);
+    const key = norm(query) + '|' + JSON.stringify([f.sources, f.year_from, f.year_to, f.oa, f.sort, f.field]);
+    const time = Date.parse(r.searched_at) || 0;
+    let g = map.get(key);
+    if (!g) { g = {key, ids: [], query, tags: f.tags.length ? f.tags : [query], filters: f, count: 0, last: time, results: r.results || 0}; map.set(key, g); }
+    g.ids.push(String(r.id)); g.count++;
+    if (time > g.last) { g.last = time; g.results = r.results || 0; }
+  });
+  return [...map.values()];
+}
+
+/* ── load ──────────────────────────────── */
+async function load(){
+  try {
+    const resp = await fetch('/api/history', {headers: {'Accept': 'application/json'}});
+    if (resp.status === 401 || resp.redirected || !(resp.headers.get('content-type') || '').includes('json')) { window.location.href = '/login'; return; }
+    const data = await resp.json();
+    if (!resp.ok) { showError(data.error || 'Could not load search history', data.detail); return; }
+    groups = buildGroups(Array.isArray(data) ? data : []);
+    $('error').innerHTML = '';
+    render();
+  } catch(e) { showError('Connection problem. Check your internet and try again.', String(e)); }
+}
+function showError(msg, detail){
+  $('list').innerHTML = ''; $('toolbar').classList.add('hidden'); $('sumbar').classList.add('hidden');
+  $('error').innerHTML = `<div class="errbox">⚠️ ${esc(msg)}.
+    <button class="btn xs" style="margin-left:8px" onclick="location.reload()">Retry</button>
+    ${detail ? `<details><summary>Technical details</summary><code>${esc(detail)}</code></details>` : ''}</div>`;
+}
+
+/* ── view ──────────────────────────────── */
+function computeView(){
+  const terms = $('q').value.trim().split(/\s+/).filter(Boolean);
+  let list = groups.filter(g => !terms.length || terms.every(t => termIn(g.tags.join(' ') + ' ' + g.query, t)));
+  const sort = $('sortBy').value;
+  list.sort((a, b) => sort === 'old' ? a.last - b.last : sort === 'most' ? (b.count - a.count || b.last - a.last) : b.last - a.last);
+  return list;
+}
+function dayLabel(ts){
+  const d = new Date(ts), now = new Date();
+  const start = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((start(now) - start(d)) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  return d.toLocaleDateString(undefined, {weekday: 'long', month: 'long', day: 'numeric', year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric'});
+}
+function badges(f){
+  const out = [];
+  if (f.year_from && f.year_to) out.push(`${f.year_from}–${f.year_to}`);
+  else if (f.year_from) out.push(`from ${f.year_from}`);
+  else if (f.year_to) out.push(`until ${f.year_to}`);
+  if (f.oa) out.push('OA only');
+  if (f.sources.length) out.push(f.sources.map(s => SRC_NAMES[s]).join(', '));
+  if (f.sort === 'recent') out.push('Most recent');
+  if (f.field === 'title') out.push('Title only');
+  if (f.field === 'abstract') out.push('Abstract only');
+  return out.map(b => `<span class="badge ${b === 'OA only' ? 'oa' : ''}">${esc(b)}</span>`).join('');
+}
+function searchURL(g){
+  const f = g.filters, p = new URLSearchParams();
+  g.tags.forEach(t => p.append('tag', t));
+  if (f.year_from) p.set('yf', f.year_from);
+  if (f.year_to)   p.set('yt', f.year_to);
+  if (f.oa)        p.set('oa', '1');
+  if (f.sort !== 'cited') p.set('sort', f.sort);
+  if (f.field !== 'both') p.set('field', f.field);
+  if (f.sources.length) p.set('src', f.sources.join(','));
+  return '/search?' + p.toString();
+}
+function cardHTML(g, idx){
+  const time = g.last ? new Date(g.last).toLocaleTimeString(undefined, {hour: 'numeric', minute: '2-digit'}) : '';
+  return `<div class="card">
+    <div class="tags">${g.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
+    <div class="meta">
+      <span>${Number(g.results).toLocaleString()} result${g.results === 1 ? '' : 's'}</span>
+      ${g.count > 1 ? `<span class="times">searched ${g.count}×</span>` : ''}
+      ${time ? `<span>${esc(time)}</span>` : ''}
+      ${badges(g.filters)}
+    </div>
+    <div class="actions">
+      <a class="btn xs primary" href="${esc(searchURL(g))}">🔍 Search again</a>
+      <button class="btn xs danger" data-act="del" data-i="${idx}">🗑 Delete</button>
+    </div>
+  </div>`;
+}
+function render(){
+  $('totalCount').textContent = groups.length ? `${groups.length} search${groups.length === 1 ? '' : 'es'}` : '';
+  if (!groups.length) {
+    $('toolbar').classList.add('hidden'); $('sumbar').classList.add('hidden'); $('moreBtn').classList.add('hidden');
+    $('list').innerHTML = `<div class="state"><div class="big">🕐</div><h3>No searches yet</h3>
+      <p>Your searches will show up here so you can run them again.</p>
+      <a class="btn primary" href="/search">🔍 Start searching</a></div>`;
+    return;
+  }
+  $('toolbar').classList.remove('hidden'); $('sumbar').classList.remove('hidden');
+  view = computeView();
+  $('info').textContent = `Showing ${Math.min(shown, view.length)} of ${view.length}` + (view.length !== groups.length ? ` (filtered from ${groups.length})` : '');
+  if (!view.length) {
+    $('moreBtn').classList.add('hidden');
+    $('list').innerHTML = `<div class="state"><div class="big">🔍</div><h3>No searches match</h3><p>Try different words.</p></div>`;
+    return;
+  }
+  const byDay = $('sortBy').value !== 'most';
+  let html = '', lastDay = '';
+  view.slice(0, shown).forEach((g, i) => {
+    if (byDay) { const d = dayLabel(g.last); if (d !== lastDay) { html += `<div class="day">${esc(d)}</div>`; lastDay = d; } }
+    html += cardHTML(g, i);
+  });
+  $('list').innerHTML = html;
+  const left = view.length - shown;
+  $('moreBtn').classList.toggle('hidden', left <= 0);
+  $('moreBtn').textContent = `Show next ${Math.min(PAGE, Math.max(left, 0))} (${Math.max(left, 0)} remaining)`;
+}
+function showMore(){ shown += PAGE; render(); }
+
+/* ── actions ───────────────────────────── */
+async function deleteGroup(g){
+  try {
+    const resp = await fetch('/api/history/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ids: g.ids})});
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data.success) { toast('⚠️ ' + (data.error || 'Could not delete')); return; }
+    groups = groups.filter(x => x !== g);
+    toast('Deleted'); render();
+  } catch(e) { toast('⚠️ Connection problem'); }
+}
+async function clearAll(){
+  if (!groups.length || !confirm('Delete your whole search history? This cannot be undone.')) return;
+  try {
+    const resp = await fetch('/api/history', {method: 'DELETE'});
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data.success) { toast('⚠️ ' + (data.error || 'Could not clear history')); return; }
+    groups = []; toast('History cleared'); render();
+  } catch(e) { toast('⚠️ Connection problem'); }
+}
+$('list').addEventListener('click', e => {
+  const b = e.target.closest('button[data-act="del"]'); if (!b) return;
+  const g = view[parseInt(b.dataset.i, 10)]; if (g) deleteGroup(g);
+});
+let typeT;
+$('q').addEventListener('input', () => { clearTimeout(typeT); typeT = setTimeout(() => { shown = PAGE; render(); }, 150); });
+$('sortBy').addEventListener('input', () => { shown = PAGE; render(); });
+window.addEventListener('load', load);
+</script>
+</body>
+</html>

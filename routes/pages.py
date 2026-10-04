@@ -20,6 +20,21 @@ def search_page():
 def saved_page():
     return render_template("saved.html")
 
+@pages_bp.route("/history")
+@login_required
+def history_page():
+    return render_template("history.html")
+
+@pages_bp.route("/collections")
+@login_required
+def collections_page():
+    return render_template("collections.html")
+
+@pages_bp.route("/citations")
+@login_required
+def citations_page():
+    return render_template("citations.html")
+
 @pages_bp.route("/donate")
 def donate():
     return render_template("donate.html")

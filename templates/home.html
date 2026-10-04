@@ -217,15 +217,15 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
     <span class="quick-icon">🔖</span>
     <span class="quick-name">Saved Papers</span>
   </a>
-  <a href="/search" class="quick-card" style="animation-delay:.1s" onclick="openCollectionsFromHome()">
+  <a href="/collections" class="quick-card" style="animation-delay:.1s">
     <span class="quick-icon">📚</span>
     <span class="quick-name">Collections</span>
   </a>
-  <a href="/search" class="quick-card" style="animation-delay:.15s" onclick="openHistoryFromHome()">
+  <a href="/history" class="quick-card" style="animation-delay:.15s">
     <span class="quick-icon">🕐</span>
     <span class="quick-name">History</span>
   </a>
-  <a href="/search" class="quick-card" style="animation-delay:.2s">
+  <a href="/citations" class="quick-card" style="animation-delay:.2s">
     <span class="quick-icon">📋</span>
     <span class="quick-name">Citations</span>
   </a>
@@ -279,12 +279,6 @@ window.addEventListener('load', async () => {
 });
 
 // ── Quick access — store intent then redirect ──
-function openCollectionsFromHome() {
-  sessionStorage.setItem('sturch_open_panel', 'collections');
-}
-function openHistoryFromHome() {
-  sessionStorage.setItem('sturch_open_panel', 'history');
-}
 </script>
 </body>
 </html>

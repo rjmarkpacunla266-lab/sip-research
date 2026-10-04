@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Citations — Sturch</title>
+<meta name="robots" content="noindex, nofollow"/>
+<meta name="theme-color" content="#0b0d12"/>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
+  --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
+  --gold:#e8b84b;--green:#3ecf8e;--red:#f06a6a;
+  --text:#d8e0f8;--muted:#5a6385;
+  --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;
+}
+[data-theme="light"]{
+  --bg:#f4f6fb;--surf:#ffffff;--surf2:#eef1f8;--surf3:#e2e7f4;
+  --border:rgba(80,100,180,.15);--text:#1a2040;--muted:#6b7599;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6}
+a{color:var(--accent);text-decoration:none}
+.hidden{display:none!important}
+#app{max-width:900px;margin:0 auto;padding:0 16px 80px}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+.logo{font-family:var(--serif);font-size:1.4rem;display:flex;align-items:center;gap:6px}
+.beta{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;font-family:var(--mono)}
+.header-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:10px;font-family:var(--sans);font-size:.8rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .18s;white-space:nowrap;text-decoration:none}
+.btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:5px 10px;font-size:.76rem}
+.btn.xs{padding:4px 9px;font-size:.72rem;border-radius:8px}
+.btn.danger{background:rgba(240,106,106,.08);border-color:rgba(240,106,106,.2);color:var(--red)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.page-title{padding:22px 0 12px}
+.page-title h1{font-family:var(--serif);font-size:1.45rem}
+.page-title p{font-size:.8rem;color:var(--muted);margin-top:2px}
+
+.panel{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:12px}
+.row{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fg label{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.fg select{background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.78rem;padding:7px 8px;outline:none;max-width:100%}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{font-family:var(--sans);font-size:.78rem;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surf2);color:var(--muted);cursor:pointer}
+.seg button.on{border-color:var(--accent);color:var(--accent);background:rgba(79,141,232,.1);font-weight:600}
+.notice{font-size:.74rem;color:var(--muted);background:rgba(232,184,75,.07);border:1px solid rgba(232,184,75,.2);border-radius:10px;padding:8px 12px;margin:12px 0}
+.notice.warn{color:var(--gold)}
+
+.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:12px 0 8px}
+.bar .sp{flex:1}
+.info{font-size:.76rem;color:var(--muted);font-family:var(--mono)}
+
+.item{display:flex;gap:10px;background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;animation:fadeUp .25s ease both}
+.item.off{opacity:.45}
+.item input{margin-top:5px;accent-color:var(--accent);flex-shrink:0;width:17px;height:17px}
+.item .body{min-width:0;flex:1}
+.ref{font-size:.88rem;line-height:1.6;padding-left:1.4em;text-indent:-1.4em;word-break:break-word}
+.flags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.flag{font-size:.68rem;font-family:var(--mono);color:var(--gold);border:1px solid rgba(232,184,75,.3);border-radius:20px;padding:0 8px}
+.item .acts{margin-top:6px}
+
+.state{text-align:center;padding:46px 16px;color:var(--muted)}
+.state .big{font-size:2.4rem;margin-bottom:8px}
+.state h3{font-family:var(--serif);color:var(--text);font-size:1.05rem;margin-bottom:6px}
+.state p{font-size:.82rem;margin-bottom:14px}
+.errbox{background:rgba(240,106,106,.07);border:1px solid rgba(240,106,106,.2);border-radius:12px;padding:14px;color:var(--red);font-size:.84rem;margin-top:14px}
+.errbox code{display:block;margin-top:8px;font-family:var(--mono);font-size:.7rem;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+.errbox summary{color:var(--muted);margin-top:8px;cursor:pointer;font-size:.74rem}
+.spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto}
+#stick{position:fixed;left:0;right:0;bottom:0;background:var(--surf);border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;z-index:100}
+#toast{position:fixed;bottom:70px;left:50%;transform:translate(-50%,60px);background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:9px 16px;font-size:.82rem;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:300;opacity:0;transition:all .3s;max-width:90vw;text-align:center}
+#toast.show{transform:translate(-50%,0);opacity:1}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<header>
+  <a href="/" class="logo" style="text-decoration:none"><span style="color:var(--accent)">Sturch</span><span class="beta">BETA</span></a>
+  <div class="header-right">
+    <a href="/" class="btn sm">🏠 Home</a>
+    <a href="/search" class="btn sm">🔍 Search</a>
+    <a href="/saved" class="btn sm">🔖 Saved</a>
+    <a href="/collections" class="btn sm">📚 Collections</a>
+    <button class="btn sm" id="themeBtn" onclick="toggleTheme()" title="Dark / light">🌙</button>
+    <a href="/logout" class="btn sm danger">Logout</a>
+  </div>
+</header>
+
+<div class="page-title">
+  <h1>📋 Citations</h1>
+  <p>Build a reference list from your saved papers or a collection.</p>
+</div>
+
+<div id="error"></div>
+
+<div id="main" class="hidden">
+  <div class="panel">
+    <div class="row">
+      <div class="fg" style="flex:1;min-width:180px"><label>Papers from</label><select id="source"></select></div>
+      <div class="fg"><label>Order</label>
+        <select id="order">
+          <option value="alpha">A–Z (standard)</option>
+          <option value="new">Year, newest first</option>
+          <option value="old">Year, oldest first</option>
+          <option value="given">As saved</option>
+        </select></div>
+    </div>
+    <div class="fg" style="margin-top:10px"><label>Style</label>
+      <div class="seg" id="styles">
+        <button data-s="apa" class="on">APA</button><button data-s="mla">MLA</button>
+        <button data-s="chicago">Chicago</button><button data-s="harvard">Harvard</button>
+        <button data-s="bibtex">BibTeX</button>
+      </div></div>
+  </div>
+
+  <div class="notice">⚠️ References are generated automatically from database records. Volume, issue or page numbers can be missing, so always check them against the paper before you submit.</div>
+  <div class="notice warn hidden" id="fallbackNote">The reference formatter could not be reached, so a simplified format is shown. Reload to try again.</div>
+
+  <div class="bar">
+    <button class="btn xs" onclick="selectAll(true)">Select all</button>
+    <button class="btn xs" onclick="selectAll(false)">None</button>
+    <span class="sp"></span>
+    <span class="info" id="info"></span>
+  </div>
+  <div id="list"></div>
+</div>
+<div id="loading"><div class="spinner"></div></div>
+
+</div>
+
+<div id="stick" class="hidden">
+  <button class="btn primary" id="copyBtn" onclick="copyBib()">📋 Copy bibliography</button>
+  <button class="btn" id="dlBtn" onclick="download()">⬇ Download</button>
+</div>
+<div id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const STYLE_NAMES = {apa: 'APA', mla: 'MLA', chicago: 'Chicago', harvard: 'Harvard', bibtex: 'BibTeX'};
+let sources = [];      // [{key, label, count}]  key = 'saved' | 'c:<id>'
+let papers = [];       // [{p, saved, cite:{apa,mla,chicago,harvard}|null}]
+let style = 'apa';
+let off = new Set();   // indexes (in `papers`) the user unticked
+let order = [];        // indexes of papers in display order
+let usedFallback = false;
+let bookmarksCache = null;
+
+/* ── helpers ───────────────────────────── */
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let toastT;
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+function toggleTheme(){
+  const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+  document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+  $('themeBtn').textContent = dark ? '☀️' : '🌙';
+  try { localStorage.setItem('sturch_theme', dark ? 'light' : 'dark'); } catch(e) {}
+}
+(function(){ try { if (localStorage.getItem('sturch_theme') === 'light') { document.documentElement.setAttribute('data-theme','light'); document.addEventListener('DOMContentLoaded', () => { $('themeBtn').textContent = '☀️'; }); } } catch(e) {} })();
+const norm = s => String(s == null ? '' : s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+async function api(url, opts){
+  const resp = await fetch(url, Object.assign({headers: {'Accept': 'application/json'}}, opts || {}));
+  if (resp.status === 401 || resp.redirected || !(resp.headers.get('content-type') || '').includes('json')) { window.location.href = '/login'; throw new Error('login'); }
+  const data = await resp.json().catch(() => ({}));
+  return {ok: resp.ok && !data.error, data};
+}
+function showError(msg, detail){
+  $('loading').classList.add('hidden'); $('main').classList.add('hidden'); $('stick').classList.add('hidden');
+  $('error').innerHTML = `<div class="errbox">⚠️ ${esc(msg)}.
+    <button class="btn xs" style="margin-left:8px" onclick="location.reload()">Retry</button>
+    ${detail ? `<details><summary>Technical details</summary><code>${esc(detail)}</code></details>` : ''}</div>`;
+}
+
+/* ── formatting ────────────────────────── */
+function cleanDoi(d){ d = String(d || '').trim(); if (!d) return ''; return /^https?:\/\//i.test(d) ? d : (/^10\./.test(d) ? 'https://doi.org/' + d : ''); }
+function localFormat(p, s){
+  const au = (p.authors || []).slice(0, 6).join(', ') || 'Unknown author';
+  const year = p.year || 'n.d.', doi = cleanDoi(p.doi);
+  return `${au} (${year}). ${p.title || 'Untitled'}.${p.journal ? ' ' + p.journal + '.' : ''}${doi ? ' ' + doi : ''}`;
+}
+function bibEsc(v){ return String(v == null ? '' : v).replace(/[{}\\]/g, '').replace(/\s+/g, ' ').trim(); }
+function nameParts(name){
+  name = String(name || '').trim(); if (!name) return null;
+  if (name.includes(',')) { const i = name.indexOf(','); return {fam: name.slice(0, i).trim(), giv: name.slice(i + 1).trim()}; }
+  const parts = name.split(/\s+/); if (parts.length === 1) return {fam: parts[0], giv: ''};
+  const last = parts[parts.length - 1];
+  // Europe PMC / PubMed style: "Waterhouse A" = family name first, initials last
+  if (/^[A-Z]{1,2}$/.test(last) && /\p{Ll}/u.test(parts.slice(0, -1).join(''))) return {fam: parts.slice(0, -1).join(' '), giv: last};
+  return {fam: last, giv: parts.slice(0, -1).join(' ')};
+}
+function bibKeyBase(p){
+  const n = nameParts((p.authors || [])[0]);
+  const last = norm(n ? n.fam : 'anon').replace(/[^a-z0-9]/g, '') || 'anon';
+  const word = norm((p.title || '').split(/\s+/).find(w => w.replace(/[^\p{L}]/gu, '').length > 3) || 'paper').replace(/[^a-z0-9]/g, '') || 'paper';
+  return last + (String(p.year || 'nd').replace(/\D/g, '') || 'nd') + word;
+}
+function bibtexFor(list){
+  const used = new Map();
+  return list.map(p => {
+    let key = bibKeyBase(p); const n = used.get(key) || 0; used.set(key, n + 1); if (n) key += String.fromCharCode(96 + n);
+    const f = [];
+    const au = (p.authors || []).map(nameParts).filter(Boolean).map(n => bibEsc(n.giv ? `${n.fam}, ${n.giv}` : n.fam));
+    if (au.length) f.push(`  author = {${au.join(' and ')}}`);
+    f.push('  title = ' + '{' + '{' + bibEsc(p.title || 'Untitled') + '}' + '}');   // split on purpose: Flask would read a double brace as a template tag
+    if (p.journal) f.push(`  journal = {${bibEsc(p.journal)}}`);
+    if (p.year) f.push(`  year = {${bibEsc(p.year)}}`);
+    if (p.volume) f.push(`  volume = {${bibEsc(p.volume)}}`);
+    if (p.issue) f.push(`  number = {${bibEsc(p.issue)}}`);
+    if (p.pages) f.push(`  pages = {${bibEsc(p.pages).replace(/-+/g, '--')}}`);
+    const d = cleanDoi(p.doi); if (d) f.push(`  doi = {${bibEsc(d.replace(/^https?:\/\/(dx\.)?doi\.org\//i, ''))}}`);
+    return `@${p.journal ? 'article' : 'misc'}{${key},\n${f.join(',\n')}\n}`;
+  });
+}
+function refText(i){
+  const it = papers[i];
+  if (style === 'bibtex') return bibtexFor([it.p])[0];
+  return (it.cite && it.cite[style]) || localFormat(it.p, style);
+}
+function sortKey(i){ return norm(refText(i)).replace(/[^\p{L}\p{N} ]/gu, ''); }
+function computeOrder(){
+  const o = $('order').value, idx = papers.map((_, i) => i);
+  const yr = i => parseInt(papers[i].p.year, 10) || 0;
+  if (o === 'alpha') idx.sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+  else if (o === 'new') idx.sort((a, b) => yr(b) - yr(a));
+  else if (o === 'old') idx.sort((a, b) => (yr(a) || 9999) - (yr(b) || 9999));
+  else idx.sort((a, b) => papers[b].saved - papers[a].saved);
+  return idx;
+}
+function flagsFor(p){
+  const f = [];
+  if (!(p.authors || []).length) f.push('no authors');
+  if (!p.year) f.push('no year');
+  if (!p.journal) f.push('no journal');
+  else if (!p.volume && !p.pages) f.push('no volume/pages');
+  return f;
+}
+
+/* ── render ────────────────────────────── */
+function render(){
+  order = computeOrder();
+  if (!papers.length) {
+    $('list').innerHTML = `<div class="state"><div class="big">📋</div><h3>Nothing to cite yet</h3>
+      <p>Save papers from Search, or pick another source above.</p><a class="btn primary" href="/search">🔍 Find papers</a></div>`;
+    $('stick').classList.add('hidden'); $('info').textContent = ''; return;
+  }
+  $('stick').classList.remove('hidden');
+  $('list').innerHTML = order.map(i => {
+    const fl = flagsFor(papers[i].p);
+    return `<div class="item ${off.has(i) ? 'off' : ''}"><input type="checkbox" data-i="${i}" ${off.has(i) ? '' : 'checked'}/>
+      <div class="body"><div class="ref">${esc(refText(i))}</div>
+      ${fl.length ? `<div class="flags">${fl.map(x => `<span class="flag">⚠ ${esc(x)}</span>`).join('')}</div>` : ''}
+      <div class="acts"><button class="btn xs" data-copy="${i}">📋 Copy</button></div></div></div>`;
+  }).join('');
+  updateCount();
+}
+function updateCount(){
+  const n = papers.length - off.size;
+  $('info').textContent = `${n} of ${papers.length} selected · ${STYLE_NAMES[style]}`;
+  $('copyBtn').textContent = `📋 Copy bibliography (${n})`;
+  $('copyBtn').disabled = $('dlBtn').disabled = n === 0;
+}
+$('list').addEventListener('change', e => {
+  const cb = e.target.closest('input[type=checkbox]'); if (!cb) return;
+  const i = parseInt(cb.dataset.i, 10);
+  if (cb.checked) off.delete(i); else off.add(i);
+  cb.closest('.item').classList.toggle('off', !cb.checked); updateCount();
+});
+$('list').addEventListener('click', e => {
+  const b = e.target.closest('button[data-copy]'); if (!b) return;
+  copyText(refText(parseInt(b.dataset.copy, 10))).then(ok => toast(ok ? '📋 Reference copied' : '⚠️ Could not copy'));
+});
+function selectAll(on){ off = on ? new Set() : new Set(papers.map((_, i) => i)); render(); }
+$('styles').addEventListener('click', e => {
+  const b = e.target.closest('button[data-s]'); if (!b) return;
+  style = b.dataset.s;
+  document.querySelectorAll('#styles button').forEach(x => x.classList.toggle('on', x === b));
+  render();
+});
+$('order').addEventListener('input', render);
+
+/* ── output ────────────────────────────── */
+function chosenText(){
+  const ids = order.filter(i => !off.has(i));
+  if (style === 'bibtex') return bibtexFor(ids.map(i => papers[i].p)).join('\n\n');
+  return ids.map(refText).join('\n\n');
+}
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); return true; } catch(e) {}
+  try { const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch(e) { return false; }
+}
+function copyBib(){ const t = chosenText(); if (!t) return; copyText(t).then(ok => toast(ok ? `📋 Copied ${papers.length - off.size} reference${papers.length - off.size === 1 ? '' : 's'}` : '⚠️ Could not copy')); }
+function download(){
+  const t = chosenText(); if (!t) return;
+  const bib = style === 'bibtex';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([bib ? t + '\n' : '\ufeff' + t + '\n'], {type: 'text/plain;charset=utf-8'}));
+  a.download = 'sturch-references' + (bib ? '.bib' : '-' + style + '.txt');
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('⬇ Downloaded');
+}
+
+/* ── load data ─────────────────────────── */
+async function loadPapers(key){
+  $('list').innerHTML = '<div class="spinner"></div>'; $('stick').classList.add('hidden');
+  let rows;
+  if (key === 'saved') {
+    const r = await api('/api/bookmarks');
+    if (!r.ok) { showError(r.data.error || 'Could not load saved papers', r.data.detail); return false; }
+    rows = r.data;
+  } else {
+    const r = await api(`/api/collections/${encodeURIComponent(key.slice(2))}/papers`);
+    if (!r.ok) { showError(r.data.error || 'Could not load this collection', r.data.detail); return false; }
+    rows = r.data;
+  }
+  papers = (Array.isArray(rows) ? rows : []).map(x => ({
+    p: (x.paper_data && typeof x.paper_data === 'object') ? x.paper_data : {}, saved: Date.parse(x.created_at) || 0, cite: null}));
+  off = new Set(); usedFallback = false;
+  if (papers.length) {
+    try {
+      const r = await api('/api/citations/bulk', {method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({papers: papers.map(x => ({authors: x.p.authors, year: x.p.year, title: x.p.title, journal: x.p.journal, volume: x.p.volume, issue: x.p.issue, pages: x.p.pages, doi: x.p.doi}))})});
+      const list = r.ok && Array.isArray(r.data.citations) ? r.data.citations : [];
+      papers.forEach((x, i) => { x.cite = list[i] && list[i].apa ? list[i] : null; });
+      usedFallback = !list.length || papers.some(x => !x.cite);
+    } catch(e) { if (e.message === 'login') return false; usedFallback = true; }
+  }
+  $('fallbackNote').classList.toggle('hidden', !usedFallback);
+  return true;
+}
+async function chooseSource(key){
+  if (await loadPapers(key)) { $('error').innerHTML = ''; render(); }
+  history.replaceState(null, '', key === 'saved' ? location.pathname : '#' + encodeURIComponent(key));
+}
+$('source').addEventListener('change', () => chooseSource($('source').value));
+
+window.addEventListener('load', async () => {
+  try {
+    const [b, c, s] = await Promise.all([api('/api/bookmarks'), api('/api/collections'), api('/api/collections/summary')]);
+    if (!b.ok) { showError(b.data.error || 'Could not load saved papers', b.data.detail); return; }
+    const savedCount = Array.isArray(b.data) ? b.data.length : 0;
+    const counts = s.ok && s.data && typeof s.data === 'object' ? s.data : {};
+    sources = [{key: 'saved', label: `🔖 All saved papers (${savedCount})`}];
+    (c.ok && Array.isArray(c.data) ? c.data : []).forEach(col => sources.push({key: 'c:' + col.id, label: `📁 ${col.name} (${counts[String(col.id)] || 0})`}));
+    $('source').innerHTML = sources.map(x => `<option value="${esc(x.key)}">${esc(x.label)}</option>`).join('');
+    const want = decodeURIComponent(location.hash.replace(/^#/, ''));
+    const key = sources.some(x => x.key === want) ? want : 'saved';
+    $('source').value = key;
+    $('loading').classList.add('hidden'); $('main').classList.remove('hidden');
+    await chooseSource(key);
+  } catch(e) { if (e.message !== 'login') showError('Connection problem. Check your internet and try again.', String(e)); }
+});
+</script>
+</body>
+</html>

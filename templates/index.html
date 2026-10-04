@@ -242,9 +242,9 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
   <div class="header-right">
     <span class="user-pill" id="userEmail">…</span>
     <button class="btn sm" id="themeBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
-    <button class="btn sm" onclick="openHistory()">🕐</button>
+    <a href="/history" class="btn sm" title="Search history">🕐</a>
     <a href="/saved" class="btn sm" title="Saved papers">🔖</a>
-    <button class="btn sm" onclick="openCollections()">📚</button>
+    <a href="/collections" class="btn sm" title="Collections">📚</a>
     <button class="btn sm" onclick="showExportMenu()">↓ Export</button>
     <a href="/donate" class="btn sm" style="background:linear-gradient(135deg,rgba(79,141,232,.15),rgba(157,110,245,.15));border-color:rgba(157,110,245,.3);color:#9d6ef5">💙 Donate</a>
     <a href="/logout" class="btn sm danger">Logout</a>
@@ -446,6 +446,7 @@ function filterQS() {
   if (yt) qs += `&year_to=${yt}`;
   if (oaOnly) qs += '&oa=1';
   if (sort) qs += `&sort=${sort}`;
+  if (searchTags.length) qs += `&tg=${encodeURIComponent(searchTags.join('|'))}`;   // for history only
   if (field && field !== 'both') qs += `&field=${field}`;
   if (src.length) qs += `&sources=${src.join(',')}`;
   return qs;
@@ -507,7 +508,7 @@ window.addEventListener('load', () => {
 
   loadUserInfo();
   loadBookmarkState();
-  restoreLastSearch();
+  if (!applyRerunFromURL()) restoreLastSearch();
   checkTutorial();
 });
 
@@ -565,6 +566,25 @@ function restoreLastSearch() {
     renderResults(data);
     toast('📋 Results restored');
   } catch(e) { sessionStorage.removeItem('sturch_last_results'); }
+}
+
+// ── Re-run a search coming from the History page ──
+function applyRerunFromURL() {
+  const p    = new URLSearchParams(location.search);
+  const tags = p.getAll('tag').map(t => t.trim().toLowerCase()).filter(Boolean).slice(0, 10);
+  if (!tags.length) return false;
+  searchTags = [...new Set(tags)]; renderTags();
+  document.getElementById('yearFrom').value = p.get('yf') || '';
+  document.getElementById('yearTo').value   = p.get('yt') || '';
+  oaOnly = p.get('oa') === '1';
+  document.getElementById('oaToggle').classList.toggle('active', oaOnly);
+  if (['cited','recent'].includes(p.get('sort')))        document.getElementById('sortBy').value  = p.get('sort');
+  if (['both','title','abstract'].includes(p.get('field'))) document.getElementById('fieldBy').value = p.get('field');
+  const src = (p.get('src') || '').split(',').filter(Boolean);
+  if (src.length) document.querySelectorAll('.src-chip').forEach(c => c.classList.toggle('active', src.includes(c.dataset.src)));
+  history.replaceState(null, '', '/search');   // so a refresh doesn't repeat the search
+  doSearch();
+  return true;
 }
 
 // ── Tag System ─────────────────────────────────
@@ -916,120 +936,44 @@ async function openAddToCollection(idx, e) {
     <button class="btn primary" style="width:100%;justify-content:center" onclick="createAndAddToCol(${idx})">Create & Add</button>`;
   document.getElementById('modalOverlay').classList.remove('hidden');
 }
+async function postToCollection(colId, paper) {
+  const r = await fetch(`/api/collections/${encodeURIComponent(colId)}/papers`, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(paper)});
+  const d = await r.json().catch(() => ({}));
+  return {ok: !!d.success, already: !!d.already, error: d.error};
+}
 async function addPaperToSelectedCol(idx) {
   const colId = document.getElementById('colPickSelect')?.value;
   if (!colId) return;
-  await fetch(`/api/collections/${colId}/papers`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(currentResults[idx])});
-  toast('📚 Added to collection!'); closeModal();
+  try {
+    const res = await postToCollection(colId, currentResults[idx]);
+    if (!res.ok) { toast('⚠️ ' + (res.error || 'Could not add to collection')); return; }
+    toast(res.already ? '📚 Already in that collection' : '📚 Added to collection!', '/collections#' + colId, 'View →');
+    closeModal();
+  } catch(err) { toast('⚠️ Connection problem. Try again.'); }
 }
 async function createAndAddToCol(idx) {
   const name = document.getElementById('newColName')?.value.trim();
   if (!name) { toast('⚠️ Enter a name'); return; }
-  const colR = await fetch('/api/collections', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
-  const col  = await colR.json();
-  if (!col.id) { toast('⚠️ Could not create'); return; }
-  await fetch(`/api/collections/${col.id}/papers`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(currentResults[idx])});
-  toast(`📚 "${name}" created and paper added!`); closeModal();
+  try {
+    const colR = await fetch('/api/collections', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+    const col  = await colR.json().catch(() => ({}));
+    if (!col.id) { toast('⚠️ ' + (col.error || 'Could not create collection')); return; }
+    const res = await postToCollection(col.id, currentResults[idx]);
+    if (!res.ok) { toast('⚠️ Collection created, but the paper could not be added'); return; }
+    toast(`📚 "${name}" created and paper added!`, '/collections#' + col.id, 'View →');
+    closeModal();
+  } catch(err) { toast('⚠️ Connection problem. Try again.'); }
 }
 
 // ── History ────────────────────────────────────
-async function openHistory() {
-  document.getElementById('modalContent').innerHTML = `<h2>🕐 Search History</h2><div class="spinner" style="margin:20px auto"></div>`;
-  document.getElementById('modalOverlay').classList.remove('hidden');
-  try {
-    const resp  = await fetch('/api/history');
-    const items = await resp.json();
-    if (!items.length) {
-      document.getElementById('modalContent').innerHTML = `<h2>🕐 Search History</h2><div class="panel-empty"><div class="big">🔍</div>No searches yet.</div>`;
-      return;
-    }
-    document.getElementById('modalContent').innerHTML = `
-      <h2>🕐 Search History</h2>
-      <p style="font-size:.76rem;color:var(--muted);margin-bottom:10px">Tap any query to search again.</p>
-      ${items.map(h => {
-        const date = (h.searched_at||'').slice(0,16).replace('T',' ');
-        return `<div class="history-item" onclick="reRunSearch('${esc(h.query)}')">
-          <div>
-            <div class="history-query">${esc(h.query)}</div>
-            <div class="history-meta">${h.results||0} results</div>
-          </div>
-          <div class="history-meta">${date}</div>
-        </div>`;
-      }).join('')}`;
-  } catch(e) { document.getElementById('modalContent').innerHTML = `<h2>🕐 History</h2><p style="color:var(--red)">Could not load.</p>`; }
-}
-function reRunSearch(query) {
-  closeModal(); searchTags = [query]; renderTags(); doSearch();
-}
+function openHistory() { window.location.href = '/history'; }
 
 // ── Saved Papers ───────────────────────────────
 function openSaved() { window.location.href = '/saved'; }
 
-// ── Collections ────────────────────────────────
-async function openCollections() {
-  document.getElementById('modalContent').innerHTML = `<h2>📚 Collections</h2><div class="spinner" style="margin:20px auto"></div>`;
-  document.getElementById('modalOverlay').classList.remove('hidden');
-  try {
-    const resp = await fetch('/api/collections');
-    renderCollectionsList(await resp.json());
-  } catch(e) { document.getElementById('modalContent').innerHTML = `<h2>📚 Collections</h2><p style="color:var(--red)">Could not load.</p>`; }
-}
-function renderCollectionsList(cols) {
-  document.getElementById('modalContent').innerHTML = `
-    <h2>📚 Collections</h2>
-    ${cols.length ? cols.map(c => `<div class="col-item" onclick="openCollectionView('${esc(c.id)}','${esc(c.name)}')">
-      <span>📁</span><span class="col-name">${esc(c.name)}</span>
-      <button class="btn xs danger" onclick="deleteCollection('${esc(c.id)}',event)">🗑</button>
-    </div>`).join('') : `<div class="panel-empty"><div class="big">📚</div>No collections yet.</div>`}
-    <div style="display:flex;gap:7px;margin-top:12px">
-      <input class="col-input" type="text" id="newColInput" placeholder="New collection name…" style="margin:0"/>
-      <button class="btn primary" onclick="createCollection()">+ Create</button>
-    </div>`;
-}
-async function createCollection() {
-  const name = document.getElementById('newColInput')?.value.trim();
-  if (!name) { toast('⚠️ Enter a name'); return; }
-  await fetch('/api/collections', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
-  toast(`📚 "${name}" created!`); openCollections();
-}
-async function deleteCollection(colId, e) {
-  e.stopPropagation();
-  if (!confirm('Delete this collection?')) return;
-  await fetch(`/api/collections/${colId}`, {method:'DELETE'});
-  toast('Collection deleted'); openCollections();
-}
-async function openCollectionView(colId, colName) {
-  document.getElementById('modalContent').innerHTML = `
-    <button class="btn sm" onclick="openCollections()" style="margin-bottom:10px">← Back</button>
-    <h2>📁 ${esc(colName)}</h2><div class="spinner" style="margin:20px auto"></div>`;
-  try {
-    const resp  = await fetch(`/api/collections/${colId}/papers`);
-    const items = await resp.json();
-    if (!items.length) {
-      document.getElementById('modalContent').innerHTML += `<div class="panel-empty">No papers in this collection.</div>`;
-      return;
-    }
-    const cards = items.map(entry => {
-      const p = entry.paper_data||{};
-      return `<div class="saved-card">
-        <div class="saved-card-title">${esc(stripTags(p.title||'Untitled'))}</div>
-        <div class="saved-card-meta">${esc((p.authors||[]).slice(0,2).join(', '))} · ${p.year||'?'}</div>
-        <div class="saved-card-actions">
-          <button class="btn xs" onclick="openColPaper(${JSON.stringify(p).replace(/"/g,'&quot;')})">📄 Read</button>
-          <button class="btn xs danger" onclick="removeFromCol('${colId}','${entry.id}',this)">🗑</button>
-        </div>
-      </div>`;
-    }).join('');
-    document.getElementById('modalContent').innerHTML = `
-      <button class="btn sm" onclick="openCollections()" style="margin-bottom:10px">← Back</button>
-      <h2>📁 ${esc(colName)} <span style="font-size:.73rem;color:var(--muted)">${items.length} papers</span></h2>${cards}`;
-  } catch(e) {}
-}
-function openColPaper(p) { sessionStorage.setItem('sturch_paper',JSON.stringify(p)); window.location.href='/paper'; }
-async function removeFromCol(colId, entryId, btn) {
-  await fetch(`/api/collections/${colId}/papers/${entryId}`, {method:'DELETE'});
-  btn.closest('.saved-card').remove(); toast('Removed from collection');
-}
+// ── Collections (full page) ───────────────────
+function openCollections() { window.location.href = '/collections'; }
 
 // ── Upgrade nudge ──────────────────────────────
 

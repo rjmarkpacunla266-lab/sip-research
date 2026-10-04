@@ -94,10 +94,42 @@ def create_collection():
         return _fail("Could not create collection", err or "Database returned no row")
     return jsonify(rows[0] if isinstance(rows, list) else rows)
 
+@library_bp.route("/api/collections/summary", methods=["GET"])
+@login_required
+def collections_summary():
+    """{collection_id: number_of_papers} for the Collections / Citations pages."""
+    ok, rows, err = sb_try("GET", "collection_papers", f"user_id=eq.{_q(session['user_id'])}&select=collection_id")
+    if not ok:
+        return _fail("Could not load collection counts", err)
+    counts = {}
+    for r in rows:
+        k = str(r.get("collection_id"))
+        counts[k] = counts.get(k, 0) + 1
+    return jsonify(counts)
+
+@library_bp.route("/api/collections/<col_id>", methods=["PATCH"])
+@login_required
+def rename_collection(col_id):
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()[:100]
+    if not name:
+        return jsonify({"error": "Collection name required"}), 400
+    ok, rows, err = sb_try("PATCH", "collections",
+                           f"id=eq.{_q(col_id)}&user_id=eq.{_q(session['user_id'])}", data={"name": name})
+    if not ok:
+        return _fail("Could not rename collection", err)
+    if not rows:
+        return jsonify({"error": "Collection not found"}), 404
+    return jsonify({"success": True, "name": name})
+
 @library_bp.route("/api/collections/<col_id>", methods=["DELETE"])
 @login_required
 def delete_collection(col_id):
-    ok, _, err = sb_try("DELETE", "collections", f"id=eq.{_q(col_id)}&user_id=eq.{_q(session['user_id'])}")
+    uid = _q(session["user_id"])
+    ok, _, err = sb_try("DELETE", "collection_papers", f"collection_id=eq.{_q(col_id)}&user_id=eq.{uid}")
+    if not ok:
+        return _fail("Could not delete collection", err)
+    ok, _, err = sb_try("DELETE", "collections", f"id=eq.{_q(col_id)}&user_id=eq.{uid}")
     if not ok:
         return _fail("Could not delete collection", err)
     return jsonify({"success": True})
