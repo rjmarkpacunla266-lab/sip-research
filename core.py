@@ -152,24 +152,45 @@ def _dot(text):
     text = (text or "").strip()
     return text if text.endswith((".", "?", "!")) else text + "."
 
+_PARTICLES = {"van", "von", "de", "del", "della", "der", "den", "di", "da", "du", "le", "la", "los", "las",
+              "ter", "ten", "bin", "ibn", "al", "el", "dos", "das", "do", "st"}
+_SUFFIXES  = {"jr", "sr", "ii", "iii", "iv"}
+_ORG_WORDS = {"organization", "organisation", "association", "society", "university", "institute", "committee",
+              "consortium", "collaboration", "group", "commission", "department", "ministry", "agency", "council",
+              "foundation", "centre", "center", "network", "team", "initiative", "board", "bureau", "federation",
+              "union", "laboratory", "hospital", "college", "school", "academy", "alliance", "program", "programme"}
+
 def _name_parts(name):
-    """-> (family, given_tokens, initials_only).
-    Understands 'Jane Q. Smith', 'Smith, Jane Q.' and the 'Waterhouse A' / 'Smith JK' style
-    that Europe PMC and PubMed use (family name first, initials last)."""
-    name = (name or "").strip()
+    """-> (family, given_tokens, initials_only, suffix).
+    Understands 'Jane Q. Smith', 'Smith, Jane Q.', 'Waterhouse A' (Europe PMC / PubMed style),
+    particles ('Maria de la Cruz'), suffixes ('Martin Luther King Jr.') and group authors."""
+    name = re.sub(r"\s+", " ", (name or "").strip())
     if not name:
-        return "", [], False
+        return "", [], False, ""
+    words = {w.strip(".,").lower() for w in name.split()}
+    if len(name.split()) >= 2 and (words & _ORG_WORDS):
+        return name, [], False, ""                          # group author: keep exactly as written
+    suffix = ""
+    toks = name.split()
+    if len(toks) > 1 and toks[-1].strip(".,").lower() in _SUFFIXES:
+        suffix = toks.pop().strip(",")
+        if suffix.lower().rstrip(".") in ("jr", "sr"):
+            suffix = suffix.rstrip(".") + "."
+        name = " ".join(toks).rstrip(",")
     if "," in name:
         fam, _, giv = name.partition(",")
-        toks = giv.split()
-        return fam.strip(), toks, all(len(t.strip(".")) <= 3 and t.strip(".").isupper() for t in toks) if toks else False
+        gt = giv.split()
+        return fam.strip(), gt, (all(len(t.strip(".")) <= 3 and t.strip(".").isupper() for t in gt) if gt else False), suffix
     parts = name.split()
     if len(parts) == 1:
-        return parts[0], [], False
+        return parts[0], [], False, suffix
     last = parts[-1]
     if re.fullmatch(r"[A-Z]{1,2}", last) and any(c.islower() for c in "".join(parts[:-1])):
-        return " ".join(parts[:-1]), [last], True          # 'Waterhouse A', 'Smith JK'
-    return parts[-1], parts[:-1], False                     # 'Jane Q. Smith'
+        return " ".join(parts[:-1]), [last], True, suffix   # 'Waterhouse A', 'Smith JK'
+    i = len(parts) - 1
+    while i > 1 and parts[i - 1].lower() in _PARTICLES:     # keep 'de la', 'van der' with the surname
+        i -= 1
+    return " ".join(parts[i:]), parts[:i], False, suffix
 
 def _initials(given, initials_only):
     out = []
@@ -186,33 +207,42 @@ def _initials(given, initials_only):
 def _people(authors):
     return [_name_parts(a) for a in (authors or []) if a and a.strip()]
 
-def _first_last(p):      # 'Smith, Jane Q.'
-    fam, given, ini = p
-    g = _initials(given, True) if ini else " ".join(given)
-    return f"{fam}, {g}" if g else fam
+def _given_full(p):
+    fam, given, ini, suf = p
+    return _initials(given, True) if ini else " ".join(given)
 
-def _natural(p):         # 'Jane Q. Smith'
-    fam, given, ini = p
-    g = _initials(given, True) if ini else " ".join(given)
-    return f"{g} {fam}".strip()
+def _inverted(p, full=False):
+    """'Smith, J. Q.' (APA/Harvard initials) or 'Smith, Jane Q.' (MLA/Chicago full names)."""
+    fam, given, ini, suf = p
+    g = _given_full(p) if (full or ini) else _initials(given, False)
+    out = f"{fam}, {g}" if g else fam
+    return f"{out}, {suf}" if suf else out
+
+def _natural(p):
+    """'Jane Q. Smith' (second and later authors in MLA/Chicago)."""
+    fam, given, ini, suf = p
+    out = f"{_given_full(p)} {fam}".strip()
+    return f"{out} {suf}" if suf else out
 
 def _doi_url(doi):
     doi = (doi or "").strip()
     return "" if not doi else (doi if doi.startswith("http") else f"https://doi.org/{doi}")
 
+def _en_dash(pages):
+    return re.sub(r"(?<=[0-9A-Za-z])-(?=[0-9A-Za-z])", "–", pages or "")
+
 def _build_apa(authors, year, title, journal, volume, issue, pages, doi):
-    ppl  = _people(authors)
-    names = [f"{fam}, {_initials(giv, ini)}".rstrip(", ") if giv else fam for fam, giv, ini in ppl]
+    names = [_inverted(p) for p in _people(authors)]
     if not names:
         author_str = "Unknown"
     elif len(names) == 1:
         author_str = names[0]
-    elif len(names) <= 6:
+    elif len(names) <= 20:                                  # APA 7: list up to 20 authors
         author_str = ", ".join(names[:-1]) + ", & " + names[-1]
-    else:
-        author_str = ", ".join(names[:6]) + ", et al."
+    else:                                                   # 21+: first 19, ellipsis, last author
+        author_str = ", ".join(names[:19]) + ", … " + names[-1]
     vol_issue  = f", {volume}({issue})" if volume and issue else (f", {volume}" if volume else "")
-    pages_part = f", {pages}" if pages else ""
+    pages_part = f", {_en_dash(pages)}" if pages else ""
     out = f"{_dot(author_str)} ({year or 'n.d.'}). {_dot((title or '').strip() or 'Untitled')}"
     if journal:
         out += f" {journal}{vol_issue}{pages_part}."
@@ -224,11 +254,11 @@ def _build_mla(authors, year, title, journal, volume, issue, pages, doi):
     if not ppl:
         author_str = "Unknown"
     elif len(ppl) == 1:
-        author_str = _first_last(ppl[0])
+        author_str = _inverted(ppl[0], full=True)
     elif len(ppl) == 2:
-        author_str = f"{_first_last(ppl[0])}, and {_natural(ppl[1])}"
+        author_str = f"{_inverted(ppl[0], full=True)}, and {_natural(ppl[1])}"
     else:
-        author_str = f"{_first_last(ppl[0])}, et al"
+        author_str = f"{_inverted(ppl[0], full=True)}, et al"
     bits = []
     if journal: bits.append(journal)
     if volume:  bits.append(f"vol. {volume}")
@@ -242,12 +272,13 @@ def _build_mla(authors, year, title, journal, volume, issue, pages, doi):
     return ref + (f" {d}." if d else "")
 
 def _build_chicago(authors, year, title, journal, volume, issue, pages, doi):
+    """Chicago author-date style (17th ed.)."""
     ppl = _people(authors)
     if not ppl:
         author_str = "Unknown"
     else:
         shown = ppl if len(ppl) <= 10 else ppl[:7]
-        names = [_first_last(shown[0])] + [_natural(p) for p in shown[1:]]
+        names = [_inverted(shown[0], full=True)] + [_natural(p) for p in shown[1:]]
         if len(ppl) > 10:
             author_str = ", ".join(names) + ", et al."
         elif len(names) == 1:
@@ -262,15 +293,14 @@ def _build_chicago(authors, year, title, journal, volume, issue, pages, doi):
     if volume:
         tail += f" {volume}"
         if issue: tail += f" ({issue})"
-    if pages: tail += f": {pages}"
+    if pages: tail += f": {_en_dash(pages)}"
     if tail.strip():
         ref += " " + _dot(tail.strip())
     d = _doi_url(doi)
     return ref + (f" {d}." if d else "")
 
 def _build_harvard(authors, year, title, journal, volume, issue, pages, doi):
-    ppl   = _people(authors)
-    names = [f"{fam}, {_initials(giv, ini)}".rstrip(", ") if giv else fam for fam, giv, ini in ppl]
+    names = [_inverted(p) for p in _people(authors)]
     if not names:
         author_str = "Unknown"
     elif len(names) == 1:
@@ -280,12 +310,12 @@ def _build_harvard(authors, year, title, journal, volume, issue, pages, doi):
     else:
         author_str = names[0] + " et al."
     y   = str(year) if year else "n.d."
-    ref = f"{author_str} ({y}) '{(title or '').strip() or 'Untitled'}'"
+    ref = f"{author_str} ({y}) '{((title or '').strip().rstrip('.') or 'Untitled')}'"
     if journal: ref += f", {journal}"
     if volume:
         ref += f", {volume}"
         if issue: ref += f"({issue})"
-    if pages: ref += f", pp. {pages}"
+    if pages: ref += f", pp. {_en_dash(pages)}"
     ref += "."
     d = _doi_url(doi)
     if d:

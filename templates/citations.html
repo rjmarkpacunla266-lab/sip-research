@@ -119,10 +119,11 @@ header{display:flex;align-items:center;justify-content:space-between;padding:16p
         <button data-s="apa" class="on">APA</button><button data-s="mla">MLA</button>
         <button data-s="chicago">Chicago</button><button data-s="harvard">Harvard</button>
         <button data-s="bibtex">BibTeX</button>
-      </div></div>
+      </div>
+      <div class="info" id="styleNote" style="margin-top:6px"></div></div>
   </div>
 
-  <div class="notice">⚠️ References are generated automatically from database records. Volume, issue or page numbers can be missing, so always check them against the paper before you submit.</div>
+  <div class="notice">⚠️ References are generated automatically from database records. Volume, issue or page numbers can be missing, and unusual names (organisations, books, theses) can come out wrong, so check each one against the paper before you submit. Plain text cannot show italics: italicise journal names (and APA volume numbers) in your document.</div>
   <div class="notice warn hidden" id="fallbackNote">The reference formatter could not be reached, so a simplified format is shown. Reload to try again.</div>
 
   <div class="bar">
@@ -146,6 +147,13 @@ header{display:flex;align-items:center;justify-content:space-between;padding:16p
 <script>
 const $ = id => document.getElementById(id);
 const STYLE_NAMES = {apa: 'APA', mla: 'MLA', chicago: 'Chicago', harvard: 'Harvard', bibtex: 'BibTeX'};
+const STYLE_NOTES = {
+  apa: 'APA 7th edition, journal-article format.',
+  mla: 'MLA 9th edition, journal-article format.',
+  chicago: 'Chicago author–date style (17th ed.). If your teacher wants notes and bibliography, the year goes elsewhere.',
+  harvard: 'A common Harvard format. Universities differ slightly, so check your own guide.',
+  bibtex: 'For LaTeX and reference managers such as Zotero.'
+};
 let sources = [];      // [{key, label, count}]  key = 'saved' | 'c:<id>'
 let papers = [];       // [{p, saved, cite:{apa,mla,chicago,harvard}|null}]
 let style = 'apa';
@@ -265,6 +273,7 @@ function updateCount(){
   const n = papers.length - off.size;
   $('info').textContent = `${n} of ${papers.length} selected · ${STYLE_NAMES[style]}`;
   $('copyBtn').textContent = `📋 Copy bibliography (${n})`;
+  $('styleNote').textContent = STYLE_NOTES[style] || '';
   $('copyBtn').disabled = $('dlBtn').disabled = n === 0;
 }
 $('list').addEventListener('change', e => {
