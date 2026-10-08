@@ -126,6 +126,38 @@ textarea::placeholder{color:var(--muted)}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── shared: filters + source tags ─────────────── */
+.hidden{display:none!important}
+.fx-bar{margin:0 0 14px}
+.fx-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:10px;border:1px solid var(--border);background:var(--surf2);color:var(--text);font-family:var(--sans);font-size:.8rem;cursor:pointer}
+.fx-btn:hover{border-color:var(--accent)}
+.fx-btn.sm{padding:4px 10px;font-size:.72rem;margin-top:10px}
+.fx-sum{font-size:.7rem;color:var(--accent);font-family:var(--mono)}
+.fx-panel{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:8px}
+.fx-row{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:flex-end}
+.fx-g{display:flex;flex-direction:column;gap:3px;min-width:0}
+.fx-g label{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.fx-g input,.fx-g select{background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.76rem;padding:6px 8px;outline:none;max-width:150px}
+.fx-g input{width:72px}
+.fx-g input:focus,.fx-g select:focus{border-color:var(--accent)}
+.fx-toggle{font-size:.76rem;padding:6px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surf2);color:var(--muted);cursor:pointer;font-family:var(--sans)}
+.fx-toggle.on{border-color:var(--green);color:var(--green);background:rgba(62,207,142,.08)}
+.fx-src{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px}
+.fx-src .lbl{font-size:.7rem;color:var(--muted)}
+.fx-chip{font-size:.74rem;padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:var(--surf);color:var(--muted);cursor:pointer;user-select:none}
+.fx-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(79,141,232,.08)}
+.tagrow{display:inline-flex;flex-wrap:wrap;gap:5px;align-items:center;vertical-align:middle}
+.src-b{font-size:.63rem;padding:1px 7px;border-radius:20px;white-space:nowrap}
+.oa-b{font-size:.66rem;padding:1px 7px;border-radius:20px;background:rgba(62,207,142,.07);border:1px solid rgba(62,207,142,.18);color:var(--green)}
+.src-openalex{background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.22);color:#4f8de8}
+.src-semantic{background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.22);color:#9d6ef5}
+.src-arxiv{background:rgba(240,145,75,.1);border:1px solid rgba(240,145,75,.22);color:#f0914b}
+.src-pubmed{background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.22);color:#3ecf8e}
+.fx-note{font-size:.72rem;color:var(--muted);margin:0 0 10px;line-height:1.5}
+.fx-note b{color:var(--text)}
+.fx-empty{text-align:center;padding:30px 14px;color:var(--muted);font-size:.84rem}
+.fx-empty .big{font-size:2.2rem;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -159,6 +191,26 @@ textarea::placeholder{color:var(--muted)}
     <span class="chip" onclick="setQuote('Renewable energy sources are essential for sustainable development.')">Renewable energy</span>
   </div>
 
+<div class="fx-bar" id="fxBar">
+  <button type="button" class="fx-btn" onclick="fToggle()">⚙ Filters <span class="fx-sum" id="fSum"></span></button>
+  <div class="fx-panel hidden" id="fPanel">
+    <div class="fx-row">
+      <div class="fx-g"><label>From</label><input type="number" id="fYf" placeholder="Any" inputmode="numeric" onchange="fChanged()"/></div>
+      <div class="fx-g"><label>To</label><input type="number" id="fYt" placeholder="Any" inputmode="numeric" onchange="fChanged()"/></div>
+      <div class="fx-g"><label>Sort</label><select id="fSort" onchange="fChanged()"><option value="match" selected>Best match</option><option value="cited">Most cited</option><option value="recent">Most recent</option></select></div>
+      <button type="button" class="fx-toggle" id="fOAbtn" onclick="fToggleOA()">🔓 OA only</button>
+    </div>
+    <div class="fx-src"><span class="lbl">Sources:</span>
+      <span class="fx-chip active" data-src="openalex" onclick="fChip(this)">OpenAlex</span>
+      <span class="fx-chip active" data-src="arxiv" onclick="fChip(this)">arXiv</span>
+      <span class="fx-chip active" data-src="pubmed" onclick="fChip(this)">PubMed</span>
+      <span class="fx-chip active" data-src="crossref" onclick="fChip(this)">Crossref</span>
+      <span class="fx-chip active" data-src="europepmc" onclick="fChip(this)">Europe PMC</span>
+    </div>
+    <button type="button" class="fx-btn sm" onclick="fReset()">↺ Reset filters</button>
+  </div>
+</div>
+
   <button class="btn primary" onclick="traceSource()" style="width:100%;justify-content:center;padding:12px">
     🔎 Trace Source
   </button>
@@ -170,6 +222,88 @@ textarea::placeholder{color:var(--muted)}
 <div id="toast"></div>
 
 <script>
+
+/* ── shared: filters + source tags ─────────────── */
+let fOA = false, fLastRun = null, fTimer = null;
+const F_DEFAULT_SORT = document.getElementById('fSort') ? document.getElementById('fSort').value : 'cited';
+const F_SORT_NAMES = {match: 'Best match', cited: 'Most cited', recent: 'Most recent'};
+function fEl(id){ return document.getElementById(id); }
+function fGet(){
+  const on = [...document.querySelectorAll('.fx-chip.active')].map(c => c.dataset.src);
+  const o = {sources: on.length === 5 ? [] : on, year_from: fEl('fYf').value.trim(), year_to: fEl('fYt').value.trim(), oa: fOA, sort: fEl('fSort').value};
+  o.field = fEl('fField') ? fEl('fField').value : 'both';
+  return o;
+}
+function fQS(){
+  const o = fGet(); let q = '';
+  if (o.sources.length) q += '&sources=' + o.sources.join(',');
+  if (o.year_from) q += '&year_from=' + encodeURIComponent(o.year_from);
+  if (o.year_to)   q += '&year_to='   + encodeURIComponent(o.year_to);
+  if (o.oa) q += '&oa=1';
+  q += '&sort=' + o.sort;
+  if (o.field !== 'both') q += '&field=' + o.field;
+  return q;
+}
+function fBody(){ const o = fGet(); return {sources: o.sources, year_from: o.year_from || null, year_to: o.year_to || null, oa: o.oa, sort: o.sort, field: o.field}; }
+function fSummaryText(){
+  const o = fGet(), p = [];
+  if (o.year_from && o.year_to) p.push(o.year_from + '–' + o.year_to); else if (o.year_from) p.push('from ' + o.year_from); else if (o.year_to) p.push('until ' + o.year_to);
+  if (o.oa) p.push('OA');
+  if (o.sources.length) p.push(o.sources.length + ' source' + (o.sources.length > 1 ? 's' : ''));
+  if (o.sort !== F_DEFAULT_SORT) p.push(F_SORT_NAMES[o.sort] || o.sort);
+  if (o.field !== 'both') p.push(o.field === 'title' ? 'title only' : 'abstract only');
+  return p.join(' · ');
+}
+function fRefreshSummary(){ const t = fSummaryText(); fEl('fSum').textContent = t ? '· ' + t : ''; }
+function fToggle(){ fEl('fPanel').classList.toggle('hidden'); }
+function fToggleOA(){ fOA = !fOA; fEl('fOAbtn').classList.toggle('on', fOA); fChanged(); }
+function fSetOA(on){ fOA = !!on; fEl('fOAbtn').classList.toggle('on', fOA); fRefreshSummary(); }
+function fChip(el){
+  if (el.classList.contains('active') && document.querySelectorAll('.fx-chip.active').length === 1) { toast('⚠️ Keep at least one source on'); return; }
+  el.classList.toggle('active'); fChanged();
+}
+function fChanged(){
+  fRefreshSummary();
+  clearTimeout(fTimer);
+  fTimer = setTimeout(() => { if (typeof fLastRun === 'function') fLastRun(); }, 350);   // re-run the last search with the new filters
+}
+function fReset(){
+  fEl('fYf').value = ''; fEl('fYt').value = ''; fEl('fSort').value = F_DEFAULT_SORT;
+  if (fEl('fField')) fEl('fField').value = 'both';
+  document.querySelectorAll('.fx-chip').forEach(c => c.classList.add('active'));
+  fOA = false; fEl('fOAbtn').classList.remove('on'); fChanged();
+}
+function safeUrl(u){ u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? u : ''; }
+function srcBadge(ds){
+  const s = String(ds || '').toLowerCase();
+  if (s.includes('arxiv'))    return '<span class="src-b src-arxiv">arXiv</span>';
+  if (s.includes('pubmed'))   return '<span class="src-b src-pubmed">PubMed</span>';
+  if (s.includes('crossref')) return '<span class="src-b src-semantic">Crossref</span>';
+  if (s.includes('europe'))   return '<span class="src-b src-pubmed">Europe PMC</span>';
+  return '<span class="src-b src-openalex">OpenAlex</span>';
+}
+function tagRow(p){ return '<span class="tagrow">' + (p && p.is_oa ? '<span class="oa-b">OA</span>' : '') + srcBadge(p && p.data_source) + '</span>'; }
+function searchLink(tags){
+  const o = fGet(), p = new URLSearchParams();
+  tags.filter(Boolean).forEach(t => p.append('tag', t));
+  if (o.year_from) p.set('yf', o.year_from);
+  if (o.year_to)   p.set('yt', o.year_to);
+  if (o.oa) p.set('oa', '1');
+  if (o.sources.length) p.set('src', o.sources.join(','));
+  if (o.sort === 'recent') p.set('sort', 'recent');
+  if (o.field !== 'both') p.set('field', o.field);
+  return '/search?' + p.toString();
+}
+function fNoResultsHtml(what){
+  const t = fSummaryText();
+  return `<div class="fx-empty"><div class="big">📭</div><p>${what}</p>` +
+    (t ? `<p style="margin-top:6px">Your filters (${esc(t)}) may be hiding results.</p><button class="fx-btn" style="margin-top:10px" onclick="fReset()">↺ Reset filters</button>` : '') + `</div>`;
+}
+function fUsedLine(data){
+  const n = data.searched != null ? `${data.searched} papers · ` : '';
+  return `<div class="fx-note">${n}${esc((data.sources_used || []).join(', '))}</div>`;
+}
+
 function updateCount() {
   document.getElementById('charCount').textContent = document.getElementById('quoteInput').value.length;
 }
@@ -191,6 +325,7 @@ async function traceSource() {
   if (!quote) { ta.classList.add('error'); toast('⚠️ Paste a quote first'); return; }
   if (quote.length < 10) { ta.classList.add('error'); toast('⚠️ Quote is too short'); return; }
 
+  fLastRun = traceSource;                    // filters re-run this search when changed
   const results = document.getElementById('results');
   results.innerHTML = '<div class="spinner"></div>';
 
@@ -198,15 +333,14 @@ async function traceSource() {
     const resp = await fetch('/api/source-tracer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ quote })
+      body: JSON.stringify(Object.assign({ quote }, fBody()))
     });
-    const data = await resp.json();
+    const data = await resp.json().catch(() => ({}));
 
     if (!resp.ok) {
-      results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>${esc(data.error || 'Error')}</p></div>`;
+      results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>${esc(data.error || 'Something went wrong. Try again.')}</p></div>`;
       return;
     }
-
     renderResults(data);
   } catch(e) {
     results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>Connection error. Try again.</p></div>`;
@@ -217,7 +351,6 @@ function renderResults(data) {
   const results = document.getElementById('results');
   let html = '';
 
-  // Keywords detected
   if (data.keywords && data.keywords.length) {
     html += `<div style="margin-bottom:12px">
       <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Keywords detected</div>
@@ -225,7 +358,6 @@ function renderResults(data) {
     </div>`;
   }
 
-  // Confidence bar
   const confClass = data.confidence;
   const confLabel = {
     high:   '✅ High confidence — likely source found',
@@ -239,59 +371,58 @@ function renderResults(data) {
     <div class="conf-track"><div class="conf-fill ${confClass}" style="width:${data.confidence_pct || 5}%"></div></div>
     <div class="conf-text ${confClass}">${confLabel} (${data.confidence_pct}%)</div>
   </div>`;
+  html += fUsedLine(data);
 
-  // Not found message
   if (!data.found && data.message) {
     html += `<div class="not-found-box">
       <h3>⚠️ Source not found in indexed databases</h3>
       <p>Possible reasons:</p>
       <ul>
-        <li>The source may not be indexed in OpenAlex, Semantic Scholar, arXiv, or PubMed</li>
+        <li>The source may not be indexed in OpenAlex, arXiv, PubMed, Crossref or Europe PMC</li>
         <li>The quote may be paraphrased or slightly altered</li>
         <li>There may be a typo in the quote</li>
         <li>The source may be a book, website, or non-academic publication</li>
+        <li>Your filters (years, sources, Open Access) may be hiding it</li>
       </ul>
       <p style="margin-top:8px">Related research papers are shown below for reference.</p>
     </div>`;
   }
 
-  // Results
   if (data.results && data.results.length) {
     const label = data.found ? 'Possible sources' : 'Related research';
-    html += `<div class="results-section">
-      <div class="section-label">${label}</div>`;
+    html += `<div class="results-section"><div class="section-label">${label}</div>`;
 
     data.results.forEach((r, i) => {
-      const isTop    = i === 0 && data.found;
-      const badge    = isTop ? '<span class="match-badge top">Best Match</span>' : '<span class="match-badge related">Related</span>';
-      const authors  = (r.authors || []).join(', ') || 'Unknown authors';
-      const cites    = r.citations || 0;
-      const cColor   = cites > 1000 ? 'var(--gold)' : cites > 100 ? 'var(--accent)' : 'var(--muted)';
+      const isTop   = !!r.is_best;
+      const badge   = isTop ? '<span class="match-badge top">Best Match</span>' : '<span class="match-badge related">Related</span>';
+      const authors = (r.authors || []).join(', ') || 'Unknown authors';
+      const cites   = r.citations || 0;
+      const cColor  = cites > 1000 ? 'var(--gold)' : cites > 100 ? 'var(--accent)' : 'var(--muted)';
+      const doi = safeUrl(r.doi), oa = safeUrl(r.oa_url);
+      const text = r.snippet || r.abstract || '';
 
-      html += `<div class="result-card ${isTop ? 'top-match' : ''}" style="animation-delay:${i*60}ms">
-        <div class="result-num">Result ${i+1} ${badge}</div>
+      html += `<div class="result-card ${isTop ? 'top-match' : ''}" style="animation-delay:${i * 60}ms">
+        <div class="result-num">Result ${i + 1} ${badge} ${tagRow(r)}</div>
         <div class="result-title">${esc(r.title || 'Untitled')}</div>
         <div class="result-meta">
           <span>${esc(authors)}</span>
-          <span>· ${r.year || '?'}</span>
-          <span>· ${esc(r.journal || r.data_source || '—')}</span>
+          <span>· ${esc(r.year || '?')}</span>
+          <span>· ${esc(r.journal || '—')}</span>
           <span style="color:${cColor}">· ★ ${cites.toLocaleString()}</span>
         </div>
-        ${r.abstract ? `<div class="result-abstract">${esc(r.abstract)}</div>` : ''}
+        ${text ? `<div class="result-abstract">${esc(text)}</div>` : ''}
         <div class="result-actions">
-          ${r.doi ? `<a href="${esc(r.doi)}" target="_blank" class="btn xs">↗ View Source</a>` : ''}
-          ${r.oa_url ? `<a href="${esc(r.oa_url)}" target="_blank" class="btn xs">↗ Read</a>` : ''}
+          ${doi ? `<a href="${esc(doi)}" target="_blank" rel="noopener noreferrer" class="btn xs">↗ View Source</a>` : ''}
+          ${oa ? `<a href="${esc(oa)}" target="_blank" rel="noopener noreferrer" class="btn xs">↗ Read</a>` : ''}
           <button class="btn xs" onclick="copyAPA(${i})">📋 Copy APA</button>
         </div>
       </div>`;
     });
-
     html += '</div>';
   } else {
-    html += `<div class="no-result"><div class="big">📭</div><p>No related papers found. Try a different quote.</p></div>`;
+    html += fNoResultsHtml('No related papers found. Try a different quote.');
   }
 
-  // Store results for copy function
   window._traceResults = data.results || [];
   results.innerHTML = html;
 }
@@ -299,17 +430,17 @@ function renderResults(data) {
 function copyAPA(i) {
   const r = window._traceResults[i];
   if (!r) return;
-  const authors = (r.authors || []).slice(0,3).map(a => {
-    const p = a.trim().split(' ');
-    return p.length >= 2 ? `${p[p.length-1]}, ${p[0][0]}.` : a;
-  }).join(', ') + ((r.authors||[]).length > 3 ? ', et al.' : '');
-  const apa = `${authors || 'Unknown'} (${r.year || 'n.d.'}). ${r.title}. ${r.journal || ''}.${r.doi ? ' ' + r.doi : ''}`;
+  let apa = r.apa_reference;
+  if (!apa) {
+    const au = (r.authors || []).slice(0, 3).join(', ') + ((r.authors || []).length > 3 ? ', et al.' : '');
+    apa = `${au || 'Unknown'} (${r.year || 'n.d.'}). ${r.title}. ${r.journal || ''}${r.doi ? ' ' + r.doi : ''}`;
+  }
   navigator.clipboard.writeText(apa).then(() => toast('📋 APA copied!')).catch(() => toast('❌ Copy failed'));
 }
 
 function esc(str) {
   if (!str) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 let toastTimer;

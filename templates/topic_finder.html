@@ -123,6 +123,38 @@ select.form-input{cursor:pointer}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:600px){.form-row{grid-template-columns:1fr}}
+
+/* ── shared: filters + source tags ─────────────── */
+.hidden{display:none!important}
+.fx-bar{margin:0 0 14px}
+.fx-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:10px;border:1px solid var(--border);background:var(--surf2);color:var(--text);font-family:var(--sans);font-size:.8rem;cursor:pointer}
+.fx-btn:hover{border-color:var(--accent)}
+.fx-btn.sm{padding:4px 10px;font-size:.72rem;margin-top:10px}
+.fx-sum{font-size:.7rem;color:var(--accent);font-family:var(--mono)}
+.fx-panel{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:8px}
+.fx-row{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:flex-end}
+.fx-g{display:flex;flex-direction:column;gap:3px;min-width:0}
+.fx-g label{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.fx-g input,.fx-g select{background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.76rem;padding:6px 8px;outline:none;max-width:150px}
+.fx-g input{width:72px}
+.fx-g input:focus,.fx-g select:focus{border-color:var(--accent)}
+.fx-toggle{font-size:.76rem;padding:6px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surf2);color:var(--muted);cursor:pointer;font-family:var(--sans)}
+.fx-toggle.on{border-color:var(--green);color:var(--green);background:rgba(62,207,142,.08)}
+.fx-src{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px}
+.fx-src .lbl{font-size:.7rem;color:var(--muted)}
+.fx-chip{font-size:.74rem;padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:var(--surf);color:var(--muted);cursor:pointer;user-select:none}
+.fx-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(79,141,232,.08)}
+.tagrow{display:inline-flex;flex-wrap:wrap;gap:5px;align-items:center;vertical-align:middle}
+.src-b{font-size:.63rem;padding:1px 7px;border-radius:20px;white-space:nowrap}
+.oa-b{font-size:.66rem;padding:1px 7px;border-radius:20px;background:rgba(62,207,142,.07);border:1px solid rgba(62,207,142,.18);color:var(--green)}
+.src-openalex{background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.22);color:#4f8de8}
+.src-semantic{background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.22);color:#9d6ef5}
+.src-arxiv{background:rgba(240,145,75,.1);border:1px solid rgba(240,145,75,.22);color:#f0914b}
+.src-pubmed{background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.22);color:#3ecf8e}
+.fx-note{font-size:.72rem;color:var(--muted);margin:0 0 10px;line-height:1.5}
+.fx-note b{color:var(--text)}
+.fx-empty{text-align:center;padding:30px 14px;color:var(--muted);font-size:.84rem}
+.fx-empty .big{font-size:2.2rem;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -168,7 +200,7 @@ select.form-input{cursor:pointer}
   <div class="form-row">
     <div class="form-group">
       <label class="form-label">Grade / Level</label>
-      <select id="levelSelect" class="form-input">
+      <select id="levelSelect" class="form-input" onchange="onLevelChange()">
         <option value="">Any level</option>
         <option value="high school">High School</option>
         <option value="college">College / University</option>
@@ -186,6 +218,32 @@ select.form-input{cursor:pointer}
     <input type="text" id="keywordsInput" class="form-input" placeholder="e.g. climate, renewable, urban…" autocomplete="off"/>
   </div>
 
+<div class="fx-bar" id="fxBar">
+  <button type="button" class="fx-btn" onclick="fToggle()">⚙ Filters <span class="fx-sum" id="fSum"></span></button>
+  <div class="fx-panel hidden" id="fPanel">
+    <div class="fx-row">
+      <div class="fx-g"><label>From</label><input type="number" id="fYf" placeholder="Any" inputmode="numeric" onchange="fChanged()"/></div>
+      <div class="fx-g"><label>To</label><input type="number" id="fYt" placeholder="Any" inputmode="numeric" onchange="fChanged()"/></div>
+      <div class="fx-g"><label>Sort</label><select id="fSort" onchange="fChanged()"><option value="cited" selected>Most cited</option><option value="recent">Most recent</option><option value="match">Best match</option></select></div>
+      <div class="fx-g"><label>Word in</label>
+        <select id="fField" onchange="fChanged()">
+          <option value="both">Title or abstract</option>
+          <option value="title">Title only</option>
+          <option value="abstract">Abstract only</option>
+        </select></div>
+      <button type="button" class="fx-toggle" id="fOAbtn" onclick="fToggleOA()">🔓 OA only</button>
+    </div>
+    <div class="fx-src"><span class="lbl">Sources:</span>
+      <span class="fx-chip active" data-src="openalex" onclick="fChip(this)">OpenAlex</span>
+      <span class="fx-chip active" data-src="arxiv" onclick="fChip(this)">arXiv</span>
+      <span class="fx-chip active" data-src="pubmed" onclick="fChip(this)">PubMed</span>
+      <span class="fx-chip active" data-src="crossref" onclick="fChip(this)">Crossref</span>
+      <span class="fx-chip active" data-src="europepmc" onclick="fChip(this)">Europe PMC</span>
+    </div>
+    <button type="button" class="fx-btn sm" onclick="fReset()">↺ Reset filters</button>
+  </div>
+</div>
+
   <div class="submit-wrap">
     <button class="btn primary" onclick="findTopics()" style="width:100%;justify-content:center;padding:12px">
       🧭 Find Related Research
@@ -201,6 +259,88 @@ select.form-input{cursor:pointer}
 <div id="toast"></div>
 
 <script>
+
+/* ── shared: filters + source tags ─────────────── */
+let fOA = false, fLastRun = null, fTimer = null;
+const F_DEFAULT_SORT = document.getElementById('fSort') ? document.getElementById('fSort').value : 'cited';
+const F_SORT_NAMES = {match: 'Best match', cited: 'Most cited', recent: 'Most recent'};
+function fEl(id){ return document.getElementById(id); }
+function fGet(){
+  const on = [...document.querySelectorAll('.fx-chip.active')].map(c => c.dataset.src);
+  const o = {sources: on.length === 5 ? [] : on, year_from: fEl('fYf').value.trim(), year_to: fEl('fYt').value.trim(), oa: fOA, sort: fEl('fSort').value};
+  o.field = fEl('fField') ? fEl('fField').value : 'both';
+  return o;
+}
+function fQS(){
+  const o = fGet(); let q = '';
+  if (o.sources.length) q += '&sources=' + o.sources.join(',');
+  if (o.year_from) q += '&year_from=' + encodeURIComponent(o.year_from);
+  if (o.year_to)   q += '&year_to='   + encodeURIComponent(o.year_to);
+  if (o.oa) q += '&oa=1';
+  q += '&sort=' + o.sort;
+  if (o.field !== 'both') q += '&field=' + o.field;
+  return q;
+}
+function fBody(){ const o = fGet(); return {sources: o.sources, year_from: o.year_from || null, year_to: o.year_to || null, oa: o.oa, sort: o.sort, field: o.field}; }
+function fSummaryText(){
+  const o = fGet(), p = [];
+  if (o.year_from && o.year_to) p.push(o.year_from + '–' + o.year_to); else if (o.year_from) p.push('from ' + o.year_from); else if (o.year_to) p.push('until ' + o.year_to);
+  if (o.oa) p.push('OA');
+  if (o.sources.length) p.push(o.sources.length + ' source' + (o.sources.length > 1 ? 's' : ''));
+  if (o.sort !== F_DEFAULT_SORT) p.push(F_SORT_NAMES[o.sort] || o.sort);
+  if (o.field !== 'both') p.push(o.field === 'title' ? 'title only' : 'abstract only');
+  return p.join(' · ');
+}
+function fRefreshSummary(){ const t = fSummaryText(); fEl('fSum').textContent = t ? '· ' + t : ''; }
+function fToggle(){ fEl('fPanel').classList.toggle('hidden'); }
+function fToggleOA(){ fOA = !fOA; fEl('fOAbtn').classList.toggle('on', fOA); fChanged(); }
+function fSetOA(on){ fOA = !!on; fEl('fOAbtn').classList.toggle('on', fOA); fRefreshSummary(); }
+function fChip(el){
+  if (el.classList.contains('active') && document.querySelectorAll('.fx-chip.active').length === 1) { toast('⚠️ Keep at least one source on'); return; }
+  el.classList.toggle('active'); fChanged();
+}
+function fChanged(){
+  fRefreshSummary();
+  clearTimeout(fTimer);
+  fTimer = setTimeout(() => { if (typeof fLastRun === 'function') fLastRun(); }, 350);   // re-run the last search with the new filters
+}
+function fReset(){
+  fEl('fYf').value = ''; fEl('fYt').value = ''; fEl('fSort').value = F_DEFAULT_SORT;
+  if (fEl('fField')) fEl('fField').value = 'both';
+  document.querySelectorAll('.fx-chip').forEach(c => c.classList.add('active'));
+  fOA = false; fEl('fOAbtn').classList.remove('on'); fChanged();
+}
+function safeUrl(u){ u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? u : ''; }
+function srcBadge(ds){
+  const s = String(ds || '').toLowerCase();
+  if (s.includes('arxiv'))    return '<span class="src-b src-arxiv">arXiv</span>';
+  if (s.includes('pubmed'))   return '<span class="src-b src-pubmed">PubMed</span>';
+  if (s.includes('crossref')) return '<span class="src-b src-semantic">Crossref</span>';
+  if (s.includes('europe'))   return '<span class="src-b src-pubmed">Europe PMC</span>';
+  return '<span class="src-b src-openalex">OpenAlex</span>';
+}
+function tagRow(p){ return '<span class="tagrow">' + (p && p.is_oa ? '<span class="oa-b">OA</span>' : '') + srcBadge(p && p.data_source) + '</span>'; }
+function searchLink(tags){
+  const o = fGet(), p = new URLSearchParams();
+  tags.filter(Boolean).forEach(t => p.append('tag', t));
+  if (o.year_from) p.set('yf', o.year_from);
+  if (o.year_to)   p.set('yt', o.year_to);
+  if (o.oa) p.set('oa', '1');
+  if (o.sources.length) p.set('src', o.sources.join(','));
+  if (o.sort === 'recent') p.set('sort', 'recent');
+  if (o.field !== 'both') p.set('field', o.field);
+  return '/search?' + p.toString();
+}
+function fNoResultsHtml(what){
+  const t = fSummaryText();
+  return `<div class="fx-empty"><div class="big">📭</div><p>${what}</p>` +
+    (t ? `<p style="margin-top:6px">Your filters (${esc(t)}) may be hiding results.</p><button class="fx-btn" style="margin-top:10px" onclick="fReset()">↺ Reset filters</button>` : '') + `</div>`;
+}
+function fUsedLine(data){
+  const n = data.searched != null ? `${data.searched} papers · ` : '';
+  return `<div class="fx-note">${n}${esc((data.sources_used || []).join(', '))}</div>`;
+}
+
 function setField(val) {
   document.getElementById('fieldInput').value = val;
   document.querySelectorAll('#fieldChips .chip').forEach(c => {
@@ -215,92 +355,106 @@ document.getElementById('keywordsInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') findTopics();
 });
 
+let _topicPapers = [], _topicShown = 10, _topicMeta = {};
+
+function onLevelChange() {
+  // High school students usually cannot open paywalled papers, so start with Open Access ones.
+  if (document.getElementById('levelSelect').value === 'high school' && !fOA) {
+    fSetOA(true); toast('🔓 Showing Open Access papers — easier to read in full');
+    if (typeof fLastRun === 'function') fLastRun();
+  }
+}
+
 async function findTopics() {
   const field    = document.getElementById('fieldInput').value.trim();
-  const level    = document.getElementById('levelSelect').value;
   const focus    = document.getElementById('focusInput').value.trim();
   const keywords = document.getElementById('keywordsInput').value.trim();
 
   if (!field) { toast('⚠️ Enter a field or subject area first'); return; }
 
-  // Build search query
-  let query = field;
-  if (focus)    query += ' ' + focus;
-  if (keywords) query += ' ' + keywords;
-  if (level)    query += ' ' + level;
-
+  fLastRun = findTopics;                     // filters re-run this search when changed
   const results = document.getElementById('results');
   results.innerHTML = '<div class="spinner"></div>';
 
   try {
-    const resp = await fetch(`/api/search?q=${encodeURIComponent(query)}&page=1`);
-    const data = await resp.json();
+    const url = `/api/topics?subject=${encodeURIComponent(field)}&focus=${encodeURIComponent(focus)}&kw=${encodeURIComponent(keywords)}${fQS()}`;
+    const resp = await fetch(url);
+    const data = await resp.json().catch(() => ({}));
 
-    if (!resp.ok || !data.results || !data.results.length) {
-      results.innerHTML = `
-        <div class="no-result">
-          <div class="big">📭</div>
-          <p>No research found for <strong>${esc(field)}</strong>. Try a broader field or different keywords.</p>
-        </div>`;
+    if (!resp.ok) {
+      results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>${esc(data.error || 'Something went wrong. Try again.')}</p></div>`;
       return;
     }
-
-    renderTopics(data.results.slice(0, 10), field, query);
+    if (!data.results || !data.results.length) {
+      results.innerHTML = fNoResultsHtml(`No research found for <strong>${esc(field)}</strong>. Try a broader field or different keywords.`);
+      return;
+    }
+    _topicPapers = data.results; _topicShown = 10;
+    _topicMeta = {field, focus, keywords, relaxed: !!data.relaxed, data};
+    renderTopics();
   } catch(e) {
     results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>Connection error. Try again.</p></div>`;
   }
 }
 
-function renderTopics(papers, field, query) {
-  const results = document.getElementById('results');
+function showMoreTopics() { _topicShown += 10; renderTopics(); }
 
-  const cards = papers.map((p, i) => {
+function renderTopics() {
+  const results = document.getElementById('results');
+  const {field, focus, keywords, relaxed, data} = _topicMeta;
+  const shown = _topicPapers.slice(0, _topicShown);
+
+  const cards = shown.map((p, i) => {
     const title    = p.title || 'Untitled';
-    const authors  = (p.authors || []).slice(0, 2).join(', ') + (p.authors?.length > 2 ? ' et al.' : '');
-    const year     = p.year || '?';
-    const journal  = p.journal || p.data_source || '—';
-    const abstract = (p.abstract || '').slice(0, 200) + (p.abstract?.length > 200 ? '…' : '');
+    const authors  = (p.authors || []).slice(0, 2).join(', ') + ((p.authors || []).length > 2 ? ' et al.' : '');
+    const abstract = p.abstract || '';
     const cites    = p.citations || 0;
     const cColor   = cites > 1000 ? 'var(--gold)' : cites > 100 ? 'var(--accent)' : 'var(--muted)';
-    const isOA     = p.is_oa;
-
+    const doi = safeUrl(p.doi), oa = safeUrl(p.oa_url);
     return `
-    <div class="topic-card" style="animation-delay:${i * 50}ms">
-      <div class="topic-num">Research ${i + 1} of ${papers.length}</div>
+    <div class="topic-card" style="animation-delay:${Math.min(i, 9) * 50}ms">
+      <div class="topic-num">Research ${i + 1} of ${_topicPapers.length} ${tagRow(p)}</div>
       <div class="topic-title">${esc(title)}</div>
       <div class="topic-meta">
         <span>${esc(authors) || 'Unknown authors'}</span>
-        <span>· ${year}</span>
-        <span>· ${esc(journal)}</span>
+        <span>· ${esc(p.year || '?')}</span>
+        <span>· ${esc(p.journal || '—')}</span>
         <span style="color:${cColor}">· ★ ${cites.toLocaleString()}</span>
-        ${isOA ? '<span class="badge oa">Open Access</span>' : ''}
       </div>
       ${abstract ? `<div class="topic-abstract">${esc(abstract)}</div>` : ''}
       <div class="topic-actions">
-        ${p.doi ? `<a href="${esc(p.doi)}" target="_blank" class="btn xs">↗ View Source</a>` : ''}
-        ${p.oa_url ? `<a href="${esc(p.oa_url)}" target="_blank" class="btn xs">↗ Read</a>` : ''}
-        <button class="btn xs" onclick="copyText('${esc(title).replace(/'/g,"\\'")}')">📋 Copy Title</button>
+        ${doi ? `<a href="${esc(doi)}" target="_blank" rel="noopener noreferrer" class="btn xs">↗ View Source</a>` : ''}
+        ${oa ? `<a href="${esc(oa)}" target="_blank" rel="noopener noreferrer" class="btn xs">↗ Read</a>` : ''}
+        <button class="btn xs" data-copy="${i}">📋 Copy Title</button>
       </div>
     </div>`;
   }).join('');
 
+  const left = _topicPapers.length - shown.length;
   results.innerHTML = `
     <div class="results-section">
       <div class="section-label">Related research in <strong style="color:var(--accent)">${esc(field)}</strong></div>
+      ${relaxed ? `<div class="fx-note">Few papers matched all your words, so broader results for <b>${esc(field)}</b> are included.</div>` : ''}
+      ${fUsedLine(data)}
       ${cards}
+      ${left > 0 ? `<div style="text-align:center;margin:10px 0"><button class="btn sm" onclick="showMoreTopics()">Show next ${Math.min(10, left)} (${left} remaining)</button></div>` : ''}
       <div class="inspo-box">
         <h3>💡 How to use these results</h3>
         <p>Look at the <strong>themes, methods, and gaps</strong> in these papers. Ask yourself: What hasn't been studied yet? What could be applied locally? What angle is missing? Your original topic should come from your own thinking — these papers are just the map, not the destination.</p>
       </div>
       <div style="margin-top:14px;text-align:center">
-        <a href="/search?q=${encodeURIComponent(query)}" class="btn primary sm">🔍 Full Paper Search</a>
+        <a href="${esc(searchLink([field, focus, keywords]))}" class="btn primary sm">🔍 Full Paper Search</a>
       </div>
     </div>`;
 }
+document.getElementById('results').addEventListener('click', e => {
+  const b = e.target.closest('button[data-copy]');
+  if (b) { const p = _topicPapers[parseInt(b.dataset.copy, 10)]; if (p) copyText(p.title || ''); }
+});
 
 function esc(str) {
   if (!str) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 function copyText(text) {

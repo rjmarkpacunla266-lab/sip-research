@@ -428,7 +428,7 @@ def _year_bounds(year_from, year_to):
 
 # ─── OPENALEX ────────────────────────────────────────────────────────
 def search_openalex(query, page=1, per_page=RESULTS_PER_SOURCE,
-                    year_from=None, year_to=None, oa_only=False, sort="cited", field="both"):
+                    year_from=None, year_to=None, oa_only=False, sort="cited", field="both", loose=False):
     """Returns (papers, total). Matches title+abstract only, so papers that merely
     mention the topic somewhere in their full text don't flood the citation sort."""
     terms  = _safe_terms(query)
@@ -443,8 +443,12 @@ def search_openalex(query, page=1, per_page=RESULTS_PER_SOURCE,
         {"filter": ",".join(base + [f"{fkey}:{strict}"])},
         {"search": query, "filter": ",".join(base)},          # safety net
     ]
+    if loose:                        # any-word relevance search (used by Source Tracer)
+        attempts = [{"search": query, "filter": ",".join(base)}]
     for extra in attempts:
         params = {"per-page": per_page, "page": page, "sort": sort_by}
+        if loose:
+            params.pop("sort")       # let OpenAlex rank by relevance
         params.update({k: v for k, v in extra.items() if v})
         try:
             resp = requests.get(OPENALEX_URL, params=params, timeout=15)
@@ -494,13 +498,15 @@ def search_semantic_scholar(query, page=1, per_page=RESULTS_PER_SOURCE):
 
 # ─── ARXIV ───────────────────────────────────────────────────────────
 def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE,
-                 year_from=None, year_to=None, oa_only=False, sort="cited", field="both"):
+                 year_from=None, year_to=None, oa_only=False, sort="cited", field="both", loose=False):
     start = (page - 1) * per_page
     def _ax(t):
         if field == "title":    return f"ti:{t}"
         if field == "abstract": return f"abs:{t}"
         return f"(ti:{t} OR abs:{t})"
-    q = " AND ".join(_ax(t) for t in _safe_terms(query)) or f"all:{query}"
+    q = (" OR " if loose else " AND ").join(_ax(t) for t in _safe_terms(query)) or f"all:{query}"
+    if loose:
+        q = f"({q})"
     if year_from or year_to:
         lo = f"{year_from or 1991}01010000"
         hi = f"{year_to or 2100}12312359"
@@ -541,13 +547,13 @@ def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE,
 
 # ─── PUBMED ──────────────────────────────────────────────────────────
 def search_pubmed(query, page=1, per_page=RESULTS_PER_SOURCE,
-                  year_from=None, year_to=None, oa_only=False, sort="cited", field="both"):
+                  year_from=None, year_to=None, oa_only=False, sort="cited", field="both", loose=False):
     retstart = (page - 1) * per_page
     def _pm(t):
         if field == "title":    return f"{t}[Title]"
         if field == "abstract": return f"({t}[Title/Abstract] NOT {t}[Title])"
         return f"{t}[Title/Abstract]"
-    term = " AND ".join(_pm(t) for t in _safe_terms(query)) or query
+    term = (" OR " if loose else " AND ").join(_pm(t) for t in _safe_terms(query)) or query
     if oa_only:
         term = f"({term}) AND free full text[sb]"
     es_params = {"db": "pubmed", "term": term, "retmax": per_page, "retstart": retstart,
@@ -608,12 +614,14 @@ def search_pubmed(query, page=1, per_page=RESULTS_PER_SOURCE,
 
 # ─── CROSSREF ────────────────────────────────────────────────────────
 def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE,
-                    year_from=None, year_to=None, oa_only=False, sort="cited", field="both"):
+                    year_from=None, year_to=None, oa_only=False, sort="cited", field="both", loose=False):
     offset = (page - 1) * per_page
     cr_params = {("query.title" if field == "title" else "query"): query, "rows": per_page, "offset": offset,
                  "sort": "published" if sort == "recent" else "is-referenced-by-count",
                  "order": "desc",
                  "select": "title,author,published,container-title,DOI,is-referenced-by-count,abstract,URL,license"}
+    if loose:                                   # relevance order
+        cr_params.pop("sort", None); cr_params.pop("order", None)
     flt = []
     if year_from: flt.append(f"from-pub-date:{year_from}-01-01")
     if year_to:   flt.append(f"until-pub-date:{year_to}-12-31")
@@ -654,7 +662,7 @@ def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE,
         return []
 
 # ─── EUROPE PMC ──────────────────────────────────────────────────────
-def _epmc_query(query, year_from, year_to, oa_only, strict, field="both"):
+def _epmc_query(query, year_from, year_to, oa_only, strict, field="both", loose=False):
     if strict:
         def _ep(t):
             if field == "title":    return f'TITLE:"{t}"'
@@ -662,6 +670,8 @@ def _epmc_query(query, year_from, year_to, oa_only, strict, field="both"):
             return f'(TITLE:"{t}" OR ABSTRACT:"{t}")'
         parts = [_ep(t) for t in _safe_terms(query)]
         q = " AND ".join(parts) or query
+    elif loose:
+        q = "(" + (" OR ".join(_safe_terms(query)) or query) + ")"
     else:
         q = f"({query})"
     if year_from or year_to:
@@ -671,14 +681,17 @@ def _epmc_query(query, year_from, year_to, oa_only, strict, field="both"):
     return q
 
 def search_europe_pmc(query, page=1, per_page=RESULTS_PER_SOURCE,
-                      year_from=None, year_to=None, oa_only=False, sort="cited", field="both"):
+                      year_from=None, year_to=None, oa_only=False, sort="cited", field="both", loose=False):
     sort_by = "P_PDATE_D desc" if sort == "recent" else "CITED desc"
     def _call(strict):
+        params = {"query": _epmc_query(query, year_from, year_to, oa_only, strict and not loose, field, loose),
+                  "pageSize": per_page, "page": page, "format": "json",
+                  "resultType": "core", "sort": sort_by}
+        if loose:
+            params.pop("sort")                  # relevance order
         return requests.get(
             "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
-            params={"query": _epmc_query(query, year_from, year_to, oa_only, strict, field),
-                    "pageSize": per_page, "page": page, "format": "json",
-                    "resultType": "core", "sort": sort_by},
+            params=params,
             timeout=15, headers={"User-Agent": "Sturch/3.0 (academic research tool)"})
     try:
         resp  = _call(True)           # title/abstract matches only (no full-text noise)
