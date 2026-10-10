@@ -95,6 +95,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 .answer-text{font-family:var(--serif);font-size:1rem;line-height:1.75;color:var(--text)}
 .answer-text mark{background:rgba(79,141,232,.18);color:var(--accent);border-radius:2px;padding:0 2px}
 .answer-text .cue{color:var(--gold);border-bottom:1px dotted rgba(232,184,75,.5)}
+.ai-b{color:var(--accent2)}
 .best-b{margin-left:6px;font-size:.66rem;padding:1px 8px;border-radius:20px;background:rgba(232,184,75,.1);border:1px solid rgba(232,184,75,.28);color:var(--gold)}
 
 /* Sources */
@@ -319,7 +320,7 @@ function fNoResultsHtml(what){
 }
 function fUsedLine(data){
   const n = data.searched != null ? `${data.searched} papers · ` : '';
-  return `<div class="fx-note">${n}${esc((data.sources_used || []).join(', '))}</div>`;
+  return `<div class="fx-note">${n}${esc((data.sources_used || []).join(', '))}${data.ai_used ? ' · <span class="ai-b">✨ AI-checked</span>' : ''}</div>`;
 }
 
 let currentTemplate = 'What is';
@@ -338,7 +339,7 @@ function setTemplate(tpl, btn) {
     'What is':    ['photosynthesis','DNA replication','climate change','CRISPR','antibiotic resistance','renewable energy'],
     'What are':   ['stem cells','greenhouse gases','antibiotics','black holes','enzymes','chromosomes'],
     'What causes': ['climate change','cancer','antibiotic resistance','earthquakes','inflation','deforestation'],
-    'How does':   ['photosynthesis work','the immune system work','DNA replication work','climate change work','CRISPR work'],
+    'How does':   ['photosynthesis work','the immune system work','stress affect sleep','climate change affect health','CRISPR work'],
     'Why is':     ['biodiversity important','sleep important','vaccination important','exercise important'],
     'Define':     ['photosynthesis','entropy','osmosis','biodiversity','metabolism','ecosystem'],
     'Effect of':  ['climate change','sleep deprivation','caffeine','social media','deforestation','exercise'],
