@@ -3,6 +3,7 @@ All three use the shared engine (engine.py), so they support the same filters as
 sources, years, Open Access and sort."""
 import re as _re
 import difflib
+import math
 import traceback
 from flask import Blueprint, render_template, request, jsonify
 from core import login_required, _safe_terms
@@ -32,8 +33,10 @@ def _pick(p, abstract_chars=0):
 # ANSWER FINDER
 # ═════════════════════════════════════════════════════════════════════
 ANSWER_TEMPLATES = [
-    (r"^what is the difference between (.+) and (.+)$", "difference"),
-    (r"^what is the effect of (.+)$",                   "effect"),
+    (r"^(?:what (?:is|are) )?(?:the )?differences? between (.+?) and (.+)$",                  "difference"),
+    (r"^(?:what (?:is|are) )?the (?:effects?|impacts?|consequences?) of (.+)$",               "effect"),
+    (r"^(?:effects?|impacts?|consequences?) of (.+)$",                                        "effect"),
+    (r"^(?:what (?:is|are) )?the (?:causes?(?: of)?|reasons? (?:for|behind)|drivers? of) (.+)$", "causes"),
     (r"^what causes (.+)$",                             "causes"),
     (r"^what are (.+)$",                                "what_are"),
     (r"^what is (.+)$",                                 "what_is"),
@@ -43,31 +46,37 @@ ANSWER_TEMPLATES = [
     (r"^define (.+)$",                                  "define"),
 ]
 
-_DEF = [r"\b(is|are|was|were)\s+(a|an|the)\b", r"\brefers?\s+to\b", r"\bdefined\s+as\b",
-        r"\bknown\s+as\b", r"\bconsists?\s+of\b", r"\bmeans?\b", r"\bcan\s+be\s+(defined|described)\b"]
-_PATTERNS = {
-    "what_is":    _DEF,
-    "define":     _DEF,
-    "what_are":   _DEF + [r"\binclude[sd]?\b"],
-    "causes":     [r"\bcaus(e|es|ed|ing)\b", r"\bdue\s+to\b", r"\bresult(s|ed|ing)?\s+(from|in)\b",
-                   r"\blead(s|ing)?\s+to\b", r"\bled\s+to\b", r"\bdriven\s+by\b", r"\bbecause\b",
-                   r"\bcontribut(e|es|ed)\b"],
-    "effect":     [r"\beffects?\b", r"\bimpacts?\b", r"\bresult(s|ed)?\s+in\b", r"\blead(s|ing)?\s+to\b",
-                   r"\bincreas(e|es|ed)\b", r"\bdecreas(e|es|ed)\b", r"\breduc(e|es|ed)\b"],
-    "how_does":   [r"\bby\b", r"\bthrough\b", r"\bmechanisms?\b", r"\bprocess\b", r"\bvia\b",
-                   r"\bworks?\b", r"\bconvert(s|ed)?\b"],
-    "why_is":     [r"\bbecause\b", r"\bimportant\b", r"\bessential\b", r"\bcritical\b",
-                   r"\bdue\s+to\b", r"\bsince\b", r"\bso\s+that\b"],
-    "difference": [r"\bdiffer", r"\bcompared?\s+(to|with)\b", r"\bwhereas\b", r"\bwhile\b"],
+# words the user may have typed after the topic ("why is X important", "how does X works")
+_TRAIL = {
+    "how_does": r"\s+works?$",
+    "why_is":   r"\s+(?:important|essential|critical|crucial|necessary|significant|useful|needed)$",
 }
 
+MIN_SCORE  = 4      # a sentence below this is not shown (better fewer answers than wrong ones)
+BEST_SCORE = 6      # the top sentence gets a "Best answer" badge at or above this
+
+def _clean_kw(kw):
+    return _re.sub(r"^(?:the|a|an)\s+", "", (kw or "").strip())
+
 def _extract_keyword(query):
-    q = query.strip().lower()
+    """-> (keyword, template, second keyword or None). Second keyword is only used by 'difference'."""
+    q = query.strip().lower().rstrip("?.! ")
     for pattern, ttype in ANSWER_TEMPLATES:
         m = _re.match(pattern, q)
-        if m:
-            return m.group(1).strip(), ttype
-    return None, None
+        if not m:
+            continue
+        kw  = m.group(1)
+        kw2 = m.group(2) if ttype == "difference" else None
+        if ttype in _TRAIL:
+            kw = _re.sub(_TRAIL[ttype], "", kw.strip())
+        kw, kw2 = _clean_kw(kw), (_clean_kw(kw2) if kw2 else None)
+        if kw and (kw2 or ttype != "difference"):
+            return kw, ttype, kw2
+    return None, None, None
+
+def _kw_regex(kw):
+    parts = [_re.escape(w) for w in kw.split()]
+    return r"\b" + r"\s+".join(parts) + r"(?:s|es)?\b"
 
 def _kw_present(sent, kw):
     if term_in(sent, kw):
@@ -75,79 +84,218 @@ def _kw_present(sent, kw):
     words = [w for w in kw.split() if len(w) > 3]
     return bool(words) and all(term_in(sent, w) for w in words)
 
-def _score_sentence(sent, kw, ttype, idx):
-    sl, score = sent.lower(), 0
-    score += 2 * sum(1 for p in _PATTERNS.get(ttype, _DEF) if _re.search(p, sl))
-    m = _re.search(_re.escape(kw.lower()), sl)
-    if m:
-        if m.start() < 40:
-            score += 1
-        if _re.match(r"\s*(is|are|refers|means|can be)\b", sl[m.end():m.end() + 15]):
-            score += 3                                     # "<topic> is …" reads like a definition
-    if idx == 0:
-        score += 1
+# ── Scoring rules ────────────────────────────────────────────────────
+# Each rule is (weight, regex). <K> stands for the topic. "pos" rules say the sentence really answers
+# THIS kind of question (the direction matters: a cause sentence has the topic as the thing being caused).
+# "neg" rules catch sentences that look similar but answer the opposite question.
+_DEF_POS = [
+    (6, r"^\W*(?:the\s+|a\s+|an\s+)?<K>\s+(?:is|are|refers?\s+to|means?|denotes?|describes?|can\s+be\s+defined\s+as)\b"),
+    (4, r"<K>.{0,40}?\b(?:is|are)\s+(?:defined|known|described|considered)\s+as\b"),
+    (3, r"<K>.{0,40}?\b(?:is|are)\s+(?:a|an|the)\b"),
+    (3, r"<K>.{0,40}?\b(?:refers?\s+to|consists?\s+of|comprises?|defined\s+as)\b"),
+]
+_DEF_NEG = [
+    (4, r"\b(?:topic|buzzword|debate|discussion)\b"),
+    (3, r"\b(?:is|are)\s+(?:an?\s+)?(?:\w+\s+)?(?:ongoing|growing|increasingly|important|major|pressing|serious|significant)\s+(?:\w+\s+)?(?:topic|issue|challenge|concern|problem|threat|area|field)\b"),
+]
+
+_RULES = {
+    "what_is":  {"pos": _DEF_POS, "neg": _DEF_NEG},
+    "define":   {"pos": _DEF_POS, "neg": _DEF_NEG},
+    "what_are": {"pos": _DEF_POS + [(2, r"<K>.{0,40}?\b(?:include[sd]?|such\s+as|types?\s+of|categories)\b")], "neg": _DEF_NEG},
+    "causes": {
+        "pos": [
+            (5, r"<K>.{0,70}?\b(?:caused|driven|triggered|fuell?ed|attributed|brought\s+about)\s+(?:\w+\s+)?(?:by|to)\b"),
+            (5, r"\b(?:causes?|drivers?|reasons?|factors?|sources?|contributors?|origins?|determinants?)\s+(?:of|for|behind)\s+(?:\w+\s+){0,3}?<K>"),
+            (4, r"<K>.{0,70}?\b(?:results?\s+from|stems?\s+from|arises?\s+from|originates?\s+from|due\s+to|because\s+of|owing\s+to|is\s+a\s+result\s+of)\b"),
+            (4, r"\b(?:cause[sd]?|drives?|driving|contribut(?:e|es|ed|ing)\s+(?:\w+ly\s+)?to|lead(?:s|ing)?\s+to|led\s+to|result(?:s|ed|ing)?\s+in)\s+(?:\w+\s+){0,3}?<K>"),
+        ],
+        "neg": [
+            # the topic is the CAUSE or the thing being discussed for its effects, not the thing being caused
+            (5, r"\b(?:effects?|impacts?|consequences?|threats?|risks?|implications?)\s+(?:of|from|on)\s+(?:\w+\s+){0,2}?<K>"),
+            (5, r"<K>\s+(?:is\s+(?:likely|expected|projected|predicted)\s+to|will|may|might|can|could|has\s+led\s+to|have\s+led\s+to|leads?\s+to|causes?|results?\s+in|affects?|impacts?|threatens?|exacerbates?|increases?|reduces?)\b(?!\s+be\b)"),
+        ],
+    },
+    "effect": {
+        "pos": [
+            (5, r"\b(?:effects?|impacts?|consequences?|implications?)\s+(?:of|from)\s+(?:\w+\s+){0,2}?<K>"),
+            (4, r"<K>.{0,60}?\b(?:causes?|leads?\s+to|results?\s+in|increases?|decreases?|reduces?|affects?|impacts?|threatens?|exacerbates?|is\s+associated\s+with|contributes?\s+to)\b"),
+            (4, r"\b(?:as\s+a\s+result\s+of|due\s+to|owing\s+to|consequence\s+of)\s+(?:\w+\s+){0,2}?<K>"),
+        ],
+        "neg": [
+            (3, r"<K>.{0,40}?\b(?:is|are)\s+(?:mainly\s+|primarily\s+)?caused\s+by\b"),
+        ],
+    },
+    "how_does": {
+        "pos": [
+            (3, r"<K>.{0,60}?\b(?:works?|occurs?|operates?|functions?|proceeds?|happens?|takes?\s+place)\b"),
+            (3, r"\b(?:mechanisms?|process|pathways?|steps?|stages?)\b"),
+            (2, r"\b(?:converts?|produces?|transforms?|binds?|synthesi[sz]es?|uses?)\b"),
+            (2, r"\b(?:by|through|via)\s+(?:\w+\s+){0,2}\w+ing\b"),
+        ],
+        "neg": [],
+    },
+    "why_is": {
+        "pos": [
+            (3, r"\bbecause\b|\bdue\s+to\b|\bso\s+that\b|\bsince\b"),
+            (3, r"\bplays?\s+(?:a\s+)?(?:key|crucial|vital|important|central|critical)\s+role\b|\b(?:essential|crucial|vital|critical|indispensable|necessary)\b"),
+            (2, r"\bimportan(?:t|ce)\b|\bbenefits?\b|\bsupports?\b"),
+        ],
+        "neg": [],
+    },
+    "difference": {
+        "pos": [
+            (3, r"\bdiffer\w*\b"),
+            (3, r"\bcompared?\s+(?:to|with)\b|\bin\s+contrast\b|\bunlike\b|\bwhereas\b|\bversus\b|\bvs\b"),
+            (2, r"\bwhile\b|\bbetween\b"),
+        ],
+        "neg": [],
+    },
+}
+
+# words shown highlighted on the page so the reader sees WHY a sentence was picked
+_CUES = {
+    "causes":     ["caused by", "driven by", "triggered by", "due to", "results from", "stems from", "because of",
+                   "causes of", "cause of", "drivers of", "contributes to", "leads to"],
+    "effect":     ["effects of", "effect of", "impacts of", "impact of", "consequences of", "results in", "leads to",
+                   "increases", "reduces", "affects"],
+    "what_is":    ["refers to", "defined as", "known as", "consists of", "means"],
+    "what_are":   ["refers to", "defined as", "known as", "consists of", "include", "such as"],
+    "define":     ["refers to", "defined as", "known as", "consists of", "means"],
+    "how_does":   ["mechanism", "process", "through", "via"],
+    "why_is":     ["because", "important", "essential", "crucial", "critical", "vital", "due to"],
+    "difference": ["differ", "differs", "compared to", "compared with", "whereas", "in contrast", "unlike", "versus"],
+}
+
+# sentences that only make sense with the sentence before them, or that talk about the paper itself
+_DANGLING = _re.compile(r"^\W*(?:these|this|those|such|it|they|their|its|that|he|she|there)\b", _re.I)
+_CONNECT  = _re.compile(r"^\W*(?:however|moreover|furthermore|therefore|thus|also|additionally|in addition|consequently|hence|nevertheless|meanwhile|overall)\b", _re.I)
+_META     = _re.compile(r"\b(?:this (?:study|paper|article|review|work|chapter)|we (?:show|find|found|propose|investigate|examine|analy[sz]e|present|study|use|discuss|review|argue|aim)"
+                        r"|our (?:results|findings|study|analysis|work|approach)|the present (?:study|paper)|literature|researchers?|authors?|studies|empirical(?:ly)?"
+                        r"|systematic review|meta-analysis|relevant)\b", _re.I)
+
+_ABBR = _re.compile(r"\b(et al|e\.g|i\.e|vs|fig|figs|approx|cf|dr|prof|u\.s|u\.k|eq|resp|etc)\.", _re.I)
+
+def _split_sentences(text):
+    """Split an abstract into sentences without breaking on 'et al.', 'e.g.', 'U.S.' and the like."""
+    t = _ABBR.sub(lambda m: m.group(0)[:-1] + "\u2024", text)
+    parts = _re.split(r"(?<=[.!?])\s+(?=[A-Z0-9\"'(\[])", t)
+    return [p.replace("\u2024", ".").strip() for p in parts if p.strip()]
+
+def _score_sentence(sent, kw, ttype, idx, kw2=None):
+    """-> (score, number of direction-aware patterns that matched)."""
+    rules = _RULES.get(ttype) or _RULES["what_is"]
+    K = _kw_regex(kw)
+    score = hits = 0
+    for w, pat in rules["pos"]:
+        if _re.search(pat.replace("<K>", K), sent, _re.I):
+            score += w
+            hits += 1
+    for w, pat in rules.get("neg", []):
+        if _re.search(pat.replace("<K>", K), sent, _re.I):
+            score -= w
+    if ttype == "difference" and kw2:
+        score += 4                                         # both things are in the sentence (checked by caller)
+    if _DANGLING.search(sent):
+        score -= 4
+    elif _CONNECT.search(sent):
+        score -= 1
+    if _META.search(sent):
+        score -= 4
     n = len(sent.split())
     if n > 45: score -= 2
-    if n < 8:  score -= 1
-    if _re.search(r"\b(we|our|this study|this paper|this review|here we)\b", sl):
-        score -= 1                                         # talks about the paper, not the topic
-    return score
+    if n < 8:  score -= 2
+    if idx == 0:
+        score += 1
+    return score, hits
 
-def _answer_candidates(paper, kw, ttype, per_paper=2):
+def _answer_candidates(paper, kw, ttype, kw2=None, per_paper=2):
     abstract = paper.get("abstract") or ""
     if not abstract:
         return []
-    sents = _re.split(r"(?<=[.!?])\s+", abstract)
     cands = []
-    for i, s in enumerate(sents):
-        s = s.strip()
-        if len(s.split()) >= 6 and _kw_present(s, kw):
-            cands.append({"text": s, "score": _score_sentence(s, kw, ttype, i), "paper": paper})
+    for i, s in enumerate(_split_sentences(abstract)):
+        n = len(s.split())
+        if s.endswith("?") or n < 6 or n > 60:
+            continue
+        if ttype == "difference":
+            if not (kw2 and _kw_present(s, kw) and _kw_present(s, kw2)):
+                continue
+        elif not _kw_present(s, kw):
+            continue
+        score, hits = _score_sentence(s, kw, ttype, i, kw2)
+        if hits and score >= MIN_SCORE:                    # must really match the question type
+            cands.append({"text": s, "score": score, "paper": paper})
     cands.sort(key=lambda c: c["score"], reverse=True)
     return cands[:per_paper]
+
+_BOOST = {"causes": "causes", "effect": "effects", "how_does": "mechanism", "why_is": "importance"}
+
+def _answer_query(kw, ttype, kw2):
+    """The paper search is aimed at the question, not only at the topic."""
+    if ttype == "difference":
+        return f"{kw} {kw2}"
+    return f"{kw} {_BOOST[ttype]}" if ttype in _BOOST else kw
+
+def _collect(papers, kw, ttype, kw2, cands, seen):
+    for p in papers:
+        for c in _answer_candidates(p, kw, ttype, kw2):
+            key = c["text"].lower()[:80]
+            if key not in seen:
+                seen.add(key)
+                cands.append(c)
+
+def _rank(c):
+    """Sentence quality first; citations add a gentle (log-scaled) boost instead of only breaking ties."""
+    return c["score"] + 1.2 * math.log10(1 + (c["paper"].get("citations") or 0))
 
 @tools_bp.route("/api/answer")
 @login_required
 def answer_finder():
-    """Answer Finder. Params: q (e.g. 'What is biofuel') + shared filters
+    """Answer Finder. Params: q (e.g. 'What causes climate change') + shared filters
     (sources, year_from, year_to, oa, sort = match | cited | recent)."""
     query = request.args.get("q", "").strip()
     if not query:
         return jsonify({"error": "Query required"}), 400
-    keyword, ttype = _extract_keyword(query)
+    keyword, ttype, kw2 = _extract_keyword(query)
     if not keyword:
         return jsonify({
             "error":   "unsupported_template",
-            "message": "Try: What is [topic], What are [topic], How does [topic] work, What causes [topic], Define [topic]"
+            "message": "Try: What is [topic], What are [topic], What causes [topic], Effect of [topic], How does [topic] work, Why is [topic] important, Define [topic], or Difference between [A] and [B]"
         }), 400
     try:
         f = read_filters(request.args.get)
         if request.args.get("sort") not in ("match", "cited", "recent"):
             f["sort"] = "match"
         pool_f = dict(f, sort="recent" if f["sort"] == "recent" else "cited")
-        papers, _ = search_papers(keyword, 1, pool_f, per_source=15)
 
+        q = _answer_query(keyword, ttype, kw2)
+        papers, _ = search_papers(q, 1, pool_f, per_source=15)
         cands, seen = [], set()
-        for p in papers:
-            for c in _answer_candidates(p, keyword, ttype):
-                key = c["text"].lower()[:80]
-                if key not in seen:
-                    seen.add(key)
-                    cands.append(c)
+        _collect(papers, keyword, ttype, kw2, cands, seen)
+        searched = len(papers)
+        if len(cands) < 3 and q != keyword and ttype != "difference":
+            more, _ = search_papers(keyword, 1, pool_f, per_source=15)      # fall back to the plain topic
+            _collect(more, keyword, ttype, kw2, cands, seen)
+            searched += len(more)
+
         if f["sort"] == "cited":
             cands.sort(key=lambda c: (c["paper"].get("citations") or 0, c["score"]), reverse=True)
         elif f["sort"] == "recent":
             cands.sort(key=lambda c: (sort_date(c["paper"]), c["score"]), reverse=True)
         else:
-            cands.sort(key=lambda c: (c["score"], c["paper"].get("citations") or 0), reverse=True)
+            cands.sort(key=_rank, reverse=True)
         top = cands[:5]
+        best = 0 if (f["sort"] == "match" and top and top[0]["score"] >= BEST_SCORE) else None
         return jsonify({
-            "keyword":  keyword, "template": ttype, "query": query,
+            "keyword":  keyword, "keyword2": kw2, "template": ttype, "query": query,
             "answers":  [c["text"] for c in top],
             "sources":  [_pick(c["paper"]) for c in top],          # same order as answers
-            "searched": len(papers),
+            "cues":     _CUES.get(ttype, []),
+            "best_index": best,
+            "searched": searched,
             "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
-            "message":  "" if top else "No direct answer found. Try searching for papers instead.",
+            "message":  "" if top else "No clear answer found in the top papers. Try searching for papers instead.",
         })
     except Exception:
         return _fail("Answer search")
