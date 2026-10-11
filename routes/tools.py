@@ -312,6 +312,36 @@ def _diversify(cands, n=5):
         seen.add(k)
     return (first + rest)[:n]
 
+def _src_key(p):
+    ds = (p.get("data_source") or "").lower()
+    for k in ("europe", "arxiv", "pubmed", "crossref"):
+        if k in ds:
+            return "europepmc" if k == "europe" else k
+    return "openalex"
+
+def _spread(cands, n=5):
+    """Best answer from each source first, so arXiv / PubMed / Crossref / Europe PMC are not crowded out by one source.
+    The chosen answers keep the order the list was already sorted in."""
+    first, rest, seen_src = [], [], set()
+    for c in _diversify(cands, len(cands)):
+        k = _src_key(c["paper"])
+        (rest if k in seen_src else first).append(c)
+        seen_src.add(k)
+    order = {id(c): i for i, c in enumerate(cands)}
+    return sorted((first + rest)[:n], key=lambda c: order[id(c)])
+
+def _source_stats(papers, cands):
+    """Per source: papers found, papers that have an abstract, and usable answer sentences (for the page's info line)."""
+    st = {}
+    blank = lambda: {"papers": 0, "abstracts": 0, "answers": 0}
+    for p in papers:
+        x = st.setdefault(_src_key(p), blank())
+        x["papers"] += 1
+        x["abstracts"] += 1 if p.get("abstract") else 0
+    for c in cands:
+        st.setdefault(_src_key(c["paper"]), blank())["answers"] += 1
+    return st
+
 @tools_bp.route("/api/answer")
 @login_required
 def answer_finder():
@@ -335,6 +365,7 @@ def answer_finder():
 
         q = _answer_query(keyword, ttype, kw2)
         papers, _ = search_papers(q, 1, pool_f, per_source=15)
+        all_papers = list(papers)
         cands, seen = [], set()
         _collect(papers, keyword, ttype, kw2, cands, seen, MIN_SCORE)
         searched = len(papers)
@@ -342,6 +373,7 @@ def answer_finder():
             more, _ = search_papers(keyword, 1, pool_f, per_source=15)      # fall back to the plain topic
             _collect(more, keyword, ttype, kw2, cands, seen, MIN_SCORE)
             searched += len(more)
+            all_papers += more
 
         if f["sort"] == "cited":
             cands.sort(key=lambda c: (c["paper"].get("citations") or 0, c["score"]), reverse=True)
@@ -349,7 +381,7 @@ def answer_finder():
             cands.sort(key=lambda c: (sort_date(c["paper"]), c["score"]), reverse=True)
         else:
             cands.sort(key=_rank, reverse=True)
-        top = _diversify(cands, 5)
+        top = _spread(cands, 5)
         best = 0 if (f["sort"] == "match" and top and ttype != "difference" and top[0]["score"] >= BEST_SCORE) else None
         return jsonify({
             "keyword":  keyword, "keyword2": kw2, "template": ttype, "query": query,
@@ -358,6 +390,7 @@ def answer_finder():
             "cues":     _CUES.get(ttype, []),
             "best_index": best,
             "searched": searched,
+            "source_stats": _source_stats(all_papers, cands),
             "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
             "message":  "" if top else "No clear answer found in the top papers. Try searching for papers instead.",
         })

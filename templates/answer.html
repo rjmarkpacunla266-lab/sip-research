@@ -317,6 +317,12 @@ function fNoResultsHtml(what){
   return `<div class="fx-empty"><div class="big">📭</div><p>${what}</p>` +
     (t ? `<p style="margin-top:6px">Your filters (${esc(t)}) may be hiding results.</p><button class="fx-btn" style="margin-top:10px" onclick="fReset()">↺ Reset filters</button>` : '') + `</div>`;
 }
+function srcStatsLine(data){
+  const st = data.source_stats || {};
+  const names = {openalex:'OpenAlex', arxiv:'arXiv', pubmed:'PubMed', crossref:'Crossref', europepmc:'Europe PMC'};
+  const parts = Object.keys(names).map(k => { const x = st[k] || {papers:0, answers:0}; return `${names[k]} ${x.papers}→${x.answers}`; });
+  return `<div class="fx-note" title="Per source: papers found → usable answer sentences. A paper found in several sources is counted once.">${parts.join(' · ')}</div>`;
+}
 function fUsedLine(data){
   const n = data.searched != null ? `${data.searched} papers · ` : '';
   return `<div class="fx-note">${n}${esc((data.sources_used || []).join(', '))}</div>`;
@@ -381,7 +387,7 @@ async function doAnswer() {
     if (!resp.ok) { results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>${esc(data.error || 'Something went wrong. Try again.')}</p></div>`; return; }
 
     if (!data.answers || !data.answers.length) {
-      results.innerHTML = fNoResultsHtml(`No direct answer found for <strong>${esc(topic)}</strong>.`) +
+      results.innerHTML = fNoResultsHtml(`No direct answer found for <strong>${esc(topic)}</strong>.`) + srcStatsLine(data) +
         `<div style="text-align:center"><a href="${esc(searchLink([topic]))}" class="btn primary">🔍 Search papers instead</a></div>`;
       return;
     }
@@ -436,7 +442,7 @@ function renderAnswers(data) {
       <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">
         Answers for: <strong style="color:var(--accent)">${esc(currentTemplate)} ${esc(kw)}${data.keyword2 ? ' and ' + esc(data.keyword2) : ''}</strong>
       </div>
-      ${fUsedLine(data)}
+      ${fUsedLine(data)}${srcStatsLine(data)}
       ${cards}
       <div class="search-cta">
         <p>Want more? <strong>Search full papers on "${esc(kw)}"</strong></p>
