@@ -180,6 +180,26 @@ footer a{color:var(--muted)}
 footer a:hover{color:var(--accent)}
 .divider{height:1px;background:var(--border);margin:0 24px}
 
+/* anchor links land below the sticky bar */
+#tools,#faq,#disclaimer{scroll-margin-top:76px}
+
+/* Beta notice + tools */
+.beta-banner{max-width:520px;margin:22px auto 0;padding:11px 15px;border:1px solid rgba(240,145,75,.28);background:rgba(240,145,75,.06);border-radius:10px;font-size:.78rem;color:var(--muted);line-height:1.6;text-align:left}
+.beta-banner strong{color:var(--orange)}
+.section-intro{color:var(--muted);font-size:.88rem;margin:-18px 0 24px}
+.tools-detail{display:grid;gap:16px}
+.tool{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:22px}
+.tool-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.tool-head .icon{font-size:1.3rem}
+.tool-head h3{font-size:1.05rem;font-weight:600}
+.tool-tag{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;font-family:monospace}
+.tool p{font-size:.85rem;color:var(--muted);line-height:1.65}
+.tool-steps{margin:12px 0 12px 20px;font-size:.83rem;color:var(--text);line-height:1.65}
+.tool-steps li{margin-bottom:4px}
+.tool .good{margin-top:10px;padding:10px 13px;background:rgba(240,145,75,.06);border:1px solid rgba(240,145,75,.2);border-radius:8px;font-size:.8rem}
+.tool .good strong{color:var(--orange)}
+.tool-more{margin-top:16px;font-size:.82rem;color:var(--muted)}
+
 /* FAQ */
 .faq details{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px}
 .faq details[open]{border-color:rgba(79,141,232,.35)}
@@ -226,6 +246,9 @@ footer a:hover{color:var(--accent)}
   <div class="sources-note fadein fadein-d3">
     Searches <span>OpenAlex · arXiv · PubMed · Crossref · Europe PMC</span> at the same time
   </div>
+  <div class="beta-banner fadein fadein-d3" role="note">
+    <strong>Beta notice:</strong> Sturch is still being built. Tools like the Answer Finder and Source Tracer read paper abstracts and can be incomplete or wrong, so always check the original paper. <a href="#disclaimer">Read the full disclaimer</a>
+  </div>
 
 
 </div>
@@ -235,29 +258,45 @@ footer a:hover{color:var(--accent)}
 <!-- Research tools -->
 <section class="section" id="tools">
   <div class="section-label">Research tools</div>
-  <h2>More than a paper search</h2>
-  <div class="features">
-    <div class="feature">
-      <div class="icon">💡</div>
-      <h3>Answer Finder</h3>
-      <p>Ask “What causes…”, “What is…” or “Effect of…” and get sentences from real papers that answer it, each with its source.</p>
-    </div>
-    <div class="feature">
-      <div class="icon">🔎</div>
-      <h3>Source Tracer</h3>
+  <h2>Tools that go beyond a paper search</h2>
+  <p class="section-intro">Every tool uses the same five databases and the same filters: years, Open Access, sources and sort.</p>
+  <div class="tools-detail">
+
+    <article class="tool">
+      <div class="tool-head"><div class="icon">💡</div><h3>Answer Finder</h3><span class="tool-tag">BETA</span></div>
+      <p>Ask a question and get sentences from real academic papers that answer it, each linked to the paper it came from.</p>
+      <ol class="tool-steps">
+        <li>Pick a template: What is, What are, What causes, Effect of, How does, Why is, Define or Difference between.</li>
+        <li>Type your topic, for example “antibiotic resistance” after “What causes”, and press Ask.</li>
+        <li>Read the answers, then use View Source or Read to open the paper behind each one.</li>
+      </ol>
+      <p class="good"><strong>Good to know:</strong> Answers come from paper abstracts, not the full text. Sturch shows fewer answers instead of weak ones, so a very common or very narrow topic may return none. If that happens, try a more specific topic or use Search Papers.</p>
+    </article>
+
+    <article class="tool">
+      <div class="tool-head"><div class="icon">🔎</div><h3>Source Tracer</h3><span class="tool-tag">BETA</span></div>
       <p>Paste a quote or claim and find the academic paper it most likely came from.</p>
-    </div>
-    <div class="feature">
-      <div class="icon">🧭</div>
-      <h3>Topic Finder</h3>
-      <p>Enter a field or subject and browse recent and highly cited papers to spark research topic ideas.</p>
-    </div>
-    <div class="feature">
-      <div class="icon">📋</div>
-      <h3>Citation Generator</h3>
-      <p>Copy auto-generated APA, MLA, Chicago and Vancouver references in one tap. Always verify before submitting.</p>
-    </div>
+      <ol class="tool-steps">
+        <li>Paste the quote or claim (at least 10 characters).</li>
+        <li>Sturch compares your wording with paper abstracts across the five databases.</li>
+        <li>Check the best match and its confidence level. If no exact source is found, related papers are shown instead.</li>
+      </ol>
+      <p class="good"><strong>Good to know:</strong> Paraphrased quotes, text that only appears in a paper’s full text, or papers that are not in these databases may not be found. A match means the wording is similar. It does not prove the claim is true.</p>
+    </article>
+
+    <article class="tool">
+      <div class="tool-head"><div class="icon">🧭</div><h3>Topic Finder</h3><span class="tool-tag">BETA</span></div>
+      <p>Explore a field and see which papers are being written, to spark ideas for your own research topic.</p>
+      <ol class="tool-steps">
+        <li>Enter a field or subject area. You can add a focus and extra keywords to narrow it down.</li>
+        <li>Sturch lists relevant papers, most cited or most recent depending on your sort.</li>
+        <li>Use them to see what is already studied, then save the ones you like.</li>
+      </ol>
+      <p class="good"><strong>Good to know:</strong> It shows papers, not finished topics. Check with your teacher or adviser that your topic fits your assignment.</p>
+    </article>
+
   </div>
+  <p class="tool-more">Also included: an APA, MLA, Chicago and Vancouver citation generator, bookmarks, collections, search history, and export to CSV and BibTeX.</p>
 </section>
 
 <div class="divider"></div>
@@ -414,10 +453,22 @@ footer a:hover{color:var(--accent)}
 <div class="divider"></div>
 
 <!-- Rules -->
-<div class="section">
-  <div class="section-label">Rules & Disclaimer</div>
+<div class="section" id="disclaimer">
+  <div class="section-label">Disclaimer &amp; rules</div>
   <h2>Before you use Sturch</h2>
   <div class="rules-box">
+    <div class="rule">
+      <div class="dot warn"></div>
+      <p><strong>Sturch is in beta.</strong> It is still being built. Features may change, results can be incomplete, and a data source can be temporarily unavailable.</p>
+    </div>
+    <div class="rule">
+      <div class="dot warn"></div>
+      <p><strong>Answers and matches are not proof.</strong> The Answer Finder and Source Tracer read paper abstracts, which can leave out context. A sentence can be correct in its paper and still not fit your question. Open the paper before you quote or cite it.</p>
+    </div>
+    <div class="rule">
+      <div class="dot warn"></div>
+      <p><strong>Topic Finder gives ideas, not approved topics.</strong> Check with your teacher or adviser before you commit to a topic.</p>
+    </div>
     <div class="rule">
       <div class="dot warn"></div>
       <p><strong>Don't spam the search button.</strong> Wait for results to load before searching again. Use Load More to get more papers on the same topic.</p>
@@ -433,6 +484,10 @@ footer a:hover{color:var(--accent)}
     <div class="rule">
       <div class="dot"></div>
       <p><strong>Data is from public academic databases.</strong> Sturch does not own any papers. All content belongs to their respective publishers and authors.</p>
+    </div>
+    <div class="rule">
+      <div class="dot"></div>
+      <p><strong>Not professional advice.</strong> Papers about health, law or money are shown for study. They are not medical, legal or financial advice.</p>
     </div>
   </div>
 </div>
@@ -458,6 +513,14 @@ footer a:hover{color:var(--accent)}
   <details>
     <summary>What is the Answer Finder?</summary>
     <p>Pick a question template such as “What causes”, “Effect of” or “Difference between”, type a topic, and Sturch shows sentences from real papers that answer it, with the paper each one came from. It only reads paper abstracts, so check the source before you rely on an answer.</p>
+  </details>
+  <details>
+    <summary>Why did the Answer Finder show no answer?</summary>
+    <p>Sturch only shows sentences that clearly answer your question, and it only reads abstracts. Very common words, very narrow topics or strict filters can return nothing. Try a more specific topic, a different question template, or fewer filters, or use Search Papers.</p>
+  </details>
+  <details>
+    <summary>What does beta mean?</summary>
+    <p>Sturch is still being built. Some features are rough, results can be incomplete, and things may change. Donations and feedback help it improve.</p>
   </details>
   <details>
     <summary>What does the Source Tracer do?</summary>
@@ -487,7 +550,7 @@ footer a:hover{color:var(--accent)}
 </main>
 
 <footer>
-  <nav aria-label="Footer" style="margin-bottom:9px"><a href="/signup">Sign up free</a> &nbsp;·&nbsp; <a href="/login">Log in</a> &nbsp;·&nbsp; <a href="/donate">Support Sturch</a></nav>
+  <nav aria-label="Footer" style="margin-bottom:9px"><a href="/signup">Sign up free</a> &nbsp;·&nbsp; <a href="/login">Log in</a> &nbsp;·&nbsp; <a href="/donate">Support Sturch</a><br><a href="#tools">Tools</a> &nbsp;·&nbsp; <a href="#faq">FAQ</a> &nbsp;·&nbsp; <a href="#disclaimer">Disclaimer</a></nav>
   <p>
     Sturch — Built by a student, for students and researchers everywhere. &nbsp;·&nbsp;
     Data from <a href="https://openalex.org" target="_blank">OpenAlex</a>,
