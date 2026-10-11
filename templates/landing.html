@@ -4,34 +4,37 @@
 <meta name="google-site-verification" content="oZpY9svmka-mPNF1Bp2Wr7GkmhslZ315Jik_dEEYQL0" />
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <!-- ═══════════════════════════════════════════════════
-       SEO — searchability & visibility
-  ═══════════════════════════════════════════════════ -->
-  <title>Sturch — Free Academic Research Search Engine for Students</title>
-  <meta name="description"  content="Search 200M+ academic papers instantly. Free research tool for students and academics. Access papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC — no paywall."/>
-  <meta name="keywords"     content="academic research search, free research papers, find research papers, student research tool, academic paper search, arxiv search, pubmed search, scientific papers, literature review, free academic database"/>
+  <!-- ═══ SEO — URLs come from SITE_URL in app.py, so a new domain needs no edits here ═══ -->
+  <title>Sturch — Free Academic Paper Search &amp; Citation Tool</title>
+  <meta name="description"  content="Search 250M+ academic papers from 5 databases at once. Free for students: APA citations, Answer Finder, Source Tracer and Topic Finder."/>
+  <meta name="keywords"     content="academic paper search, free research papers, find research papers, student research tool, APA citation generator, answer finder, source tracer, research topic finder, arxiv search, pubmed search, literature review, free academic database"/>
   <meta name="author"       content="Sturch"/>
-  <meta name="robots"       content="index, follow"/>
+  <meta name="robots"       content="index, follow, max-image-preview:large"/>
   <meta name="theme-color"  content="#0b0d12"/>
-  <link rel="canonical"     href="https://sturch-production.up.railway.app/"/>
+  <link rel="canonical"     href="{{ site_url }}/"/>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml"/>
+  <link rel="icon" href="/static/favicon-192.png" sizes="192x192" type="image/png"/>
+  <link rel="apple-touch-icon" href="/static/favicon-192.png"/>
 
   <!-- Open Graph — social sharing preview -->
   <meta property="og:type"        content="website"/>
   <meta property="og:site_name"   content="Sturch"/>
-  <meta property="og:title"       content="Sturch — Free Academic Research Search Engine for Students"/>
-  <meta property="og:description" content="Search 200M+ academic papers instantly. Free research tool for students and academics. Access papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC — no paywall."/>
-  <meta property="og:url"         content="https://sturch-production.up.railway.app/"/>
-  <meta property="og:image"       content="https://sturch-production.up.railway.app/static/og-image.png"/>
+  <meta property="og:title"       content="Sturch — Free Academic Paper Search &amp; Citation Tool"/>
+  <meta property="og:description" content="Search 250M+ academic papers from 5 databases at once. Free for students: APA citations, Answer Finder, Source Tracer and Topic Finder."/>
+  <meta property="og:url"         content="{{ site_url }}/"/>
+  <meta property="og:image"       content="{{ site_url }}/static/og-image.png"/>
   <meta property="og:image:width"  content="1200"/>
   <meta property="og:image:height" content="630"/>
+  <meta property="og:image:alt"   content="Sturch — free academic paper search for students"/>
   <meta property="og:locale"      content="en_US"/>
 
   <!-- Twitter Card -->
   <meta name="twitter:card"        content="summary_large_image"/>
   <meta name="twitter:site"        content="@sturch_app"/>
-  <meta name="twitter:title"       content="Sturch — Free Academic Research Search Engine for Students"/>
-  <meta name="twitter:description" content="Search 200M+ academic papers instantly. Free research tool for students and academics. Access papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC — no paywall."/>
-  <meta name="twitter:image"       content="https://sturch-production.up.railway.app/static/og-image.png"/>
+  <meta name="twitter:title"       content="Sturch — Free Academic Paper Search &amp; Citation Tool"/>
+  <meta name="twitter:description" content="Search 250M+ academic papers from 5 databases at once. Free for students: APA citations, Answer Finder, Source Tracer and Topic Finder."/>
+  <meta name="twitter:image"       content="{{ site_url }}/static/og-image.png"/>
+  <meta name="twitter:image:alt"   content="Sturch — free academic paper search for students"/>
 
   <script type="application/ld+json">
   {
@@ -39,64 +42,44 @@
     "@graph": [
       {
         "@type": "WebApplication",
-        "@id": "https://sturch-production.up.railway.app/#webapp",
+        "@id": "{{ site_url }}/#webapp",
         "name": "Sturch",
-        "url": "https://sturch-production.up.railway.app",
-        "description": "Free academic research search engine. Search 200M+ papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC.",
+        "url": "{{ site_url }}/",
+        "description": "Free academic paper search for students. Search 250M+ papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC, find answers in real papers, trace quotes to their source and generate citations.",
         "applicationCategory": "EducationalApplication",
         "operatingSystem": "Web",
         "inLanguage": "en",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        },
+        "isAccessibleForFree": true,
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+        "publisher": {"@id": "{{ site_url }}/#org"},
         "featureList": [
-          "Search 200M+ academic papers",
-          "APA, MLA, Chicago, Vancouver citation generator",
-          "Answer Finder — research-backed question answering",
-          "Source Tracer — verify academic claims",
-          "Bookmark and organize papers",
+          "Search 250M+ academic papers from 5 databases at once",
+          "APA, MLA, Chicago and Vancouver citation generator",
+          "Answer Finder: answers taken from real academic papers",
+          "Source Tracer: find the paper behind a quote",
+          "Topic Finder: research topic ideas from recent and highly cited papers",
+          "Bookmarks and collections",
           "Export to CSV and BibTeX"
-        ],
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": {
-            "@type": "EntryPoint",
-            "urlTemplate": "https://sturch-production.up.railway.app/search?q={{search_term_string}}"
-          },
-          "query-input": "required name=search_term_string"
-        }
+        ]
       },
       {
         "@type": "Organization",
-        "@id": "https://sturch-production.up.railway.app/#org",
+        "@id": "{{ site_url }}/#org",
         "name": "Sturch",
-        "url": "https://sturch-production.up.railway.app",
+        "url": "{{ site_url }}/",
         "description": "Free academic research search tool for students and researchers."
       },
       {
         "@type": "WebSite",
-        "@id": "https://sturch-production.up.railway.app/#website",
-        "url": "https://sturch-production.up.railway.app",
+        "@id": "{{ site_url }}/#website",
+        "url": "{{ site_url }}/",
         "name": "Sturch",
-        "publisher": {"@id": "https://sturch-production.up.railway.app/#org"},
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": {
-            "@type": "EntryPoint",
-            "urlTemplate": "https://sturch-production.up.railway.app/search?q={{search_term_string}}"
-          },
-          "query-input": "required name=search_term_string"
-        }
+        "inLanguage": "en",
+        "publisher": {"@id": "{{ site_url }}/#org"}
       }
     ]
   }
   </script>
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- Browser search engine autodiscovery -->
-  <link rel="search" type="application/opensearchdescription+xml"
-        title="Sturch — Search Academic Papers" href="/opensearch.xml"/>
   <!-- Preconnect hints for faster font loading -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -107,7 +90,7 @@
   --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
   --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
   --gold:#e8b84b;--green:#3ecf8e;--orange:#f0914b;
-  --text:#d8e0f8;--muted:#5a6385;
+  --text:#d8e0f8;--muted:#8892b4;
   --serif:'Lora',serif;--sans:'Outfit',sans-serif;
 }
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
@@ -197,6 +180,15 @@ footer a{color:var(--muted)}
 footer a:hover{color:var(--accent)}
 .divider{height:1px;background:var(--border);margin:0 24px}
 
+/* FAQ */
+.faq details{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px}
+.faq details[open]{border-color:rgba(79,141,232,.35)}
+.faq summary{cursor:pointer;font-weight:600;font-size:.92rem;list-style:none}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'+';float:right;color:var(--accent);font-weight:400}
+.faq details[open] summary::after{content:'−'}
+.faq p{margin-top:9px;font-size:.84rem;color:var(--muted);line-height:1.65}
+
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 .fadein{animation:fadeUp .5s ease both}
 .fadein-d1{animation-delay:.1s}
@@ -218,13 +210,16 @@ footer a:hover{color:var(--accent)}
     <span>Sturch</span>
     <a href="/donate" class="btn" style="border-color:rgba(157,110,245,.3);color:#9d6ef5;font-size:.78rem;padding:4px 11px">💙 Donate</a>
   </div>
+  <div class="nav-btns"><a href="/login" class="btn">Log in</a></div>
 </nav>
+
+<main>
 
 <!-- Hero -->
 <div class="hero">
   <div class="hero-badge fadein">🎓 Built for Students & Researchers</div>
   <h1 class="fadein fadein-d1">Find research papers<br><span>in seconds</span></h1>
-  <p class="fadein fadein-d2">Your shortcut to academic research. Search across 250M+ papers from 4 major databases simultaneously — free to start.</p>
+  <p class="fadein fadein-d2">Search 250M+ academic papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC at once. Free for students, with APA citations, an Answer Finder and a Source Tracer.</p>
   <div class="hero-btns fadein fadein-d3">
     <a href="/signup" class="btn primary lg">Get Started Free</a>
   </div>
@@ -234,6 +229,36 @@ footer a:hover{color:var(--accent)}
 
 
 </div>
+
+<div class="divider"></div>
+
+<!-- Research tools -->
+<section class="section" id="tools">
+  <div class="section-label">Research tools</div>
+  <h2>More than a paper search</h2>
+  <div class="features">
+    <div class="feature">
+      <div class="icon">💡</div>
+      <h3>Answer Finder</h3>
+      <p>Ask “What causes…”, “What is…” or “Effect of…” and get sentences from real papers that answer it, each with its source.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🔎</div>
+      <h3>Source Tracer</h3>
+      <p>Paste a quote or claim and find the academic paper it most likely came from.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🧭</div>
+      <h3>Topic Finder</h3>
+      <p>Enter a field or subject and browse recent and highly cited papers to spark research topic ideas.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">📋</div>
+      <h3>Citation Generator</h3>
+      <p>Copy auto-generated APA, MLA, Chicago and Vancouver references in one tap. Always verify before submitting.</p>
+    </div>
+  </div>
+</section>
 
 <div class="divider"></div>
 
@@ -250,7 +275,7 @@ footer a:hover{color:var(--accent)}
     <div class="step">
       <div class="step-num">2</div>
       <h3>Get results instantly</h3>
-      <p>Sturch searches 4 major academic databases at the same time and shows the best matching papers.</p>
+      <p>Sturch searches 5 major academic databases at the same time and shows the best matching papers.</p>
     </div>
     <div class="step">
       <div class="step-num">3</div>
@@ -269,7 +294,7 @@ footer a:hover{color:var(--accent)}
   <div class="features">
     <div class="feature">
       <div class="icon">🔍</div>
-      <h3>4-Source Search</h3>
+      <h3>5-Source Search</h3>
       <p>OpenAlex, arXiv, PubMed, Crossref and Europe PMC searched simultaneously.</p>
     </div>
     <div class="feature">
@@ -414,6 +439,42 @@ footer a:hover{color:var(--accent)}
 
 <div class="divider"></div>
 
+<!-- FAQ -->
+<section class="section faq" id="faq">
+  <div class="section-label">FAQ</div>
+  <h2>Frequently asked questions</h2>
+  <details>
+    <summary>Is Sturch really free?</summary>
+    <p>Yes. Sturch is free to use and needs no credit card. Donations are voluntary and go to the student who built it.</p>
+  </details>
+  <details>
+    <summary>Where do the papers come from?</summary>
+    <p>Sturch searches OpenAlex, arXiv, PubMed, Crossref and Europe PMC at the same time. Sturch does not own any papers: all content belongs to the publishers and authors.</p>
+  </details>
+  <details>
+    <summary>Can I read the full papers for free?</summary>
+    <p>When a paper is open access, Sturch links to the free full text. Use the Open Access filter to show only those papers.</p>
+  </details>
+  <details>
+    <summary>What is the Answer Finder?</summary>
+    <p>Pick a question template such as “What causes”, “Effect of” or “Difference between”, type a topic, and Sturch shows sentences from real papers that answer it, with the paper each one came from. It only reads paper abstracts, so check the source before you rely on an answer.</p>
+  </details>
+  <details>
+    <summary>What does the Source Tracer do?</summary>
+    <p>Paste a quote or a claim and Sturch looks for the paper it most likely came from. If the source is paraphrased or not indexed, it may not be found, and it will say so.</p>
+  </details>
+  <details>
+    <summary>Are the citations accurate?</summary>
+    <p>References are generated automatically from paper metadata and can miss details such as volume, issue or page numbers. Always double-check them before you submit your work.</p>
+  </details>
+  <details>
+    <summary>Will Sturch write my research paper?</summary>
+    <p>No. Sturch helps you find, read and cite real papers. It does not write your research for you.</p>
+  </details>
+</section>
+
+<div class="divider"></div>
+
 <!-- CTA -->
 <div class="cta">
   <h2>Ready to start your research?</h2>
@@ -423,7 +484,10 @@ footer a:hover{color:var(--accent)}
   </div>
 </div>
 
+</main>
+
 <footer>
+  <nav aria-label="Footer" style="margin-bottom:9px"><a href="/signup">Sign up free</a> &nbsp;·&nbsp; <a href="/login">Log in</a> &nbsp;·&nbsp; <a href="/donate">Support Sturch</a></nav>
   <p>
     Sturch — Built by a student, for students and researchers everywhere. &nbsp;·&nbsp;
     Data from <a href="https://openalex.org" target="_blank">OpenAlex</a>,
