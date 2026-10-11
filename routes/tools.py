@@ -5,6 +5,8 @@ import re as _re
 import difflib
 import math
 import traceback
+import requests
+import xml.etree.ElementTree as ET
 from flask import Blueprint, render_template, request, jsonify
 from core import login_required, _safe_terms
 from engine import (read_filters, search_papers, apply_filters_and_sort, term_in, relevance,
@@ -55,6 +57,7 @@ _TRAIL = {
     "why_is":   r"\s+(?:important|essential|critical|crucial|necessary|significant|useful|needed)$",
 }
 
+ANSWER_PER_SOURCE = 20   # papers asked from each source (more candidates for the weaker sources)
 MIN_SCORE  = 5      # below this a sentence is not shown (better fewer answers than wrong ones)
 BEST_SCORE = 7      # needed for the "Best answer" badge
 
@@ -342,6 +345,30 @@ def _source_stats(papers, cands):
         st.setdefault(_src_key(c["paper"]), blank())["answers"] += 1
     return st
 
+def _pubmed_abstracts(papers):
+    """PubMed search results carry no abstract, so they could never give an answer sentence.
+    Fetch the missing abstracts in ONE request and fill them in. Any failure is ignored (those papers just stay empty)."""
+    need = {}
+    for p in papers:
+        oid = str(p.get("openalex_id") or "")
+        if not p.get("abstract") and oid.startswith("pmid:") and oid[5:].isdigit():
+            need[oid[5:]] = p
+    ids = list(need)[:25]
+    if not ids:
+        return
+    try:
+        r = requests.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi", timeout=12,
+                         params={"db": "pubmed", "id": ",".join(ids), "retmode": "xml"})
+        if not r.ok:
+            return
+        for art in ET.fromstring(r.content).iter("PubmedArticle"):
+            pmid = (art.findtext("MedlineCitation/PMID") or "").strip()
+            text = " ".join(t for t in ("".join(a.itertext()).strip() for a in art.iter("AbstractText")) if t)
+            if pmid in need and text:
+                need[pmid]["abstract"] = text
+    except Exception:
+        return
+
 @tools_bp.route("/api/answer")
 @login_required
 def answer_finder():
@@ -364,13 +391,15 @@ def answer_finder():
         pool_f = dict(f, sort="recent" if f["sort"] == "recent" else "cited")
 
         q = _answer_query(keyword, ttype, kw2)
-        papers, _ = search_papers(q, 1, pool_f, per_source=15)
+        papers, _ = search_papers(q, 1, pool_f, per_source=ANSWER_PER_SOURCE)
+        _pubmed_abstracts(papers)
         all_papers = list(papers)
         cands, seen = [], set()
         _collect(papers, keyword, ttype, kw2, cands, seen, MIN_SCORE)
         searched = len(papers)
         if len(cands) < 3 and q != keyword and ttype not in _TWO:
-            more, _ = search_papers(keyword, 1, pool_f, per_source=15)      # fall back to the plain topic
+            more, _ = search_papers(keyword, 1, pool_f, per_source=ANSWER_PER_SOURCE)      # fall back to the plain topic
+            _pubmed_abstracts(more)
             _collect(more, keyword, ttype, kw2, cands, seen, MIN_SCORE)
             searched += len(more)
             all_papers += more
