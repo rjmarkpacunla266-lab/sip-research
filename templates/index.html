@@ -102,18 +102,51 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 .suggest-chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;background:var(--surf2);border:1px solid var(--border);color:var(--muted);font-size:.73rem;cursor:pointer;transition:all .15s}
 .suggest-chip:hover{border-color:var(--accent);color:var(--accent);background:rgba(79,141,232,.06)}
 
-/* ── Filters row ── */
-.filters-row{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
-.filter-group{display:flex;align-items:center;gap:5px;font-size:.76rem;color:var(--muted)}
-.filter-group label{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em}
+/* ── Filters (one tidy collapsible panel) ── */
+.search-wrap input{min-width:0}
+.search-wrap .btn{flex:none}
+.hint{font-size:.72rem;color:var(--muted);margin:7px 2px 0}
+.fx{margin-top:12px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.fx-head{width:100%;display:flex;align-items:center;gap:8px;padding:10px 13px;min-height:46px;background:none;border:0;color:var(--text);font-family:var(--sans);font-size:.86rem;font-weight:600;cursor:pointer;text-align:left}
+.fx-count{flex:none;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--accent);color:#fff;font:600 .68rem/20px var(--mono);text-align:center}
+.fx-count[data-n="0"]{display:none}
+.fx-sum{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-weight:400;font-size:.76rem}
+.fx-caret{flex:none;color:var(--muted);font-size:.8rem;transition:transform .2s}
+.fx.open .fx-caret{transform:rotate(180deg)}
+.fx-panel{display:none;padding:2px 13px 13px;border-top:1px solid var(--border)}
+.fx.open .fx-panel{display:block}
+.fx-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 10px;margin-top:12px}
+.fx-field{min-width:0}
+.fx-field label,.fx-label{display:block;font-size:.64rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:5px}
+.fx-field .filter-input{width:100%;min-width:0;padding:10px 11px;border-radius:9px;font-size:.84rem;background:var(--surf2)}
+.fx-field select.filter-input{font-family:var(--sans);appearance:none;-webkit-appearance:none;padding-right:28px;text-overflow:ellipsis;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 15px) 55%,calc(100% - 10px) 55%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.fx-oa{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:11px 13px;min-height:46px;border:1px solid var(--border);border-radius:10px;background:var(--surf2);color:var(--text);font-size:.86rem;cursor:pointer;user-select:none;transition:border-color .15s}
+.fx-oa small{display:block;color:var(--muted);font-size:.7rem;margin-top:1px}
+.fx-oa .sw{flex:none;position:relative;width:40px;height:23px;border-radius:12px;background:var(--surf3);border:1px solid var(--border);transition:background .2s,border-color .2s}
+.fx-oa .sw::after{content:'';position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
+.fx-oa.active{border-color:rgba(62,207,142,.5)}
+.fx-oa.active .sw{background:rgba(62,207,142,.22);border-color:var(--green)}
+.fx-oa.active .sw::after{transform:translateX(17px);background:var(--green)}
+.fx-group{margin-top:14px}
+.src-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:0}
+.src-chip{font-size:.78rem;padding:7px 13px;border-radius:20px;border:1px solid var(--border);background:var(--surf2);color:var(--muted);cursor:pointer;transition:all .15s;user-select:none}
+.src-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(79,141,232,.1)}
+.fx-foot{display:flex;justify-content:flex-end;margin-top:12px}
+.fx-reset{background:none;border:1px solid var(--border);border-radius:9px;color:var(--muted);font-family:var(--sans);font-size:.78rem;padding:8px 14px;min-height:38px;cursor:pointer}
+.fx-reset:hover{border-color:var(--accent);color:var(--accent)}
+.filter-hint{font-size:.7rem;color:var(--muted)}
 .filter-input{width:88px;padding:5px 9px;background:var(--surf);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:.76rem;outline:none}
 .filter-input:focus{border-color:var(--accent)}
-.oa-toggle{display:flex;align-items:center;gap:5px;font-size:.76rem;color:var(--muted);cursor:pointer;padding:4px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surf);transition:all .15s}
-.oa-toggle:hover,.oa-toggle.active{border-color:var(--green);color:var(--green);background:rgba(62,207,142,.06)}
-.filter-hint{font-size:.7rem;color:var(--muted)}
-.src-row{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
-.src-chip{font-size:.74rem;padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:var(--surf);color:var(--muted);cursor:pointer;transition:all .15s;user-select:none}
-.src-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(79,141,232,.08)}
+/* "Try:" topics scroll sideways on phones instead of stacking into 4 rows */
+.suggest-wrap{display:flex;flex-wrap:nowrap;gap:6px;margin:10px 0 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+.suggest-wrap::-webkit-scrollbar{display:none}
+.suggest-wrap .suggest-chip,.suggest-wrap .suggest-label{flex:none;white-space:nowrap}
+.suggest-chip{padding:6px 12px;font-size:.78rem}
+@media (min-width:760px){
+  .suggest-wrap{flex-wrap:wrap;overflow:visible}
+  .fx-grid{grid-template-columns:repeat(4,1fr)}
+  .fx-oa{max-width:420px}
+}
 
 /* ── Stats bar ── */
 .stats-bar{display:flex;gap:6px;margin:14px 0;flex-wrap:wrap}
@@ -231,6 +264,17 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
   .foot-btns{width:100%;flex-wrap:wrap}
   .header-right{gap:4px}
 }
+/* ── Phone tidy-ups for the results header ── */
+@media (max-width:640px){
+  .stats-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .stat{min-width:0;padding:9px 11px}
+  .toolbar .count{flex:1 1 100%}
+  .toolbar .btn.sm,.toolbar .cite-counter{flex:1 1 auto;justify-content:center;text-align:center}
+}
+@media (max-width:520px){
+  .user-pill{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
+
 </style>
 </head>
 <body>
@@ -263,9 +307,10 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
   <div class="tags-wrap" id="tagsWrap"></div>
   <div class="search-wrap">
     <svg class="si" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="text" id="searchInput" placeholder="Type keyword + Enter to add tag, then press Search…" autocomplete="off"/>
+    <input type="text" id="searchInput" placeholder="Type a keyword, press Enter" autocomplete="off"/>
     <button class="btn primary" onclick="doSearch()">Search</button>
   </div>
+  <div class="hint">Enter adds a keyword as a tag · add several for a sharper search</div>
 
   <!-- Quick topic suggestions -->
   <div class="suggest-wrap" id="suggestWrap">
@@ -281,42 +326,49 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
   </div>
 
   <!-- Filters -->
-  <div class="filters-row">
-    <div class="filter-group">
-      <label>From</label>
-      <input type="number" id="yearFrom" class="filter-input" placeholder="Any" min="1800" max="2026"/>
+  <div class="fx" id="fx">
+    <button type="button" class="fx-head" id="fxHead" onclick="toggleFilters()" aria-expanded="false" aria-controls="fxPanel">
+      <span>⚙ Filters</span>
+      <span class="fx-count" id="fxCount" data-n="0">0</span>
+      <span class="fx-sum" id="fxSum">All years · All sources</span>
+      <span class="fx-caret">▾</span>
+    </button>
+    <div class="fx-panel" id="fxPanel">
+      <div class="fx-grid">
+        <div class="fx-field"><label for="yearFrom">From year</label>
+          <input type="number" id="yearFrom" class="filter-input" placeholder="Any" min="1800" max="2026" inputmode="numeric" onchange="onSortChange()"/></div>
+        <div class="fx-field"><label for="yearTo">To year</label>
+          <input type="number" id="yearTo" class="filter-input" placeholder="Any" min="1800" max="2026" inputmode="numeric" onchange="onSortChange()"/></div>
+        <div class="fx-field"><label for="sortBy">Sort by</label>
+          <select id="sortBy" class="filter-input" onchange="onSortChange()">
+            <option value="cited">Most cited</option>
+            <option value="recent">Most recent</option>
+          </select></div>
+        <div class="fx-field"><label for="fieldBy">Word in</label>
+          <select id="fieldBy" class="filter-input" onchange="onSortChange()">
+            <option value="both">Title or abstract</option>
+            <option value="title">Title only</option>
+            <option value="abstract">Abstract only</option>
+          </select></div>
+      </div>
+
+      <div class="fx-oa" id="oaToggle" onclick="toggleOA()" role="switch" aria-checked="false" tabindex="0" title="Open Access only">
+        <span>🔓 Open access only<small>Papers you can read in full, free</small></span><span class="sw"></span>
+      </div>
+
+      <div class="fx-group">
+        <span class="fx-label">Sources</span>
+        <div class="src-row" id="srcRow">
+          <span class="src-chip active" data-src="openalex"  onclick="toggleSource(this)">OpenAlex</span>
+          <span class="src-chip active" data-src="arxiv"     onclick="toggleSource(this)">arXiv</span>
+          <span class="src-chip active" data-src="pubmed"    onclick="toggleSource(this)">PubMed</span>
+          <span class="src-chip active" data-src="crossref"  onclick="toggleSource(this)">Crossref</span>
+          <span class="src-chip active" data-src="europepmc" onclick="toggleSource(this)">Europe PMC</span>
+        </div>
+      </div>
+
+      <div class="fx-foot"><button type="button" class="fx-reset" onclick="resetFilters()">↺ Reset filters</button></div>
     </div>
-    <div class="filter-group">
-      <label>To</label>
-      <input type="number" id="yearTo" class="filter-input" placeholder="Any" min="1800" max="2026"/>
-    </div>
-    <div class="oa-toggle" id="oaToggle" onclick="toggleOA()" title="Open Access only">
-      🔓 OA Only
-    </div>
-    <div class="filter-group">
-      <label>Sort</label>
-      <select id="sortBy" class="filter-input" style="width:110px" onchange="onSortChange()">
-        <option value="cited">Most Cited</option>
-        <option value="recent">Most Recent</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <label>Word in</label>
-      <select id="fieldBy" class="filter-input" style="width:130px" onchange="onSortChange()">
-        <option value="both">Title or abstract</option>
-        <option value="title">Title only</option>
-        <option value="abstract">Abstract only</option>
-      </select>
-    </div>
-    <span class="filter-hint">Enter = add tag · Search = find papers</span>
-  </div>
-  <div class="src-row" id="srcRow">
-    <span class="filter-hint">Sources:</span>
-    <span class="src-chip active" data-src="openalex"  onclick="toggleSource(this)">OpenAlex</span>
-    <span class="src-chip active" data-src="arxiv"     onclick="toggleSource(this)">arXiv</span>
-    <span class="src-chip active" data-src="pubmed"    onclick="toggleSource(this)">PubMed</span>
-    <span class="src-chip active" data-src="crossref"  onclick="toggleSource(this)">Crossref</span>
-    <span class="src-chip active" data-src="europepmc" onclick="toggleSource(this)">Europe PMC</span>
   </div>
 </div>
 
@@ -432,7 +484,7 @@ function selectedSources() {
 function toggleSource(el) {
   const active = document.querySelectorAll('.src-chip.active');
   if (el.classList.contains('active') && active.length === 1) { toast('⚠️ Keep at least one source on'); return; }
-  el.classList.toggle('active');
+  el.classList.toggle('active'); fxSummary();
   if (currentQuery) doSearch();   // re-run with the new source selection
 }
 function filterQS() {
@@ -509,6 +561,8 @@ window.addEventListener('load', () => {
   loadUserInfo();
   loadBookmarkState();
   if (!applyRerunFromURL()) restoreLastSearch();
+  fxSummary();
+  if (window.innerWidth >= 760) toggleFilters(true);   // roomy screens: show the panel open
   checkTutorial();
 });
 
@@ -527,11 +581,50 @@ function dismissTutorial() {
 function toggleOA() {
   oaOnly = !oaOnly;
   const el = document.getElementById('oaToggle');
-  el.classList.toggle('active', oaOnly);
+  el.classList.toggle('active', oaOnly); el.setAttribute('aria-checked', String(oaOnly)); fxSummary();
   toast(oaOnly ? '🔓 Open Access only ON' : '🔓 Open Access filter OFF');
   if (currentQuery) doSearch(); else applyView();   // re-fetch so the result pool matches
 }
+// ── Filters panel: open/close, summary line, reset ──
+function toggleFilters(force) {
+  const box = document.getElementById('fx');
+  const open = typeof force === 'boolean' ? force : !box.classList.contains('open');
+  box.classList.toggle('open', open);
+  document.getElementById('fxHead').setAttribute('aria-expanded', String(open));
+}
+function fxSummary() {
+  const yf = document.getElementById('yearFrom').value.trim(), yt = document.getElementById('yearTo').value.trim();
+  const on = [...document.querySelectorAll('.src-chip.active')].length;
+  const parts = [];
+  if (yf && yt) parts.push(yf + '–' + yt); else if (yf) parts.push('from ' + yf); else if (yt) parts.push('until ' + yt);
+  if (oaOnly) parts.push('Open access');
+  if (on < 5) parts.push(on + ' source' + (on === 1 ? '' : 's'));
+  if (document.getElementById('sortBy').value === 'recent') parts.push('Most recent');
+  const f = document.getElementById('fieldBy').value;
+  if (f === 'title') parts.push('Title only'); else if (f === 'abstract') parts.push('Abstract only');
+  document.getElementById('fxCount').textContent = parts.length;
+  document.getElementById('fxCount').dataset.n = parts.length;
+  document.getElementById('fxSum').textContent = parts.length ? parts.join(' · ') : 'All years · All sources';
+}
+function resetFilters() {
+  document.getElementById('yearFrom').value = '';
+  document.getElementById('yearTo').value = '';
+  document.getElementById('sortBy').value = 'cited';
+  document.getElementById('fieldBy').value = 'both';
+  document.querySelectorAll('.src-chip').forEach(c => c.classList.add('active'));
+  oaOnly = false;
+  const oa = document.getElementById('oaToggle'); oa.classList.remove('active'); oa.setAttribute('aria-checked', 'false');
+  fxSummary();
+  toast('Filters reset');
+  if (currentQuery) doSearch();
+}
+document.getElementById('fxPanel').addEventListener('input',  () => setTimeout(fxSummary, 0));
+document.getElementById('fxPanel').addEventListener('change', () => setTimeout(fxSummary, 0));
+document.getElementById('fxPanel').addEventListener('click',  () => setTimeout(fxSummary, 0));
+document.getElementById('oaToggle').addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleOA(); } });
+
 function onSortChange() {
+  fxSummary();
   if (currentQuery) doSearch(); else applyView();
 }
 
@@ -582,6 +675,7 @@ function applyRerunFromURL() {
   if (['both','title','abstract'].includes(p.get('field'))) document.getElementById('fieldBy').value = p.get('field');
   const src = (p.get('src') || '').split(',').filter(Boolean);
   if (src.length) document.querySelectorAll('.src-chip').forEach(c => c.classList.toggle('active', src.includes(c.dataset.src)));
+  fxSummary();
   history.replaceState(null, '', '/search');   // so a refresh doesn't repeat the search
   doSearch();
   return true;
