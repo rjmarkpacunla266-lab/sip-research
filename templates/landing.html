@@ -109,10 +109,12 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 .btn.lg{padding:12px 26px;font-size:.98rem;font-weight:600}
 
 /* Hero */
-.hero{text-align:center;padding:65px 24px 55px;max-width:680px;margin:0 auto}
-.hero-badge{display:inline-block;background:rgba(79,141,232,.08);border:1px solid rgba(79,141,232,.18);color:var(--accent);font-size:.73rem;padding:4px 14px;border-radius:20px;margin-bottom:20px;letter-spacing:.05em}
-.hero h1{font-family:var(--serif);font-size:2.3rem;line-height:1.3;margin-bottom:14px}
-.hero h1 span{color:var(--accent)}
+/* Banner */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.banner-wrap{max-width:940px;margin:26px auto 0;padding:0 18px}
+.banner{display:block;width:100%;height:auto;border-radius:16px;border:1px solid var(--border);box-shadow:0 18px 50px rgba(0,0,0,.45);background:#080b16}
+
+.hero{text-align:center;padding:34px 24px 55px;max-width:680px;margin:0 auto}
 .hero p{font-size:.97rem;color:var(--muted);margin-bottom:28px;max-width:460px;margin-left:auto;margin-right:auto}
 .hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .sources-note{margin-top:18px;font-size:.73rem;color:var(--muted)}
@@ -216,8 +218,9 @@ footer a:hover{color:var(--accent)}
 .fadein-d3{animation-delay:.3s}
 
 @media(max-width:600px){
-  .hero h1{font-size:1.65rem}
-  .hero{padding:46px 18px 38px}
+  .banner-wrap{margin-top:14px;padding:0 12px}
+  .banner{border-radius:12px}
+  .hero{padding:24px 18px 38px}
   .section{padding:38px 18px}
   .btn.lg{padding:11px 20px;font-size:.93rem}
 }
@@ -235,10 +238,18 @@ footer a:hover{color:var(--accent)}
 
 <main>
 
+<!-- Banner -->
+<header class="banner-wrap fadein">
+  <h1 class="sr-only">Find research papers in seconds</h1>
+  <picture>
+    <source srcset="/static/banner.webp" type="image/webp"/>
+    <img class="banner" src="/static/banner.jpg" width="1600" height="837" fetchpriority="high" decoding="async"
+         alt="Sturch: find research papers in seconds. 250M+ papers, 5 databases, free for students."/>
+  </picture>
+</header>
+
 <!-- Hero -->
 <div class="hero">
-  <div class="hero-badge fadein">🎓 Built for Students & Researchers</div>
-  <h1 class="fadein fadein-d1">Find research papers<br><span>in seconds</span></h1>
   <p class="fadein fadein-d2">Search 250M+ academic papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC at once. Free for students, with APA citations, an Answer Finder and a Source Tracer.</p>
   <div class="hero-btns fadein fadein-d3">
     <a href="/signup" class="btn primary lg">Get Started Free</a>
