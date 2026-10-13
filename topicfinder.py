@@ -37,7 +37,7 @@ demonstrated suggest suggests suggested propose proposed present presents presen
 report reports aim aims objective objectives background conclusion conclusions introduction methods purpose
 patients patient participants sample samples group groups total number numbers rate rates year years time long short
 large small major main key well good better best due need needs future available existing performance
-overall scale scales specific general common recently often first second third one two three type types""".split())
+overall scale scales needed required lack known unknown unclear remains remain specific general common recently often first second third one two three type types""".split())
 
 # ───────────────────────── small text helpers ─────────────────────────
 def _norm(text):
@@ -231,7 +231,7 @@ def extract_gaps(text, paper, subject_terms, idea_forms=(), section_bonus=0):
     on_title = any(term_in(title, t) for t in subject_terms)
     for s in split_sentences(text):
         n = len(s.split())
-        if s.endswith("?") or n < 8 or n > 55:
+        if s.endswith("?") or n < 6 or n > 55:
             continue
         sc = _gap_score(s)
         if sc < 4:
@@ -367,3 +367,25 @@ def fulltext_gaps(papers, subject_terms, idea_forms=(), max_papers=6, budget=9.0
     finally:
         ex.shutdown(wait=False, cancel_futures=True)
     return cands, used
+
+
+# ═════════════════════════════════════════════════════════════════════
+# 4. COVERAGE OF THE USER'S EXTRA WORDS (focus / keywords)
+# ═════════════════════════════════════════════════════════════════════
+def _text(p):
+    return f"{p.get('title') or ''} {p.get('abstract') or ''}"
+
+def matched_terms(p, extra_terms):
+    """Which of the focus/keyword words appear in this paper's title or abstract."""
+    from engine import term_in
+    t = _text(p)
+    return [w for w in extra_terms if term_in(t, w)]
+
+def coverage(papers, extra_terms):
+    """How many of the papers mention each focus/keyword word, and how many mention ALL of them.
+    All-zero means the combination is (nearly) unstudied in the sources searched: a possible research gap."""
+    if not extra_terms:
+        return None
+    per = [{"term": w, "papers": sum(1 for p in papers if w in matched_terms(p, [w]))} for w in extra_terms]
+    both = sum(1 for p in papers if len(matched_terms(p, extra_terms)) == len(extra_terms))
+    return {"total": len(papers), "terms": per, "all": both}

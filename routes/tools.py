@@ -5,6 +5,7 @@ import re as _re
 import difflib
 import math
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 import requests
 import xml.etree.ElementTree as ET
 from flask import Blueprint, render_template, request, jsonify
@@ -590,16 +591,41 @@ def topics():
         full_query = " ".join(terms)
         pool_f = dict(f, sort="recent" if f["sort"] == "recent" else "cited")
 
+        low = {x.lower() for x in subj_terms}
+        focus_terms = [x for x in _dedupe_terms(_safe_terms(focus)) if x.lower() not in low][:4]
+        kw_terms    = [x for x in _dedupe_terms(_safe_terms(kw)) if x.lower() not in low
+                       and x.lower() not in {y.lower() for y in focus_terms}][:4]
+        extra_terms = focus_terms + kw_terms
+
         papers, _ = search_papers(full_query, 1, pool_f, per_source=25)
         papers = [p for p in papers if _on_topic(p, subj_terms)]
         strict_n = len(papers)
-        if strict_n < 12 and len(subj_terms) < len(terms):          # focus words too narrow: widen to the subject
-            more, _ = search_papers(" ".join(subj_terms), 1, pool_f, per_source=25)
+        if strict_n < 12 and extra_terms:
+            # Too few papers match every word: search the subject with each extra group on its own
+            # (subject + focus, subject + keywords, subject) so a paper about "bioethanol flammability"
+            # is found even when nothing covers focus AND keywords together.
+            queries = [q for q in (
+                " ".join(subj_terms + focus_terms) if focus_terms else "",
+                " ".join(subj_terms + kw_terms) if kw_terms else "",
+                " ".join(subj_terms)) if q and q != full_query]
+            with ThreadPoolExecutor(max_workers=3) as ex:
+                batches = list(ex.map(lambda q: search_papers(q, 1, pool_f, per_source=25)[0], queries))
             have = {(p.get("doi") or p.get("title") or "").lower() for p in papers}
-            papers += [p for p in more if _on_topic(p, subj_terms)
-                       and (p.get("doi") or p.get("title") or "").lower() not in have]
-        papers = apply_filters_and_sort(papers, f, full_query)[:60]
-        _pubmed_abstracts(papers)                                   # PubMed sends no abstract; ideas need text
+            for batch in batches:
+                for p in batch:
+                    k = (p.get("doi") or p.get("title") or "").lower()
+                    if k not in have and _on_topic(p, subj_terms):
+                        have.add(k)
+                        papers.append(p)
+        papers = apply_filters_and_sort(papers, f, full_query)
+        papers = papers[:120]
+        _pubmed_abstracts(papers[:60])                              # PubMed sends no abstract; ideas need text
+        for p in papers:
+            p["_matched"] = topicfinder.matched_terms(p, extra_terms)
+        if extra_terms and f["sort"] == "match":
+            papers.sort(key=lambda p: len(p["_matched"]), reverse=True)   # stable: keeps the earlier order inside a group
+        cov = topicfinder.coverage(papers, extra_terms)
+        papers = papers[:60]
 
         ideas = topicfinder.extract_ideas(papers, subj_terms)
         forms = [i["topic"] for i in ideas]
@@ -617,8 +643,13 @@ def topics():
         msg = ""
         if len(papers) < 4:
             msg = "Not many papers matched. Try a broader subject, fewer focus words, or more sources."
+        elif cov and cov["all"] == 0:
+            msg = ("No paper found mentions all of: " + ", ".join(extra_terms) + ". This combination may be unstudied "
+                   "(a possible research gap) or worded differently. Papers matching the most words are shown first.")
         return jsonify({
-            "results": [_pick(p, abstract_chars=260) for p in papers[:30]],
+            "results": [dict(_pick(p, abstract_chars=260), matched=p.get("_matched", []),
+                             missing=[x for x in extra_terms if x not in p.get("_matched", [])]) for p in papers[:30]],
+            "coverage": cov, "extra_terms": extra_terms,
             "ideas": ideas, "gaps": gaps,
             "relaxed": len(papers) > strict_n, "analysed": len(papers), "fulltext_used": ft_used,
             "subject": subject, "query": full_query, "terms": terms, "message": msg,

@@ -13,15 +13,15 @@
   <meta name="author"       content="Sturch"/>
   <meta name="robots"       content="noindex, nofollow"/>
   <meta name="theme-color"  content="#0b0d12"/>
-  <link rel="canonical"     href="https://sturch-production.up.railway.app/topic-generator"/>
+  <link rel="canonical"     href="{{ site_url }}/topic-generator"/>
 
   <!-- Open Graph — social sharing preview -->
   <meta property="og:type"        content="website"/>
   <meta property="og:site_name"   content="Sturch"/>
   <meta property="og:title"       content="Topic Finder — Research Topic Generator | Sturch"/>
   <meta property="og:description" content="Generate research paper topic ideas for your field of study. Sturch suggests unique, literature-backed topics tailored to your subject area and level."/>
-  <meta property="og:url"         content="https://sturch-production.up.railway.app/topic-generator"/>
-  <meta property="og:image"       content="https://sturch-production.up.railway.app/static/og-image.png"/>
+  <meta property="og:url"         content="{{ site_url }}/topic-generator"/>
+  <meta property="og:image"       content="{{ site_url }}/static/og-image.png"/>
   <meta property="og:image:width"  content="1200"/>
   <meta property="og:image:height" content="630"/>
   <meta property="og:locale"      content="en_US"/>
@@ -31,7 +31,7 @@
   <meta name="twitter:site"        content="@sturch_app"/>
   <meta name="twitter:title"       content="Topic Finder — Research Topic Generator | Sturch"/>
   <meta name="twitter:description" content="Generate research paper topic ideas for your field of study. Sturch suggests unique, literature-backed topics tailored to your subject area and level."/>
-  <meta name="twitter:image"       content="https://sturch-production.up.railway.app/static/og-image.png"/>
+  <meta name="twitter:image"       content="{{ site_url }}/static/og-image.png"/>
 
   <!-- ═══════════════════════════════════════════════ -->
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
@@ -155,6 +155,27 @@ select.form-input{cursor:pointer}
 .fx-note b{color:var(--text)}
 .fx-empty{text-align:center;padding:30px 14px;color:var(--muted);font-size:.84rem}
 .fx-empty .big{font-size:2.2rem;margin-bottom:6px}
+
+/* ── ideas, gaps, coverage ─────────────── */
+.sub-note{font-size:.72rem;color:var(--muted);margin:-4px 0 10px;line-height:1.5}
+.idea-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px}
+.idea{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:20px;background:var(--surf);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-size:.8rem;cursor:pointer;transition:all .15s}
+.idea:hover{border-color:var(--accent2);background:rgba(157,110,245,.07)}
+.idea .n{font-family:var(--mono);font-size:.64rem;color:var(--muted)}
+.tr{font-family:var(--mono);font-size:.6rem;padding:1px 6px;border-radius:10px}
+.tr-rising{background:rgba(62,207,142,.1);color:var(--green);border:1px solid rgba(62,207,142,.2)}
+.tr-established{background:rgba(90,99,133,.15);color:var(--muted);border:1px solid var(--border)}
+.gap-card{background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:var(--r);padding:12px 15px;margin-bottom:9px}
+.gap-q{font-family:var(--serif);font-size:.9rem;line-height:1.5;color:var(--text);margin-bottom:7px}
+.gap-src{font-size:.72rem;color:var(--muted);display:flex;gap:6px 10px;flex-wrap:wrap;align-items:center}
+.gap-src a{color:var(--muted);text-decoration:underline}
+.src-b.ab{background:rgba(232,184,75,.08);border:1px solid rgba(232,184,75,.2);color:var(--gold)}
+.src-b.ft{background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.2);color:var(--green)}
+.src-b.hit{background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.2);color:var(--green)}
+.src-b.miss{background:transparent;border:1px dashed var(--border);color:var(--muted)}
+.cov{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-size:.78rem;color:var(--muted);line-height:1.7}
+.cov b{color:var(--text)}
+.cov.warn{border-color:rgba(232,184,75,.3);background:rgba(232,184,75,.05);color:#c9a83a}
 </style>
 </head>
 <body>
@@ -355,7 +376,7 @@ document.getElementById('keywordsInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') findTopics();
 });
 
-let _topicPapers = [], _topicShown = 10, _topicMeta = {};
+let _topicPapers = [], _topicShown = 10, _topicMeta = {}, _topicIdeas = [];
 
 function onLevelChange() {
   // High school students usually cannot open paywalled papers, so start with Open Access ones.
@@ -389,12 +410,27 @@ async function findTopics() {
       results.innerHTML = fNoResultsHtml(`No research found for <strong>${esc(field)}</strong>. Try a broader field or different keywords.`);
       return;
     }
-    _topicPapers = data.results; _topicShown = 10;
+    _topicPapers = data.results; _topicShown = 10; _topicIdeas = data.ideas || [];
     _topicMeta = {field, focus, keywords, relaxed: !!data.relaxed, data};
     renderTopics();
   } catch(e) {
     results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>Connection error. Try again.</p></div>`;
   }
+}
+
+
+function matchRow(p){
+  const m = p.matched || [], x = p.missing || [];
+  if (!m.length && !x.length) return '';
+  return '<div style="margin:0 0 6px;display:flex;flex-wrap:wrap;gap:4px">' +
+    m.map(w => `<span class="src-b hit">✓ ${esc(w)}</span>`).join('') +
+    x.map(w => `<span class="src-b miss">no “${esc(w)}”</span>`).join('') + '</div>';
+}
+function coverageHtml(data){
+  const c = data.coverage; if (!c) return data.message ? `<div class="cov warn">${esc(data.message)}</div>` : '';
+  const parts = c.terms.map(t => `<b>${t.papers}</b> mention “${esc(t.term)}”`).join(' · ');
+  return `<div class="cov${c.all === 0 ? ' warn' : ''}">Of <b>${c.total}</b> papers analysed: ${parts}${c.terms.length > 1 ? ` · <b>${c.all}</b> mention all` : ''}.` +
+    (data.message ? `<br>${esc(data.message)}` : '') + '</div>';
 }
 
 function showMoreTopics() { _topicShown += 10; renderTopics(); }
@@ -414,6 +450,7 @@ function renderTopics() {
     return `
     <div class="topic-card" style="animation-delay:${Math.min(i, 9) * 50}ms">
       <div class="topic-num">Research ${i + 1} of ${_topicPapers.length} ${tagRow(p)}</div>
+      ${matchRow(p)}
       <div class="topic-title">${esc(title)}</div>
       <div class="topic-meta">
         <span>${esc(authors) || 'Unknown authors'}</span>
@@ -431,11 +468,32 @@ function renderTopics() {
   }).join('');
 
   const left = _topicPapers.length - shown.length;
+  const ideas = data.ideas || [], gaps = data.gaps || [];
+  const ideasHtml = ideas.length ? `
+      <div class="section-label">Sub-topics to explore</div>
+      <p class="sub-note">Themes that keep coming up across these papers. Tap one to narrow the search to it.</p>
+      <div class="idea-wrap">${ideas.map((d, i) => `<button class="idea" data-idea="${i}" title="${esc(d.papers + ' papers' + (d.examples && d.examples[0] ? ' · e.g. ' + d.examples[0].title : ''))}">${esc(d.topic)} <span class="n">${d.papers}</span>${d.trend === 'rising' ? '<span class="tr tr-rising">↑ rising</span>' : d.trend === 'established' ? '<span class="tr tr-established">established</span>' : ''}</button>`).join('')}</div>` : '';
+  const gapsHtml = gaps.length ? `
+      <div class="section-label" style="margin-top:22px">Research gaps mentioned in the papers</div>
+      <p class="sub-note">Sentences quoted from the papers where the authors say something is unknown, missing or needs more study. Use them as starting points for an original question.</p>
+      ${gaps.map(g => { const p = g.paper || {}, d = safeUrl(p.doi), o = safeUrl(p.oa_url); return `
+      <div class="gap-card">
+        <div class="gap-q">“${esc(g.text)}”</div>
+        <div class="gap-src">
+          <span class="src-b ${g.from === 'full text' ? 'ft' : 'ab'}">${g.from === 'full text' ? 'from full text' : 'from abstract'}</span>
+          <span>${d ? `<a href="${esc(d)}" target="_blank" rel="noopener noreferrer">${esc(p.title || 'Source')}</a>` : esc(p.title || 'Source')}${p.year ? ' · ' + esc(p.year) : ''}</span>
+          ${o ? `<a href="${esc(o)}" target="_blank" rel="noopener noreferrer">Read</a>` : ''}
+        </div>
+      </div>`; }).join('')}` : '';
+  const usedLine = `<div class="fx-note">${data.analysed ? data.analysed + ' papers analysed · ' : ''}${data.fulltext_used ? 'full text read for ' + data.fulltext_used + ' open-access paper' + (data.fulltext_used > 1 ? 's' : '') + ' · ' : ''}${esc((data.sources_used || []).join(', '))}</div>`;
   results.innerHTML = `
     <div class="results-section">
       <div class="section-label">Related research in <strong style="color:var(--accent)">${esc(field)}</strong></div>
-      ${relaxed ? `<div class="fx-note">Few papers matched all your words, so broader results for <b>${esc(field)}</b> are included.</div>` : ''}
-      ${fUsedLine(data)}
+      ${usedLine}
+      ${coverageHtml(data)}
+      ${ideasHtml}
+      ${gapsHtml}
+      <div class="section-label" style="margin-top:22px">Papers${data.extra_terms && data.extra_terms.length ? ' (most matching words first when sorted by Best match)' : ''}</div>
       ${cards}
       ${left > 0 ? `<div style="text-align:center;margin:10px 0"><button class="btn sm" onclick="showMoreTopics()">Show next ${Math.min(10, left)} (${left} remaining)</button></div>` : ''}
       <div class="inspo-box">
@@ -448,6 +506,12 @@ function renderTopics() {
     </div>`;
 }
 document.getElementById('results').addEventListener('click', e => {
+  const ib = e.target.closest('button[data-idea]');
+  if (ib) {
+    const d = _topicIdeas[parseInt(ib.dataset.idea, 10)];
+    if (d) { document.getElementById('keywordsInput').value = d.topic; toast('🔎 Narrowing to “' + d.topic + '”'); findTopics(); window.scrollTo({top: 0, behavior: 'smooth'}); }
+    return;
+  }
   const b = e.target.closest('button[data-copy]');
   if (b) { const p = _topicPapers[parseInt(b.dataset.copy, 10)]; if (p) copyText(p.title || ''); }
 });
