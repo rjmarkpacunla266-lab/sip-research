@@ -9,6 +9,7 @@ import requests
 import xml.etree.ElementTree as ET
 from flask import Blueprint, render_template, request, jsonify
 from core import login_required, _safe_terms
+import topicfinder
 from engine import (read_filters, search_papers, apply_filters_and_sort, term_in, relevance,
                     sort_date, SOURCE_LABELS)
 
@@ -554,11 +555,29 @@ def source_tracer_page():
 # ═════════════════════════════════════════════════════════════════════
 # TOPIC FINDER
 # ═════════════════════════════════════════════════════════════════════
+def _dedupe_terms(terms):
+    out = []
+    for t in terms:
+        if t.lower() not in [x.lower() for x in out]:
+            out.append(t)
+    return out
+
+def _on_topic(p, subj_terms):
+    """A paper is on topic when (almost) every subject word is in its title or abstract.
+    PubMed results without an abstract are judged on the title alone."""
+    if not subj_terms:
+        return True
+    text = f"{p.get('title') or ''} {p.get('abstract') or ''}"
+    need = max(1, math.ceil(0.67 * len(subj_terms)))
+    hit = sum(1 for t in subj_terms if term_in(text, t))
+    return hit >= need
+
 @tools_bp.route("/api/topics")
 @login_required
 def topics():
-    """Params: subject (required), focus, kw + shared filters
-    (sources, year_from, year_to, oa, sort = cited | recent | match, field = both | title | abstract)."""
+    """Params: subject (required), focus, kw + shared filters (sources, year_from, year_to, oa, sort),
+    fulltext = 1 | 0 (read the Discussion/Conclusion of open-access papers for research gaps; default 1).
+    Returns: results (papers), ideas (recurring sub-topics + trend), gaps (research-gap sentences)."""
     subject = request.args.get("subject", "").strip()[:200]
     focus   = request.args.get("focus", "").strip()[:200]
     kw      = request.args.get("kw", "").strip()[:200]
@@ -566,25 +585,44 @@ def topics():
         return jsonify({"error": "Enter a field or subject area first"}), 400
     try:
         f = read_filters(request.args.get)
-        terms = []
-        for t in _safe_terms(f"{subject} {focus} {kw}"):
-            if t.lower() not in [x.lower() for x in terms]:
-                terms.append(t)
-        terms = terms[:10]
+        subj_terms = _dedupe_terms(_safe_terms(subject))[:6]
+        terms = _dedupe_terms(_safe_terms(f"{subject} {focus} {kw}"))[:10]
         full_query = " ".join(terms)
         pool_f = dict(f, sort="recent" if f["sort"] == "recent" else "cited")
 
-        papers, _ = search_papers(full_query, 1, pool_f, per_source=20)
+        papers, _ = search_papers(full_query, 1, pool_f, per_source=25)
+        papers = [p for p in papers if _on_topic(p, subj_terms)]
         strict_n = len(papers)
-        if strict_n < 10 and len(_safe_terms(subject)) < len(terms):
-            more, _ = search_papers(" ".join(_safe_terms(subject)), 1, pool_f, per_source=20)
+        if strict_n < 12 and len(subj_terms) < len(terms):          # focus words too narrow: widen to the subject
+            more, _ = search_papers(" ".join(subj_terms), 1, pool_f, per_source=25)
             have = {(p.get("doi") or p.get("title") or "").lower() for p in papers}
-            papers = papers + [p for p in more if (p.get("doi") or p.get("title") or "").lower() not in have]
-        papers = apply_filters_and_sort(papers, f, full_query)[:30]
+            papers += [p for p in more if _on_topic(p, subj_terms)
+                       and (p.get("doi") or p.get("title") or "").lower() not in have]
+        papers = apply_filters_and_sort(papers, f, full_query)[:60]
+        _pubmed_abstracts(papers)                                   # PubMed sends no abstract; ideas need text
+
+        ideas = topicfinder.extract_ideas(papers, subj_terms)
+        forms = [i["topic"] for i in ideas]
+        cands = []
+        for p in papers:
+            for c in topicfinder.extract_gaps(p.get("abstract") or "", p, subj_terms, forms):
+                c["from"] = "abstract"
+                cands.append(c)
+        ft_used = 0
+        if request.args.get("fulltext", "1") != "0":
+            ft_cands, ft_used = topicfinder.fulltext_gaps(papers, subj_terms, forms)
+            cands += ft_cands
+        gaps = topicfinder.pick_gaps(cands, 8)
+
+        msg = ""
+        if len(papers) < 4:
+            msg = "Not many papers matched. Try a broader subject, fewer focus words, or more sources."
         return jsonify({
-            "results": [_pick(p, abstract_chars=260) for p in papers],
-            "relaxed": len(papers) > strict_n, "subject": subject, "query": full_query,
-            "terms": terms, "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
+            "results": [_pick(p, abstract_chars=260) for p in papers[:30]],
+            "ideas": ideas, "gaps": gaps,
+            "relaxed": len(papers) > strict_n, "analysed": len(papers), "fulltext_used": ft_used,
+            "subject": subject, "query": full_query, "terms": terms, "message": msg,
+            "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
         })
     except Exception:
         return _fail("Topic search")
