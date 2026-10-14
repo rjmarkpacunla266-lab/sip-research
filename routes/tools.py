@@ -292,6 +292,45 @@ def _answer_query(kw, ttype, kw2):
         return f"{kw} {kw2}"
     return f"{kw} {_BOOST[ttype]}" if ttype in _BOOST else kw
 
+_EXTRA_QUERIES = {                       # extra wordings: review / overview papers usually state the definition outright
+    "what_is":  ("overview", "review"),
+    "what_are": ("overview", "review"),
+    "define":   ("definition", "review"),
+    "how_does": ("mechanism review", "pathway"),
+    "why_is":   ("importance review", "role"),
+    "causes":   ("causes review",),
+    "effect":   ("effects review",),
+}
+
+def _answer_queries(kw, ttype, kw2):
+    """The question's own search plus a couple of wordings that reach review / overview papers (max 3 searches)."""
+    qs = [_answer_query(kw, ttype, kw2)]
+    if ttype not in _TWO:
+        for extra in _EXTRA_QUERIES.get(ttype, ()):
+            if f"{kw} {extra}" not in qs:
+                qs.append(f"{kw} {extra}")
+    return qs[:3]
+
+def _merge_keep_abstract(batches):
+    """One entry per paper across all searches. The most-cited copy is kept, but it borrows an abstract from another copy
+    when it has none (otherwise a paper would be thrown away for having no sentences to read)."""
+    best = {}
+    for p in (p for b in batches for p in b):
+        k = _paper_key(p)
+        if not k:
+            continue
+        old = best.get(k)
+        if old is None:
+            best[k] = p
+            continue
+        keep, other = (p, old) if (p.get("citations") or 0) > (old.get("citations") or 0) else (old, p)
+        if not keep.get("abstract") and other.get("abstract"):
+            keep["abstract"] = other["abstract"]
+        if other.get("is_oa") and not keep.get("is_oa"):
+            keep["is_oa"], keep["oa_url"] = True, keep.get("oa_url") or other.get("oa_url")
+        best[k] = keep
+    return list(best.values())
+
 def _collect(papers, kw, ttype, kw2, cands, seen, min_score):
     for p in papers:
         for c in _answer_candidates(p, kw, ttype, kw2, min_score=min_score):
@@ -355,7 +394,7 @@ def _pubmed_abstracts(papers):
         oid = str(p.get("openalex_id") or "")
         if not p.get("abstract") and oid.startswith("pmid:") and oid[5:].isdigit():
             need[oid[5:]] = p
-    ids = list(need)[:25]
+    ids = list(need)[:60]
     if not ids:
         return
     try:
@@ -393,14 +432,20 @@ def answer_finder():
         pool_f = dict(f, sort="recent" if f["sort"] == "recent" else "cited")
 
         q = _answer_query(keyword, ttype, kw2)
-        papers, _ = search_papers(q, 1, pool_f, per_source=ANSWER_PER_SOURCE)
+        queries = _answer_queries(keyword, ttype, kw2)
+        with ThreadPoolExecutor(max_workers=len(queries)) as ex:                 # several wordings at once: reviews and overviews
+            batches = list(ex.map(lambda qq: search_papers(qq, 1, pool_f, per_source=ANSWER_PER_SOURCE)[0], queries))
+        papers = _merge_keep_abstract(batches)
         _pubmed_abstracts(papers)
         all_papers = list(papers)
         cands, seen = [], set()
         _collect(papers, keyword, ttype, kw2, cands, seen, MIN_SCORE)
         searched = len(papers)
-        if len(cands) < 3 and q != keyword and ttype not in _TWO:
+        if len(cands) < 3 and keyword not in queries and ttype not in _TWO:
             more, _ = search_papers(keyword, 1, pool_f, per_source=ANSWER_PER_SOURCE)      # fall back to the plain topic
+            more = _merge_keep_abstract([more, all_papers])
+            have = {_paper_key(p) for p in all_papers}
+            more = [p for p in more if _paper_key(p) not in have]
             _pubmed_abstracts(more)
             _collect(more, keyword, ttype, kw2, cands, seen, MIN_SCORE)
             searched += len(more)
@@ -420,6 +465,7 @@ def answer_finder():
             "sources":  [_pick(c["paper"]) for c in top],          # same order as answers
             "cues":     _CUES.get(ttype, []),
             "best_index": best,
+            "best_rank": round(_rank(top[best]), 2) if best is not None else None,
             "searched": searched,
             "source_stats": _source_stats(all_papers, cands),
             "ft_papers": [_pick(p) for p in _ft_pool(all_papers)],
@@ -544,6 +590,7 @@ def answer_fulltext():
             "licenses": [c["license"] for c in top],
             "cues": _CUES.get(ttype, []),
             "read": len(reads), "tried": len(papers),
+            "best_rank": round(_rank(top[0]), 2) if top and ttype != "difference" and top[0]["score"] >= BEST_SCORE else None,
             "message": "" if top else ("No clear answer found in the full text of these papers." if reads else
                                        "Full text was not available for these papers."),
         })

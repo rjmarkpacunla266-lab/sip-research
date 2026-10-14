@@ -159,6 +159,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 .fx-empty{text-align:center;padding:30px 14px;color:var(--muted);font-size:.84rem}
 .fx-empty .big{font-size:2.2rem;margin-bottom:6px}
 
+.answer-card.best{border-color:var(--gold);box-shadow:0 0 0 1px rgba(232,184,75,.6),0 0 24px rgba(232,184,75,.15)}
 /* full-text answers */
 .ft-head{margin-top:22px}
 .ft-b{font-family:var(--mono);font-size:.62rem;padding:1px 7px;border-radius:20px;background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.2);color:var(--green);margin-left:6px}
@@ -324,7 +325,7 @@ function fNoResultsHtml(what){
     (t ? `<p style="margin-top:6px">Your filters (${esc(t)}) may be hiding results.</p><button class="fx-btn" style="margin-top:10px" onclick="fReset()">↺ Reset filters</button>` : '') + `</div>`;
 }
 function fUsedLine(data){
-  const n = data.searched != null ? `${data.searched} papers · ` : '';
+  const n = data.searched != null ? `${data.searched} papers analysed (the top results from each database) · ` : '';
   return `<div class="fx-note">${n}${esc((data.sources_used || []).join(', '))}</div>`;
 }
 
@@ -406,6 +407,7 @@ function renderAnswers(data) {
   const kw = data.keyword || '';
   const results = document.getElementById('results');
   window._answers = data.answers || [];
+  window._bestRank = (data.best_rank == null) ? null : data.best_rank;
   const highlight = makeHighlighter(data);
 
   const cards = data.answers.map((ans, i) => {
@@ -425,7 +427,7 @@ function renderAnswers(data) {
         </div>
       </div>` : '';
     return `
-    <div class="answer-card" style="animation-delay:${i * 60}ms">
+    <div class="answer-card${data.best_index === i ? ' best' : ''}" style="animation-delay:${i * 60}ms">
       <div class="answer-num">Answer ${i + 1} of ${data.answers.length}${data.best_index === i ? ' <span class="best-b">★ Best answer</span>' : ''}</div>
       <div class="answer-text">${highlight(ans)}</div>
       <button class="btn xs" style="margin-top:10px" data-copy="${i}">📋 Copy</button>
@@ -475,6 +477,11 @@ async function loadFullText(data, query) {
     if (run !== _ftRun) return;                       // a newer search replaced this one
     if (!r.ok) { box.innerHTML = ''; return; }
     box.innerHTML = renderFullText(d, data);
+    if (box.querySelector('.answer-card.ft.best')) {                  // a full-text answer beat the best abstract answer: move the gold outline
+      document.querySelectorAll('#results .answer-card:not(.ft)').forEach(c => {
+        c.classList.remove('best'); const b = c.querySelector('.best-b'); if (b) b.remove();
+      });
+    }
   } catch (e) {
     if (run === _ftRun) box.innerHTML = '';
   }
@@ -487,14 +494,17 @@ function renderFullText(d, data) {
   }
   const highlight = makeHighlighter(Object.assign({}, data, {cues: d.cues || data.cues}));
   window._ftAnswers = d.answers;
+  const ftBest = d.best_rank != null && (window._bestRank == null || d.best_rank > window._bestRank);
+  if (ftBest) window._bestRank = d.best_rank;
   const cards = d.answers.map((ans, i) => {
     const s = (d.sources || [])[i] || {};
     const cites = s.citations || 0;
     const cColor = cites > 1000 ? 'var(--gold)' : cites > 100 ? 'var(--accent)' : 'var(--muted)';
     const doi = safeUrl(s.doi), oa = safeUrl(s.oa_url), lic = safeUrl((d.licenses || [])[i]);
+    const isBest = ftBest && i === 0;
     return `
-    <div class="answer-card" style="animation-delay:${i * 60}ms">
-      <div class="answer-num">Full-text answer ${i + 1} of ${d.answers.length}<span class="ft-b">${esc((d.sections || [])[i] || 'Full text')}</span></div>
+    <div class="answer-card ft${isBest ? ' best' : ''}" style="animation-delay:${i * 60}ms">
+      <div class="answer-num">Full-text answer ${i + 1} of ${d.answers.length}${isBest ? ' <span class="best-b">★ Best answer</span>' : ''}<span class="ft-b">${esc((d.sections || [])[i] || 'Full text')}</span></div>
       <div class="answer-text">${highlight(ans)}</div>
       <button class="btn xs" style="margin-top:10px" data-ftcopy="${i}">📋 Copy</button>
       <div class="source-card" style="margin-top:8px;margin-bottom:0">
