@@ -422,11 +422,133 @@ def answer_finder():
             "best_index": best,
             "searched": searched,
             "source_stats": _source_stats(all_papers, cands),
+            "ft_papers": [_pick(p) for p in _ft_pool(all_papers)],
             "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
             "message":  "" if top else "No clear answer found in the top papers. Try searching for papers instead.",
         })
     except Exception:
         return _fail("Answer search")
+
+# ── Answers from the FULL TEXT of open-access papers ─────────────────
+# Abstracts are short, so many questions find nothing. For open-access papers that Europe PMC / PubMed Central hold
+# in full, the same sentence rules are run over the body of the paper, with a few extra rules because body text is noisier.
+FT_MIN_SCORE = MIN_SCORE + 1          # a little stricter than abstracts (body text has more look-alike sentences)
+FT_MAX_PAPERS = 8
+_DOI_OK = _re.compile(r"^10\.\d{4,9}/[^\s\"<>]+$")
+_FT_SKIP = _re.compile(r"method|material|experimental\s+(?:section|procedure|setup|design|detail)|procedure|protocol|reference|acknowledg|funding|conflict|supplement|"
+                       r"appendix|availability|ethic|statistic|abbreviation|author|contribution|competing|disclosure", _re.I)
+_FT_INTRO = _re.compile(r"introduc|background|overview|literature|related|state of the art|theor", _re.I)
+_FT_RESULT = _re.compile(r"result|finding|discussion|conclusion|summary|implication|outcome", _re.I)
+_FT_BAD = _re.compile(r"\u27e6|\b(?:Figs?\.?|Figures?|Tables?|Eq\.?|Equations?|Supplementary|Appendix)\s*[A-Z]?\d|\bet al\b|"
+                      r"\bpp?\.\s*\d|\b(?:shown|presented|illustrated|depicted|listed|summari[sz]ed|reported|described|given|seen)\s+(?:in|by)\s*[.,;:)]", _re.I)
+_DEF_TYPES = ("what_is", "what_are", "define", "how_does", "why_is")
+
+def _ft_pool(papers, n=FT_MAX_PAPERS):
+    """Open-access papers with a DOI, best candidates first (PubMed / Europe PMC records most often have full text)."""
+    seen, out = set(), []
+    for p in papers:
+        doi = (p.get("doi") or "").strip().lower()
+        if not (p.get("is_oa") and doi) or doi in seen:
+            continue
+        seen.add(doi)
+        out.append(p)
+    pref = lambda p: 0 if _src_key(p) in ("europepmc", "pubmed") else 1
+    out.sort(key=lambda p: (pref(p), -(p.get("citations") or 0)))
+    return out[:n]
+
+def _ft_section(path, ttype):
+    """-> (label shown to the reader, score bonus) or None when the section should not be used (methods, references...)."""
+    parts = [x.strip() for x in path.split(">")]
+    if any(_FT_SKIP.search(x) for x in parts):
+        return None
+    top = parts[0]
+    bonus = 0
+    if ttype in _DEF_TYPES and _FT_INTRO.search(top):
+        bonus = 1
+    elif ttype not in _DEF_TYPES and _FT_RESULT.search(top):
+        bonus = 1
+    label = _re.sub(r"^[\dIVXivx]+(?:\.\d+)*[.)]?\s+", "", top).strip() or top
+    return label[:60], bonus
+
+def _fulltext_candidates(paper, ft, kw, ttype, kw2=None, per_paper=2):
+    cands = []
+    for path, text in (ft.get("sections") or {}).items():
+        info = _ft_section(path, ttype)
+        if not info:
+            continue
+        label, bonus = info
+        for s in _split_sentences(text):
+            n = len(s.split())
+            if s.endswith("?") or n < 8 or n > 50 or _FT_BAD.search(s):
+                continue
+            if ttype in _TWO:
+                if not (kw2 and _kw_present(s, kw) and _kw_present(s, kw2)):
+                    continue
+            elif not _kw_present(s, kw):
+                continue
+            score, hits = _score_sentence(s, kw, ttype, 1, kw2)      # idx 1: no 'first sentence of an abstract' bonus
+            if hits and score + bonus >= FT_MIN_SCORE:
+                cands.append({"text": s, "score": score + bonus, "hits": hits, "paper": paper,
+                              "section": label, "license": ft.get("license") or "",
+                              "tboost": 1 if _kw_present(paper.get("title") or "", kw) else 0})
+    cands.sort(key=lambda c: c["score"], reverse=True)
+    return cands[:per_paper]
+
+def _client_paper(p):
+    """The page sends back the papers it was given; keep only plain, expected fields."""
+    out = {}
+    for k in ("title", "journal", "doi", "oa_url", "data_source", "apa_reference", "openalex_id", "date"):
+        v = p.get(k)
+        out[k] = v[:400] if isinstance(v, str) else None
+    y = p.get("year")
+    out["year"] = y if isinstance(y, (int, str)) and not isinstance(y, bool) else None
+    c = p.get("citations")
+    out["citations"] = c if isinstance(c, int) and not isinstance(c, bool) else 0
+    out["authors"] = [a[:80] for a in (p.get("authors") or []) if isinstance(a, str)][:6]
+    out["is_oa"] = True
+    return out
+
+@tools_bp.route("/api/answer/fulltext", methods=["POST"])
+@login_required
+def answer_fulltext():
+    """Second step of the Answer Finder. Body (JSON): q (the question) and papers (the open-access papers the first step returned).
+    Reads their full text (Europe PMC) and returns extra answer sentences with the section they came from."""
+    data = request.get_json(silent=True) or {}
+    query = str(data.get("q") or "").strip()[:300]
+    keyword, ttype, kw2 = _extract_keyword(query)
+    if not keyword:
+        return jsonify({"error": "unsupported_template"}), 400
+    papers = []
+    for p in (data.get("papers") or [])[:FT_MAX_PAPERS]:
+        if not isinstance(p, dict):
+            continue
+        cp = _client_paper(p)
+        doi = _re.sub(r"^https?://(?:dx\.)?doi\.org/", "", (cp.get("doi") or "").strip())
+        if _DOI_OK.match(doi):
+            papers.append(cp)
+    try:
+        reads = topicfinder.fetch_fulltexts(papers, budget=9.0, max_papers=FT_MAX_PAPERS)
+        cands, seen = [], set()
+        for paper, ft in reads:
+            for c in _fulltext_candidates(paper, ft, keyword, ttype, kw2):
+                key = c["text"].lower()[:80]
+                if key not in seen:
+                    seen.add(key)
+                    cands.append(c)
+        cands.sort(key=_rank, reverse=True)
+        top = _diversify(cands, 5)
+        return jsonify({
+            "answers": [c["text"] for c in top],
+            "sources": [_pick(c["paper"]) for c in top],
+            "sections": [c["section"] for c in top],
+            "licenses": [c["license"] for c in top],
+            "cues": _CUES.get(ttype, []),
+            "read": len(reads), "tried": len(papers),
+            "message": "" if top else ("No clear answer found in the full text of these papers." if reads else
+                                       "Full text was not available for these papers."),
+        })
+    except Exception:
+        return _fail("Full-text answer search")
 
 @tools_bp.route("/answer")
 @login_required

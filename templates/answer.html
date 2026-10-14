@@ -158,6 +158,12 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 .fx-note b{color:var(--text)}
 .fx-empty{text-align:center;padding:30px 14px;color:var(--muted);font-size:.84rem}
 .fx-empty .big{font-size:2.2rem;margin-bottom:6px}
+
+/* full-text answers */
+.ft-head{margin-top:22px}
+.ft-b{font-family:var(--mono);font-size:.62rem;padding:1px 7px;border-radius:20px;background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.2);color:var(--green);margin-left:6px}
+.ft-lic{font-size:.7rem;color:var(--muted);margin-top:8px}
+.ft-lic a{color:var(--muted);text-decoration:underline}
 </style>
 </head>
 <body>
@@ -317,12 +323,6 @@ function fNoResultsHtml(what){
   return `<div class="fx-empty"><div class="big">📭</div><p>${what}</p>` +
     (t ? `<p style="margin-top:6px">Your filters (${esc(t)}) may be hiding results.</p><button class="fx-btn" style="margin-top:10px" onclick="fReset()">↺ Reset filters</button>` : '') + `</div>`;
 }
-function srcStatsLine(data){
-  const st = data.source_stats || {};
-  const names = {openalex:'OpenAlex', arxiv:'arXiv', pubmed:'PubMed', crossref:'Crossref', europepmc:'Europe PMC'};
-  const parts = Object.keys(names).map(k => { const x = st[k] || {papers:0, answers:0}; return `${names[k]} ${x.papers}→${x.answers}`; });
-  return `<div class="fx-note" title="Per source: papers found → usable answer sentences. A paper found in several sources is counted once.">${parts.join(' · ')}</div>`;
-}
 function fUsedLine(data){
   const n = data.searched != null ? `${data.searched} papers · ` : '';
   return `<div class="fx-note">${n}${esc((data.sources_used || []).join(', '))}</div>`;
@@ -344,7 +344,7 @@ function setTemplate(tpl, btn) {
     'What is':    ['photosynthesis','DNA replication','climate change','CRISPR','antibiotic resistance','renewable energy'],
     'What are':   ['stem cells','greenhouse gases','antibiotics','black holes','enzymes','chromosomes'],
     'What causes': ['climate change','cancer','antibiotic resistance','earthquakes','inflation','deforestation'],
-    'How does':   ['photosynthesis work','the immune system work','stress affect sleep','climate change affect health','CRISPR work'],
+    'How does':   ['photosynthesis work','the immune system work','DNA replication work','climate change work','CRISPR work'],
     'Why is':     ['biodiversity important','sleep important','vaccination important','exercise important'],
     'Define':     ['photosynthesis','entropy','osmosis','biodiversity','metabolism','ecosystem'],
     'Effect of':  ['climate change','sleep deprivation','caffeine','social media','deforestation','exercise'],
@@ -371,8 +371,10 @@ async function doAnswer() {
   if (!topic) { toast('⚠️ Type a topic first'); return; }
 
   currentKeyword = topic;
+  _ftRun++;                                  // drop any full-text result still on its way
   fLastRun = doAnswer;                       // filters re-run this search when changed
   const query    = `${currentTemplate} ${topic}`;
+  window._lastQuery = query;
   const results  = document.getElementById('results');
   results.innerHTML = '<div class="spinner"></div>';
 
@@ -387,11 +389,14 @@ async function doAnswer() {
     if (!resp.ok) { results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>${esc(data.error || 'Something went wrong. Try again.')}</p></div>`; return; }
 
     if (!data.answers || !data.answers.length) {
-      results.innerHTML = fNoResultsHtml(`No direct answer found for <strong>${esc(topic)}</strong>.`) + srcStatsLine(data) +
+      results.innerHTML = fNoResultsHtml(`No direct answer found in the abstracts for <strong>${esc(topic)}</strong>.`) +
+        `<div id="ftBox"></div>` +
         `<div style="text-align:center"><a href="${esc(searchLink([topic]))}" class="btn primary">🔍 Search papers instead</a></div>`;
+      loadFullText(data, query);
       return;
     }
     renderAnswers(data);
+    loadFullText(data, query);
   } catch(e) {
     results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>Connection error. Try again.</p></div>`;
   }
@@ -401,16 +406,7 @@ function renderAnswers(data) {
   const kw = data.keyword || '';
   const results = document.getElementById('results');
   window._answers = data.answers || [];
-  const rx = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const terms = [kw, data.keyword2].filter(Boolean).map(rx);
-  const re = terms.length ? new RegExp('(' + terms.join('|') + ')', 'gi') : null;
-  const cues = (data.cues || []).slice().sort((a, b) => b.length - a.length).map(rx);
-  const reCue = cues.length ? new RegExp('\\b(' + cues.join('|') + ')\\b', 'gi') : null;
-  const highlight = t => {
-    let h = esc(t);
-    if (reCue) h = h.replace(reCue, '<span class="cue">$1</span>');
-    return re ? h.replace(re, m => '<mark>' + m + '</mark>') : h;
-  };
+  const highlight = makeHighlighter(data);
 
   const cards = data.answers.map((ans, i) => {
     const s = (data.sources || [])[i];
@@ -442,15 +438,83 @@ function renderAnswers(data) {
       <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">
         Answers for: <strong style="color:var(--accent)">${esc(currentTemplate)} ${esc(kw)}${data.keyword2 ? ' and ' + esc(data.keyword2) : ''}</strong>
       </div>
-      ${fUsedLine(data)}${srcStatsLine(data)}
+      ${fUsedLine(data)}
       ${cards}
+      <div id="ftBox"></div>
       <div class="search-cta">
         <p>Want more? <strong>Search full papers on "${esc(kw)}"</strong></p>
         <a href="${esc(searchLink([kw]))}" class="btn primary sm">🔍 Search Papers</a>
       </div>
     </div>`;
 }
+
+// ── Answers from the full text of open-access papers (second step) ──
+let _ftRun = 0;
+function makeHighlighter(data) {
+  const rx = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const terms = [data.keyword || currentKeyword, data.keyword2].filter(Boolean).map(rx);
+  const re = terms.length ? new RegExp('(' + terms.join('|') + ')', 'gi') : null;
+  const cues = (data.cues || []).slice().sort((a, b) => b.length - a.length).map(rx);
+  const reCue = cues.length ? new RegExp('\\b(' + cues.join('|') + ')\\b', 'gi') : null;
+  return t => {
+    let h = esc(t);
+    if (reCue) h = h.replace(reCue, '<span class="cue">$1</span>');
+    return re ? h.replace(re, m => '<mark>' + m + '</mark>') : h;
+  };
+}
+async function loadFullText(data, query) {
+  const box = document.getElementById('ftBox');
+  const papers = data.ft_papers || [];
+  if (!box || !papers.length) return;
+  const run = ++_ftRun;
+  box.innerHTML = `<div class="fx-note ft-head">🔎 Reading the full text of up to ${papers.length} open-access papers…</div>`;
+  try {
+    const r = await fetch('/api/answer/fulltext', {method: 'POST', headers: {'Content-Type': 'application/json'},
+                                                  body: JSON.stringify({q: query, papers})});
+    const d = await r.json().catch(() => ({}));
+    if (run !== _ftRun) return;                       // a newer search replaced this one
+    if (!r.ok) { box.innerHTML = ''; return; }
+    box.innerHTML = renderFullText(d, data);
+  } catch (e) {
+    if (run === _ftRun) box.innerHTML = '';
+  }
+}
+function renderFullText(d, data) {
+  const head = `<div class="sources-label ft-head">From the full text of open-access papers</div>`;
+  const note = `<div class="fx-note">Read the full text of ${d.read || 0} of ${d.tried || 0} papers. Only some open-access papers have full text available.</div>`;
+  if (!d.answers || !d.answers.length) {
+    return head + note + (d.message ? `<div class="fx-note">${esc(d.message)}</div>` : '');
+  }
+  const highlight = makeHighlighter(Object.assign({}, data, {cues: d.cues || data.cues}));
+  window._ftAnswers = d.answers;
+  const cards = d.answers.map((ans, i) => {
+    const s = (d.sources || [])[i] || {};
+    const cites = s.citations || 0;
+    const cColor = cites > 1000 ? 'var(--gold)' : cites > 100 ? 'var(--accent)' : 'var(--muted)';
+    const doi = safeUrl(s.doi), oa = safeUrl(s.oa_url), lic = safeUrl((d.licenses || [])[i]);
+    return `
+    <div class="answer-card" style="animation-delay:${i * 60}ms">
+      <div class="answer-num">Full-text answer ${i + 1} of ${d.answers.length}<span class="ft-b">${esc((d.sections || [])[i] || 'Full text')}</span></div>
+      <div class="answer-text">${highlight(ans)}</div>
+      <button class="btn xs" style="margin-top:10px" data-ftcopy="${i}">📋 Copy</button>
+      <div class="source-card" style="margin-top:8px;margin-bottom:0">
+        <div class="source-info">
+          <div class="source-title" title="${esc(s.title)}">${esc(s.title || 'Untitled')}</div>
+          <div class="source-meta">${tagRow(s)} ${esc(s.journal || '—')} · ${esc(s.year || '?')} · <span style="color:${cColor}">★ ${cites.toLocaleString()}</span></div>
+        </div>
+        <div class="source-btns">
+          ${doi ? `<a href="${esc(doi)}" target="_blank" rel="noopener noreferrer" class="btn xs">↗ View Source</a>` : ''}
+          ${oa ? `<a href="${esc(oa)}" target="_blank" rel="noopener noreferrer" class="btn xs">Read</a>` : ''}
+        </div>
+      </div>
+      ${lic ? `<div class="ft-lic">Open-access license: <a href="${esc(lic)}" target="_blank" rel="noopener noreferrer">${esc(lic.replace(/^https?:\/\/(www\.)?/, ''))}</a></div>` : ''}
+    </div>`;
+  }).join('');
+  return head + note + cards;
+}
 document.getElementById('results').addEventListener('click', e => {
+  const fb = e.target.closest('button[data-ftcopy]');
+  if (fb) { copyText((window._ftAnswers || [])[parseInt(fb.dataset.ftcopy, 10)] || ''); return; }
   const b = e.target.closest('button[data-copy]');
   if (b) copyText((window._answers || [])[parseInt(b.dataset.copy, 10)] || '');
 });

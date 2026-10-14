@@ -291,9 +291,51 @@ def _epmc_pmcid(doi, timeout=8):
 def _text_of(el):
     return re.sub(r"\s+", " ", "".join(el.itertext())).strip()
 
+_PH_X, _PH_F = "\u27e6X\u27e7", "\u27e6F\u27e7"     # placeholders: figure/table reference, formula
+
+def _para_text(el):
+    """Paragraph text without citation markers. Figure/table/formula references become a placeholder so the
+    sentence can be rejected later (a sentence that says 'as shown in [figure]' means nothing alone)."""
+    out = [el.text or ""]
+    def walk(e):
+        tag = e.tag.split("}")[-1] if isinstance(e.tag, str) else ""
+        if tag == "xref":
+            out.append("" if e.get("ref-type") == "bibr" else _PH_X)
+        elif tag in ("fig", "table-wrap", "supplementary-material"):
+            out.append(_PH_X)
+        elif tag in ("inline-formula", "disp-formula"):
+            out.append(_PH_F)
+        elif tag == "sup" and re.fullmatch(r"[\d,\s\u2013\u2212-]*", "".join(e.itertext())):
+            pass                                            # superscript reference numbers
+        else:
+            out.append(e.text or "")
+            for c in e:
+                walk(c)
+        out.append(e.tail or "")
+    for c in el:
+        walk(c)
+    return _tidy("".join(out))
+
+def _tidy(t):
+    t = re.sub(r"\(\s*[,;\u2013-]?\s*\)|\[\s*[,;\u2013-]?\s*\]", "", t)   # brackets left empty by removed citations
+    t = re.sub(r"\s+", " ", t)
+    t = re.sub(r"\s+([,.;:])", r"\1", t)
+    return t.strip()
+
+def _walk_secs(parent, path, out):
+    for sec in parent.findall("sec"):
+        tnode = sec.find("title")
+        title = _text_of(tnode) if tnode is not None else ""
+        here = path + [title] if title else path
+        paras = [_para_text(p) for p in sec.findall("p")]
+        key = " > ".join(here)
+        if key and any(paras):
+            out[key] = (out.get(key, "") + " " + " ".join(paras)).strip()
+        _walk_secs(sec, here, out)
+
 def parse_jats(xml_bytes):
-    """JATS XML -> {"license": url or "", "sections": {section title: text}} (only the sections we care about
-    plus Abstract/Results so other tools can use them too)."""
+    """JATS XML -> {"license": url or "", "sections": {"Results > Effect of pH": text, ...}}.
+    Keys are the section PATH, so a sub-section can be judged by the section it sits in."""
     root = ET.fromstring(xml_bytes)
     lic = ""
     for el in root.iter("license"):
@@ -305,13 +347,8 @@ def parse_jats(xml_bytes):
     sections = {}
     body = root.find(".//body")
     if body is not None:
-        for sec in body.iter("sec"):
-            title = _text_of(sec.find("title")) if sec.find("title") is not None else ""
-            paras = [_text_of(p) for p in sec.findall("p")]
-            if title and paras:
-                sections.setdefault(title, "")
-                sections[title] += " " + " ".join(paras)
-    return {"license": lic, "sections": {k: v.strip() for k, v in sections.items()}}
+        _walk_secs(body, [], sections)
+    return {"license": lic, "sections": sections}
 
 def get_oa_fulltext(doi, timeout=10):
     """Open-access full text for a DOI via Europe PMC, or None. Cached in memory.
@@ -389,3 +426,26 @@ def coverage(papers, extra_terms):
     per = [{"term": w, "papers": sum(1 for p in papers if w in matched_terms(p, [w]))} for w in extra_terms]
     both = sum(1 for p in papers if len(matched_terms(p, extra_terms)) == len(extra_terms))
     return {"total": len(papers), "terms": per, "all": both}
+
+
+def fetch_fulltexts(papers, budget=9.0, max_papers=8):
+    """[(paper, fulltext dict)] for the open-access papers whose full text could be read within `budget` seconds."""
+    pool = [p for p in papers if _doi(p)][:max_papers]
+    got = []
+    if not pool:
+        return got
+    ex = ThreadPoolExecutor(max_workers=min(8, len(pool)))
+    jobs = {ex.submit(get_oa_fulltext, _doi(p)): p for p in pool}
+    try:
+        for fut in as_completed(jobs, timeout=budget):
+            try:
+                ft = fut.result()
+            except Exception:
+                continue
+            if ft and ft.get("sections"):
+                got.append((jobs[fut], ft))
+    except Exception:
+        pass                                               # time budget reached: use what has arrived
+    finally:
+        ex.shutdown(wait=False, cancel_futures=True)
+    return got
