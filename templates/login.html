@@ -67,6 +67,15 @@ input::placeholder{color:#3a4060}
 .beta-badge{display:inline-block;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.18);color:#9d6ef5;font-size:.66rem;padding:2px 7px;border-radius:20px;margin-left:5px;vertical-align:middle}
 .pts-note{text-align:center;font-size:.75rem;color:#5a6385;margin-top:10px;background:#181d2e;border:1px solid rgba(100,130,220,.1);border-radius:8px;padding:9px 12px}
 .pts-note strong{color:#4f8de8}
+.guestbtn{width:100%;padding:11px;background:transparent;border:1px solid rgba(100,130,220,.25);border-radius:10px;color:#d8e0f8;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;transition:border-color .2s,background .2s}
+.guestbtn:hover{border-color:#4f8de8;background:rgba(79,141,232,.06)}
+.guestbtn:disabled{opacity:.6;cursor:not-allowed}
+.hint{font-size:.74rem;color:#5a6385;margin-top:5px;line-height:1.4}
+.guestnote{font-size:.74rem;color:#5a6385;text-align:center;margin-top:8px;line-height:1.45}
+.codebox{background:#181d2e;border:1px dashed rgba(79,141,232,.45);border-radius:12px;padding:16px;text-align:center;margin:14px 0}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.35rem;letter-spacing:.12em;color:#4f8de8;font-weight:700;user-select:all}
+.warn{background:rgba(240,180,60,.07);border:1px solid rgba(240,180,60,.22);border-radius:8px;color:#e8b84a;font-size:.8rem;padding:10px 13px;line-height:1.45;margin-bottom:14px}
+.btn2{width:100%;padding:10px;background:#181d2e;border:1px solid rgba(100,130,220,.2);border-radius:10px;color:#d8e0f8;font-family:'Outfit',sans-serif;font-size:.88rem;cursor:pointer;margin-top:8px}
 </style>
 </head>
 <body>
@@ -79,8 +88,8 @@ input::placeholder{color:#3a4060}
   <div class="success" id="successMsg"></div>
 
   <div class="form-group">
-    <label for="email">Email Address</label>
-    <input type="email" id="email" placeholder="youremail@gmail.com" autocomplete="email"/>
+    <label for="username">Username</label>
+    <input type="text" id="username" placeholder="Your username (or old account email)" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"/>
   </div>
 
   <div class="form-group">
@@ -100,6 +109,9 @@ input::placeholder{color:#3a4060}
 
   <div class="divider">or</div>
 
+  <button class="guestbtn" type="button" onclick="doGuest(this)">Continue as guest</button>
+  <div class="guestnote">Guest searches and saved papers are kept only for this browser for 30 days. If you clear your browser data or switch devices they are lost. You can create an account later and keep them.</div>
+
   <div class="bottom">
     Don't have an account? <a href="/signup">Sign up free →</a>
   </div>
@@ -110,7 +122,7 @@ input::placeholder{color:#3a4060}
 document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
 async function doLogin() {
-  const email    = document.getElementById('email').value.trim();
+  const username = document.getElementById('username').value.trim();
   const password = document.getElementById('password').value.trim();
   const btn      = document.getElementById('loginBtn');
   const errorEl  = document.getElementById('errorMsg');
@@ -118,7 +130,7 @@ async function doLogin() {
 
   errorEl.style.display = successEl.style.display = 'none';
 
-  if (!email || !password) {
+  if (!username || !password) {
     errorEl.textContent = 'Please fill in all fields';
     errorEl.style.display = 'block'; return;
   }
@@ -129,7 +141,7 @@ async function doLogin() {
     const resp = await fetch('/login', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({email, password})
+      body: JSON.stringify({username, password})
     });
     const data = await resp.json();
     if (data.success) {
@@ -146,6 +158,19 @@ async function doLogin() {
     errorEl.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Sign In';
   }
+}
+
+async function doGuest(btn) {
+  const errorEl = document.getElementById('errorMsg');
+  errorEl.style.display = 'none';
+  btn.disabled = true; const old = btn.textContent; btn.textContent = 'Starting…';
+  try {
+    const resp = await fetch('/guest', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
+    const data = await resp.json();
+    if (data.success) { window.location.href = data.redirect || '/'; return; }
+    errorEl.textContent = data.error || 'Could not start a guest session';
+  } catch(e) { errorEl.textContent = 'Connection error. Try again.'; }
+  errorEl.style.display = 'block'; btn.disabled = false; btn.textContent = old;
 }
 </script>
 </body>

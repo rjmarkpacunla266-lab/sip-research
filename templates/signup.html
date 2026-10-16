@@ -71,10 +71,21 @@ input::placeholder{color:#3a4060}
 .pts-hero{text-align:center;margin-bottom:18px;padding:14px 16px;background:linear-gradient(135deg,rgba(79,141,232,.1),rgba(157,110,245,.08));border:1px solid rgba(79,141,232,.2);border-radius:12px}
 .pts-num{font-size:2.2rem;font-weight:700;color:#4f8de8;line-height:1;font-family:'Lora',serif}
 .pts-label{font-size:.75rem;color:#5a6385;margin-top:3px}
+.guestbtn{width:100%;padding:11px;background:transparent;border:1px solid rgba(100,130,220,.25);border-radius:10px;color:#d8e0f8;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;transition:border-color .2s,background .2s}
+.guestbtn:hover{border-color:#4f8de8;background:rgba(79,141,232,.06)}
+.guestbtn:disabled{opacity:.6;cursor:not-allowed}
+.hint{font-size:.74rem;color:#5a6385;margin-top:5px;line-height:1.4}
+.guestnote{font-size:.74rem;color:#5a6385;text-align:center;margin-top:8px;line-height:1.45}
+.codebox{background:#181d2e;border:1px dashed rgba(79,141,232,.45);border-radius:12px;padding:16px;text-align:center;margin:14px 0}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.35rem;letter-spacing:.12em;color:#4f8de8;font-weight:700;user-select:all}
+.warn{background:rgba(240,180,60,.07);border:1px solid rgba(240,180,60,.22);border-radius:8px;color:#e8b84a;font-size:.8rem;padding:10px 13px;line-height:1.45;margin-bottom:14px}
+.btn2{width:100%;padding:10px;background:#181d2e;border:1px solid rgba(100,130,220,.2);border-radius:10px;color:#d8e0f8;font-family:'Outfit',sans-serif;font-size:.88rem;cursor:pointer;margin-top:8px}
+.divider{display:flex;align-items:center;gap:10px;margin:20px 0 14px;color:#3a4060;font-size:.78rem}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(100,130,220,.1)}
 </style>
 </head>
 <body>
-<div class="card">
+<div class="card" id="formCard">
 
   <div class="logo"><span>Sturch</span><span class="beta-badge">BETA</span></div>
   <h1 class="tagline">Create your free account</h1>
@@ -95,13 +106,14 @@ input::placeholder{color:#3a4060}
   <div class="success" id="successMsg"></div>
 
   <div class="form-group">
-    <label for="email">Email Address</label>
-    <input type="email" id="email" placeholder="youremail@gmail.com" autocomplete="email"/>
+    <label for="username">Username</label>
+    <input type="text" id="username" placeholder="e.g. juan_delacruz" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="20"/>
+    <div class="hint">3–20 characters: letters, numbers and underscore. No email needed.</div>
   </div>
 
   <div class="form-group">
     <label for="password">Password</label>
-    <input type="password" id="password" placeholder="At least 6 characters" autocomplete="new-password"/>
+    <input type="password" id="password" placeholder="At least 8 characters" autocomplete="new-password"/>
   </div>
 
   <div class="form-group">
@@ -115,13 +127,29 @@ input::placeholder{color:#3a4060}
     Already have an account? <a href="/login">Sign in</a>
   </div>
 
+  <div class="divider">or</div>
+  <button class="guestbtn" type="button" onclick="doGuest(this)">Continue as guest</button>
+  <div class="guestnote">Guest searches and saved papers are kept only for this browser for 30 days. If you clear your browser data or switch devices they are lost. You can create an account later and keep them.</div>
+
+</div>
+
+<div class="card" id="codeCard" style="display:none">
+  <div class="logo"><span>Sturch</span></div>
+  <h1 class="tagline">Save your recovery code</h1>
+  <div class="warn"><strong>Important:</strong> you signed up without an email, so this code is the only way to reset your password if you forget it. It is shown <strong>once</strong>. Screenshot it or write it down.</div>
+  <div class="codebox"><div class="code" id="codeText"></div></div>
+  <button class="btn2" type="button" onclick="copyCode()" id="copyBtn">Copy code</button>
+  <label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font-size:.82rem;margin:16px 0 4px;cursor:pointer">
+    <input type="checkbox" id="savedChk" style="width:auto" onchange="document.getElementById('goBtn').disabled=!this.checked"/> I saved my recovery code
+  </label>
+  <button class="btn" id="goBtn" disabled onclick="window.location.href='/'">Continue to Sturch →</button>
 </div>
 
 <script>
 document.addEventListener('keydown', e => { if (e.key === 'Enter') doSignup(); });
 
 async function doSignup() {
-  const email    = document.getElementById('email').value.trim();
+  const username = document.getElementById('username').value.trim().toLowerCase();
   const password = document.getElementById('password').value.trim();
   const password2= document.getElementById('password2').value.trim();
   const btn      = document.getElementById('signupBtn');
@@ -130,16 +158,16 @@ async function doSignup() {
 
   errorEl.style.display = successEl.style.display = 'none';
 
-  if (!email || !password || !password2) {
+  if (!username || !password || !password2) {
     errorEl.textContent = 'Please fill in all fields';
     errorEl.style.display = 'block'; return;
   }
-  if (!email.includes('@')) {
-    errorEl.textContent = 'Please enter a valid email address';
+  if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+    errorEl.textContent = 'Username must be 3–20 characters: letters, numbers and underscore only';
     errorEl.style.display = 'block'; return;
   }
-  if (password.length < 6) {
-    errorEl.textContent = 'Password must be at least 6 characters';
+  if (password.length < 8) {
+    errorEl.textContent = 'Password must be at least 8 characters';
     errorEl.style.display = 'block'; return;
   }
   if (password !== password2) {
@@ -153,13 +181,13 @@ async function doSignup() {
     const resp = await fetch('/signup', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({email, password})
+      body: JSON.stringify({username, password})
     });
     const data = await resp.json();
     if (data.success) {
-      successEl.textContent = '🎉 Account created! Redirecting…';
-      successEl.style.display = 'block';
-      setTimeout(() => window.location.href = data.redirect || '/', 700);
+      document.getElementById('codeText').textContent = data.recovery_code;
+      document.getElementById('formCard').style.display = 'none';
+      document.getElementById('codeCard').style.display = 'block';
     } else {
       errorEl.textContent = data.error || 'Signup failed';
       errorEl.style.display = 'block';
@@ -170,6 +198,24 @@ async function doSignup() {
     errorEl.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Create Free Account →';
   }
+}
+
+async function doGuest(btn) {
+  const errorEl = document.getElementById('errorMsg');
+  errorEl.style.display = 'none';
+  btn.disabled = true; const old = btn.textContent; btn.textContent = 'Starting…';
+  try {
+    const resp = await fetch('/guest', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
+    const data = await resp.json();
+    if (data.success) { window.location.href = data.redirect || '/'; return; }
+    errorEl.textContent = data.error || 'Could not start a guest session';
+  } catch(e) { errorEl.textContent = 'Connection error. Try again.'; }
+  errorEl.style.display = 'block'; btn.disabled = false; btn.textContent = old;
+}
+
+function copyCode() {
+  const t = document.getElementById('codeText').textContent, b = document.getElementById('copyBtn');
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => b.textContent = 'Copied ✓').catch(() => b.textContent = 'Press and hold the code to copy');
 }
 </script>
 </body>
