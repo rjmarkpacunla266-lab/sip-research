@@ -165,12 +165,12 @@ def guest():
     if not is_ip_allowed_to_signup(ip):
         return jsonify({"error": "Too many accounts from your device today. Please try again tomorrow."}), 429
     name = "guest_" + "".join(secrets.choice("abcdefghijkmnpqrstuvwxyz23456789") for _ in range(8))
-    ok, rows, _err = sb_try("POST", "users", data={
+    ok, rows, _ = sb_try("POST", "users", data={
         "username": name, "email": f"{name}@sturch.invalid", "is_guest": True, "search_count": 0,
         "password_hash": hash_password(secrets.token_urlsafe(24)),           # nobody knows it: the cookie is the only key
         "created_at": datetime.now().isoformat()})
     if not ok or not rows:
-        return jsonify({"error": "Could not start a guest session. Try again. [" + str(_err)[:200] + "]"}), 500
+        return jsonify({"error": "Could not start a guest session. Try again."}), 500
     record_ip_signup(ip)
     _start_session(rows[0] if isinstance(rows, list) else rows, guest=True)
     if secrets.randbelow(20) == 0:
