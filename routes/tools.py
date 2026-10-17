@@ -772,22 +772,73 @@ def _title_overlap(title, quote):
     return sum(1 for w in tw if term_in(quote, w)) / len(tw) if tw else 0.0
 
 def _score_paper(paper, quote, keywords, rank_bonus=0.0):
-    """-> (score 0..1, best sentence, wording similarity, share of keywords found in title/abstract, rank bonus)."""
+    """-> (score 0..1, best sentence, wording similarity, share of keywords found in title/abstract, rank bonus, title overlap)."""
     title, abstract = paper.get("title") or "", paper.get("abstract") or ""
     sim, sentence = _best_match(abstract, quote) if abstract else (0.0, "")
     text = title + " " + abstract
     cov = sum(1 for k in keywords if term_in(text, k)) / max(len(keywords), 1)
     tov = _title_overlap(title, quote)
     score = 0.30 * sim + 0.30 * cov + 0.10 * tov + 0.30 * rank_bonus
-    return score, sentence, sim, cov, rank_bonus
+    return score, sentence, sim, cov, rank_bonus, tov
 
 def _confidence(score, sim, cov, rb=0.0):
     """A match only counts as 'found' when the words really overlap (or several searches agree), not just by chance."""
-    if (score >= 0.7 and sim >= 0.6) or (score >= 0.65 and rb >= 0.9 and cov >= 0.6):
+    if (score >= 0.7 and sim >= 0.6) or (score >= 0.65 and rb >= 0.9 and cov >= 0.6) or (sim >= 0.8 and cov >= 0.5):
         return "high", True
     if score >= 0.45 and (cov >= 0.5 or rb >= 0.7):
         return "medium", True
     return ("low", False)
+
+# ── Looking for the quote INSIDE the paper (open-access full text), not only in the abstract ──
+# A quote copied from an article usually comes from its body. The abstract rarely repeats it, so abstract-only matching
+# can only guess from related words. For the best candidates that are open access (Europe PMC / PubMed Central hold the
+# full text), the quote is compared with every sentence of the paper.
+TRACE_FT_MAX = 8
+_TR_SKIP = _re.compile(r"reference|acknowledg|funding|conflict|competing|contribution|supplement|abbreviation|availability", _re.I)
+
+def _ft_best_match(ft, quote, keywords):
+    """-> (similarity 0..1, best passage, section label, share of keywords in that passage) over the paper's sections."""
+    q = _clean_text(quote)
+    need = max(2, math.ceil(0.5 * len(keywords)))
+    wins = []                                                  # (keyword hits, passage, section label)
+    for path, text in (ft.get("sections") or {}).items():
+        if _TR_SKIP.search(path):
+            continue
+        sents = [x.strip() for x in _re.split(r"(?<=[.!?])\s+", _clean_abstract(text)) if len(x.split()) >= 4]
+        label = (_re.sub(r"^[\dIVXivx]+(?:\.\d+)*[.)]?\s+", "", path.split(">")[0].strip()) or path)[:60]
+        for i in range(len(sents)):
+            for n in (1, 2, 3):                                # a sentence, two or three in a row (quotes can span sentences)
+                if i + n > len(sents):
+                    break
+                w = " ".join(sents[i:i + n])
+                hits = sum(1 for k in keywords if term_in(w, k))
+                if hits >= need:
+                    wins.append((hits, w, label))
+    wins.sort(key=lambda x: (x[0], -abs(len(x[1]) - len(quote))), reverse=True)
+    best = (0.0, "", "", 0.0)
+    for hits, w, label in wins[:40]:                           # compare the quote only with the most promising passages
+        sm = difflib.SequenceMatcher(None, q, _clean_text(w))
+        if sm.real_quick_ratio() < best[0] or sm.quick_ratio() < best[0]:
+            continue
+        r = sm.ratio()
+        if r > best[0]:
+            best = (r, w, label, hits / max(len(keywords), 1))
+    return best
+
+def _full_text_pass(scored, quote, keywords):
+    """Re-score the best open-access candidates using their full text. Changes rows in place; -> (tried, read)."""
+    pool = [r for r in scored if r.get("doi") and r.get("is_oa")][:TRACE_FT_MAX]
+    if not pool:
+        return 0, 0
+    reads = topicfinder.fetch_fulltexts(pool, budget=8.0, max_papers=len(pool))
+    for row, ft in reads:
+        sim, passage, label, cov = _ft_best_match(ft, quote, keywords)
+        if sim > row["sim"] and passage:
+            row["sim"], row["cov"] = round(sim, 3), round(max(row["cov"], cov), 3)
+            row["snippet"] = passage[:400] + ("\u2026" if len(passage) > 400 else "")
+            row["match_in"], row["section"] = "full text", label
+            row["score"] = round(0.30 * row["sim"] + 0.30 * row["cov"] + 0.10 * row.get("tov", 0) + 0.30 * row["rb"], 4)
+    return len(pool), len(reads)
 
 @tools_bp.route("/api/source-tracer", methods=["POST"])
 @login_required
@@ -810,13 +861,18 @@ def source_tracer():
 
         scored = []
         for p in papers:
-            score, sentence, sim, cov, rb = _score_paper(p, quote, keywords, ranks.get(_pkey(p), 0.0))
+            score, sentence, sim, cov, rb, tov = _score_paper(p, quote, keywords, ranks.get(_pkey(p), 0.0))
             row = _pick(p, abstract_chars=300)
             row["score"] = round(score, 4)
-            row["sim"], row["cov"], row["rb"] = round(sim, 3), round(cov, 3), round(rb, 3)
+            row["sim"], row["cov"], row["rb"], row["tov"] = round(sim, 3), round(cov, 3), round(rb, 3), round(tov, 3)
+            row["match_in"] = "abstract" if sim >= 0.25 and sentence else ""
             row["snippet"] = sentence if sim >= 0.25 and sentence else row.get("abstract", "")
             scored.append(row)
         scored.sort(key=lambda r: r["score"], reverse=True)
+        ft_tried = ft_read = 0
+        if scored and scored[0]["sim"] < 0.85:               # an almost word-for-word abstract match needs no more checking
+            ft_tried, ft_read = _full_text_pass(scored, quote, keywords)
+            scored.sort(key=lambda r: r["score"], reverse=True)
 
         top_score = scored[0]["score"] if scored else 0
         if scored:
@@ -839,11 +895,14 @@ def source_tracer():
         if not found:
             message = ("No exact source found. Possible reasons: the source may not be indexed in OpenAlex, "
                        "arXiv, PubMed, Crossref or Europe PMC, the quote may be paraphrased, or your filters "
-                       "may be hiding it. Related papers are shown below.")
+                       "may be hiding it. Only open-access papers can be checked inside their full text"
+                       + (f" ({ft_read} of the top {ft_tried} were readable)" if ft_tried else "")
+                       + ". Related papers are shown below.")
         return jsonify({
             "quote": quote, "keywords": keywords, "found": found, "confidence": confidence,
             "confidence_pct": int(top_score * 100), "results": shown, "message": message,
             "searched": len(papers), "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
+            "fulltext_tried": ft_tried, "fulltext_read": ft_read,
         })
     except Exception:
         return _fail("Source tracing")
