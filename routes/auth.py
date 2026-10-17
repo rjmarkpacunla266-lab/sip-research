@@ -179,9 +179,11 @@ def guest():
 
 @auth_bp.route("/api/me")
 def me():
+    """Same shape the pages already read ("email"), now holding the username, plus guest info for a banner."""
     if "user_id" not in session:
-        return jsonify({"logged_in": False})
-    return jsonify({"logged_in": True, "username": session.get("username", ""),
+        return jsonify({"error": "Not logged in"}), 401
+    name = session.get("user_email") or session.get("username") or ""
+    return jsonify({"email": name, "username": session.get("username", ""),
                     "is_guest": bool(session.get("is_guest")), "guest_days": GUEST_DAYS})
 
 
