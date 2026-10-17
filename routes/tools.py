@@ -4,6 +4,7 @@ sources, years, Open Access and sort."""
 import re as _re
 import difflib
 import math
+import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 import requests
@@ -735,26 +736,32 @@ def _pkey(p):
     return doi or (p.get("title") or "").strip().lower()[:60]
 
 def _trace_pool(quote, keywords, f):
-    """Find candidate papers with three searches. The first two are run EXACTLY like Search Papers runs a search
-    (same function, default settings: the whole quote, then its opening words), because that is what finds the right
-    paper in practice. The third (distinctive words, loose) is a safety net. Each source ranks its own results; a
-    paper that comes out near the top of several searches gets a rank bonus.
-    Returns (papers, {paper key: rank bonus 0..1})."""
+    """Find candidate papers. The searches are run EXACTLY like Search Papers runs a search (same function, default
+    settings): the whole quote, then its opening words. Each is also run with 'Open Access only' switched on, because
+    each source returns only its top few results, and without that filter the right (open-access) paper can be crowded
+    out by closed-access ones. A last search with the distinctive words (loose) is a safety net. Each source ranks its own
+    results; a paper near the top of several searches gets a rank bonus. Returns (papers, {paper key: rank bonus 0..1})."""
     words = quote.split()
-    jobs = []                                              # (query, loose, per_source or None for the default)
-    for q, loose, per in ((" ".join(words)[:300], False, None), (" ".join(words[:14]), False, None),
-                          (" ".join(keywords[:6]), True, 15)):
+    f_oa = dict(f, oa_only=True)
+    jobs = []                                              # (query, loose, per_source or None for the default, filters)
+    base = [(" ".join(words)[:300], False, None), (" ".join(words[:14]), False, None)]
+    for q, loose, per in base:
         q = q.strip()
-        if q and all(q != j[0] for j in jobs):
-            jobs.append((q, loose, per))
+        if q and all((q, fl) not in [(j[0], j[3]) for j in jobs] for fl in (f,)):
+            jobs.append((q, loose, per, f))
+            if not f["oa_only"]:
+                jobs.append((q, loose, per, f_oa))
+    kq = " ".join(keywords[:6]).strip()
+    if kq:
+        jobs.append((kq, True, 15, f))
     def run(job):
-        q, loose, per = job
+        q, loose, per, fl = job
         try:
             kw = {"loose": True, "per_source": per} if loose else ({"per_source": per} if per else {})
-            return search_sources(q, 1, f, **kw)[0]       # f as given: same filters and sort setting as Search Papers
+            return search_sources(q, 1, fl, **kw)[0]
         except Exception:
             return []
-    with ThreadPoolExecutor(max_workers=3) as ex:
+    with ThreadPoolExecutor(max_workers=len(jobs)) as ex:
         batches = list(ex.map(run, jobs))
     rank, allraw = {}, []
     for raw in batches:
@@ -797,23 +804,30 @@ TRACE_FT_MAX = 8
 _TR_SKIP = _re.compile(r"reference|acknowledg|funding|conflict|competing|contribution|supplement|abbreviation|availability", _re.I)
 
 def _ft_best_match(ft, quote, keywords):
-    """-> (similarity 0..1, best passage, section label, share of keywords in that passage) over the paper's sections."""
+    """-> (similarity 0..1, best passage, section label, share of keywords in that passage) over the paper's sections.
+    Fast on purpose: long papers have thousands of sentences, so each sentence is lower-cased ONCE and checked for the
+    keywords with plain substring tests; only the few best passages go through the slower similarity comparison."""
     q = _clean_text(quote)
-    need = max(2, math.ceil(0.5 * len(keywords)))
+    stems = [k[:-1] if k.endswith("s") and len(k) > 4 else k for k in keywords]      # 'risks' also finds 'risk'
+    need = max(2, math.ceil(0.5 * len(stems)))
     wins = []                                                  # (keyword hits, passage, section label)
     for path, text in (ft.get("sections") or {}).items():
         if _TR_SKIP.search(path):
             continue
         sents = [x.strip() for x in _re.split(r"(?<=[.!?])\s+", _clean_abstract(text)) if len(x.split()) >= 4]
         label = (_re.sub(r"^[\dIVXivx]+(?:\.\d+)*[.)]?\s+", "", path.split(">")[0].strip()) or path)[:60]
+        low = [x.lower() for x in sents]
+        found = [frozenset(i for i, st in enumerate(stems) if st in lw) for lw in low]
         for i in range(len(sents)):
+            if not found[i]:
+                continue                                       # every useful passage starts with a sentence that has a keyword
+            acc = set()
             for n in (1, 2, 3):                                # a sentence, two or three in a row (quotes can span sentences)
                 if i + n > len(sents):
                     break
-                w = " ".join(sents[i:i + n])
-                hits = sum(1 for k in keywords if term_in(w, k))
-                if hits >= need:
-                    wins.append((hits, w, label))
+                acc |= found[i + n - 1]
+                if len(acc) >= need:
+                    wins.append((len(acc), " ".join(sents[i:i + n]), label))
     wins.sort(key=lambda x: (x[0], -abs(len(x[1]) - len(quote))), reverse=True)
     best = (0.0, "", "", 0.0)
     for hits, w, label in wins[:40]:                           # compare the quote only with the most promising passages
@@ -825,20 +839,25 @@ def _ft_best_match(ft, quote, keywords):
             best = (r, w, label, hits / max(len(keywords), 1))
     return best
 
-def _full_text_pass(scored, quote, keywords):
-    """Re-score the best open-access candidates using their full text. Changes rows in place; -> (tried, read)."""
-    pool = [r for r in scored if r.get("doi") and r.get("is_oa")][:TRACE_FT_MAX]
-    if not pool:
+def _full_text_pass(scored, quote, keywords, budget=8.0):
+    """Re-score the best open-access candidates using their full text. Changes rows in place; -> (tried, read).
+    Never raises: if anything goes wrong the abstract-based result is simply kept."""
+    try:
+        pool = [r for r in scored if r.get("doi") and r.get("is_oa")][:TRACE_FT_MAX]
+        if not pool or budget < 2:
+            return 0, 0
+        reads = topicfinder.fetch_fulltexts(pool, budget=budget, max_papers=len(pool))
+        for row, ft in reads:
+            sim, passage, label, cov = _ft_best_match(ft, quote, keywords)
+            if sim > row["sim"] and passage:
+                row["sim"], row["cov"] = round(sim, 3), round(max(row["cov"], cov), 3)
+                row["snippet"] = passage[:400] + ("\u2026" if len(passage) > 400 else "")
+                row["match_in"], row["section"] = "full text", label
+                row["score"] = round(0.30 * row["sim"] + 0.30 * row["cov"] + 0.10 * row.get("tov", 0) + 0.30 * row["rb"], 4)
+        return len(pool), len(reads)
+    except Exception:
+        traceback.print_exc()
         return 0, 0
-    reads = topicfinder.fetch_fulltexts(pool, budget=8.0, max_papers=len(pool))
-    for row, ft in reads:
-        sim, passage, label, cov = _ft_best_match(ft, quote, keywords)
-        if sim > row["sim"] and passage:
-            row["sim"], row["cov"] = round(sim, 3), round(max(row["cov"], cov), 3)
-            row["snippet"] = passage[:400] + ("\u2026" if len(passage) > 400 else "")
-            row["match_in"], row["section"] = "full text", label
-            row["score"] = round(0.30 * row["sim"] + 0.30 * row["cov"] + 0.10 * row.get("tov", 0) + 0.30 * row["rb"], 4)
-    return len(pool), len(reads)
 
 @tools_bp.route("/api/source-tracer", methods=["POST"])
 @login_required
@@ -853,6 +872,7 @@ def source_tracer():
     keywords = _extract_keywords(quote)
     if not keywords:
         return jsonify({"error": "Could not extract keywords from the quote."}), 400
+    t0 = time.monotonic()
     try:
         f = read_filters(data.get)
         if data.get("sort") not in ("match", "cited", "recent"):
@@ -871,7 +891,7 @@ def source_tracer():
         scored.sort(key=lambda r: r["score"], reverse=True)
         ft_tried = ft_read = 0
         if scored and scored[0]["sim"] < 0.85:               # an almost word-for-word abstract match needs no more checking
-            ft_tried, ft_read = _full_text_pass(scored, quote, keywords)
+            ft_tried, ft_read = _full_text_pass(scored, quote, keywords, budget=min(8.0, 22.0 - (time.monotonic() - t0)))
             scored.sort(key=lambda r: r["score"], reverse=True)
 
         top_score = scored[0]["score"] if scored else 0
