@@ -12,7 +12,7 @@ from flask import Blueprint, render_template, request, jsonify
 from core import login_required, _safe_terms
 import topicfinder
 from engine import (read_filters, search_papers, apply_filters_and_sort, term_in, relevance,
-                    sort_date, SOURCE_LABELS)
+                    sort_date, SOURCE_LABELS, search_sources, merge_dedupe)
 
 tools_bp = Blueprint("tools", __name__)
 
@@ -95,31 +95,46 @@ def _kw_present(sent, kw):
 # ── Scoring rules ────────────────────────────────────────────────────
 # Each rule is (weight, regex). <K> is the topic, <K2> the second term. "pos" rules say the sentence really
 # answers THIS kind of question (direction matters). "neg" rules catch look-alikes that answer something else.
+# "boost" rules only add points when a "pos" rule already matched (generic cue words are never enough alone).
 _HEAD = r"^\W*(?:(?:the|a|an)\s+)?<K>(?:\s*\([^)]{1,30}\))?\s*,?\s+"
+# the topic must be the subject of the sentence (at most 2 modifier words before it)
+_SUBJ = r"^\W*(?:(?:the|a|an)\s+)?(?:[\w\-]+\s+){0,2}?<K>(?:\s+(?:use|usage|exposure|consumption|intake|deficiency|loss))?(?:\s*\([^)]{1,30}\))?\s*,?\s+"
 _DEF_POS = [
     (7, _HEAD + r"(?:is|are)\s+(?:a|an|the|any|one|those|defined|known|considered|characteri[sz]ed|referred|said|"
                 r"often|typically|generally|commonly|usually|simply|essentially|basically)\b"),
     (6, _HEAD + r"(?:refers?\s+to|means?|denotes?|describes?)\b"),
     (5, r"<K>.{0,30}?\b(?:is|are)\s+(?:defined|known|described|considered|characteri[sz]ed)\s+as\b"),
     (5, r"<K>.{0,30}?\b(?:can\s+be\s+defined\s+as|is\s+defined\s+by)\b"),
-    # "Antibiotics are drugs that ..." - a plain noun after is/are (not an adverb, -ing/-ed form or a word already covered above)
+    # "Antibiotics are drugs that ..." - a noun phrase that is immediately explained (that / which / of / used ...)
     (5, _HEAD + r"(?:is|are)\s+(?!(?:a|an|the|any|one|those|defined|known|considered|referred|said|not|also|still|currently|"
-                r"increasingly|likely|unlikely|expected|projected|predicted|being|been|\w+ly|\w+ing|\w+ed)\b)\w+"),
+                r"increasingly|likely|unlikely|expected|projected|predicted|being|been|\w+ly)\b)"
+                r"(?:[\w\-]+\s+){0,5}?(?:that|which|of|used|made|composed|consisting|containing|produced|derived|capable|"
+                r"responsible|involved|formed|found)\b"),
+]
+_DEF_BOOST = [
+    (1.5, r"\b(?:process|mechanism|phenomenon|movement|branch|type|form|class|group|ability|capacity)\s+(?:by\s+which|in\s+which|that|which|of|to)\b"),
 ]
 _DEF_NEG = [
     (6, r"<K>\s+(?:is|are)\s+(?:likely|expected|projected|predicted|unlikely|thought|believed|estimated|set|going|able|not|still|currently|increasingly)\b"),
     (4, r"\b(?:topic|buzzword|debate|discussion)\b"),
     (5, r"\b(?:is|are)\s+(?:an?\s+)?(?:\w+\s+)?(?:ongoing|growing|pressing|serious|major|significant|important)\s+(?:\w+\s+)?(?:topic|issue|challenge|concern|problem|threat|area|field)\b"),
+    (3, r"\b(?:universal|common|widespread|ubiquitous)\s+phenomenon\b|\bin\s+a\s+(?:broad|wide)\s+(?:variety|range)\b"),
+    # property lists: "X is a, it is b, it is c"
+    (6, r"\b(?:it|they)\s+(?:is|are)\b.*\b(?:it|they)\s+(?:is|are)\b"),
 ]
 _NOT_BE = r"\b(?!\s+(?:be|been)\b)"
 
+_OUT = (r"(?:causes?|leads?\s+to|results?\s+in|increases?|decreases?|reduces?|improves?|impairs?|affects?|impacts?|threatens?|"
+        r"exacerbates?|worsens?|enhances?|induces?|promotes?|inhibits?|damages?|harms?|lowers?|raises?|contributes?\s+to|"
+        r"(?:is|are)\s+associated\s+with)")
+
 _RULES = {
-    "what_is":  {"pos": _DEF_POS, "neg": _DEF_NEG},
-    "define":   {"pos": _DEF_POS, "neg": _DEF_NEG},
+    "what_is":  {"pos": _DEF_POS, "neg": _DEF_NEG, "boost": _DEF_BOOST},
+    "define":   {"pos": _DEF_POS, "neg": _DEF_NEG, "boost": _DEF_BOOST},
     "what_are": {"pos": _DEF_POS + [
                     (4, r"<K>\s+(?:include|includes|comprise|comprises|consist\s+of|encompass)\b"),
                     (3, r"\b(?:types?|kinds?|classes|categories|examples)\s+of\s+<K>")],
-                 "neg": _DEF_NEG},
+                 "neg": _DEF_NEG, "boost": _DEF_BOOST},
     "causes": {
         "pos": [
             # "K is mainly caused by X" - the sentence must name the cause (something after "by")
@@ -129,7 +144,7 @@ _RULES = {
             (6, r"\b(?:cause|causes|driver|drivers|reason|reasons|source|sources|contributor|contributors|factor|factors)\s+"
                 r"(?:of|for|behind)\s+(?:\w+\s+){0,2}?<K>\s+(?:is|are|was|were|include|includes|being|lies|can\s+be|may\s+be)\s+\w+"),
             (5, r"<K>.{0,60}?\b(?:results?\s+from|stems?\s+from|arises?\s+from|originates?\s+from|due\s+to|because\s+of|"
-                r"owing\s+to|attributable\s+to)\s+\w+"),
+                r"owing\s+to|attributable\s+to|emerges?\s+(?:from|due\s+to))\s+\w+"),
             # "X causes K"
             (6, r"\b\w+(?:\s+\w+){0,5}?\s+(?:causes?(?!\s+of\b)|drives?|triggers?|fuels?|contributes?\s+to|leads?\s+to|"
                 r"is\s+responsible\s+for|are\s+responsible\s+for|accounts?\s+for)\s+(?:\w+\s+){0,3}?<K>"),
@@ -143,14 +158,18 @@ _RULES = {
     },
     "effect": {
         "pos": [
-            (5, r"\b(?:effects?|impacts?|consequences?|implications?)\s+(?:of|from)\s+(?:\w+\s+){0,2}?<K>\s+(?:\w+ly\s+)?"
-                r"(?:is|are|was|were|include|includes|can|may|will|has|have|on|threaten\w*|affect\w*|reduce\w*|increase\w*|lead\w*|result\w*)\b"),
-            (4, r"<K>.{0,60}?\b(?:causes?|leads?\s+to|results?\s+in|increases?|decreases?|reduces?|affects?|impacts?|threatens?|"
-                r"exacerbates?|is\s+associated\s+with|contributes?\s+to)\s+\w+"),
-            (4, r"\b(?:as\s+a\s+result\s+of|owing\s+to|consequence\s+of)\s+(?:\w+\s+){0,2}?<K>"),
+            # "<K> reduces / leads to / is associated with <something>" - the topic is the subject, an outcome verb follows
+            (6, _SUBJ + r"(?:\w+\s+){0,12}?\b" + _OUT + r"\s+\w+"),
+            # "the (negative) effects of <K> on <something>" / "the effects of <K> include ..."
+            (5, r"\b(?:effects?|impacts?|consequences?)\s+of\s+(?:\w+\s+){0,2}?<K>\s+on\s+\w+"),
+            (5, r"\b(?:effects?|consequences?)\s+of\s+(?:\w+\s+){0,2}?<K>\s+(?:include|includes)\b"),
+            (4, r"\b(?:as\s+a\s+result\s+of|consequence\s+of)\s+(?:\w+\s+){0,2}?<K>"),
         ],
         "neg": [
             (3, r"<K>.{0,40}?\b(?:is|are)\s+(?:mainly\s+|primarily\s+)?caused\s+by\b"),
+            # "has become a critical area of research" - says the topic is studied, not what it does
+            (5, r"\barea\s+of\s+(?:research|study|interest|concern)\b|\b(?:has|have)\s+(?:become|surged|emerged|gained|attracted|received)\b"
+                r"|\b(?:has|have)\s+been\s+(?:\w+\s+)?(?:studied|investigated|examined|debated|explored)\b"),
         ],
     },
     "how_affect": {
@@ -163,33 +182,53 @@ _RULES = {
         "neg": [],
     },
     "how_does": {
+        # the topic must be the subject AND do/perform something; generic words like "process" only add to a real match
         "pos": [
-            (3, r"<K>.{0,60}?\b(?:works?|occurs?|operates?|functions?|proceeds?|happens?|takes?\s+place)\b"),
-            (3, r"\b(?:mechanisms?|process|pathways?|steps?|stages?)\b"),
-            (2, r"\b(?:converts?|produces?|transforms?|binds?|synthesi[sz]es?|uses?)\b"),
-            (2, r"\b(?:by|through|via)\s+(?:\w+\s+){0,2}\w+ing\b"),
+            (5, _SUBJ + r"(?:\w+\s+){0,3}?\b(?:works?|functions?|operates?|occurs?|proceeds?|happens?|takes?\s+place|detects?|"
+                r"recogni[sz]es?|responds?|converts?|transforms?|produces?|synthesi[sz]es?|binds?|uses?|captures?|activates?|"
+                r"cuts?|repairs?|fights?|identifies?|destroys?|protects?)\b"),
+            (5, r"\b(?:mechanisms?|process(?:es)?|pathways?)\s+(?:by\s+which|through\s+which|in\s+which|of)\s+(?:\w+\s+){0,2}?<K>"),
+            (5, _SUBJ + r"(?:\w+\s+){0,6}?\b(?:is|are)\s+(?:a|an|the)\s+(?:\w+\s+){0,2}?(?:mechanism|process|pathway)\b"),
+        ],
+        "boost": [
+            (1.5, r"\b(?:by|through|via)\s+(?:\w+\s+){0,2}\w+ing\b"),
+            (1.5, r"\b(?:mechanisms?|steps?|stages?|pathways?)\b"),
         ],
         "neg": [],
     },
     "why_is": {
+        # needs the topic itself to be called important / essential, or its benefits / importance / role to be named
         "pos": [
-            (3, r"\bbecause\b|\bdue\s+to\b|\bso\s+that\b|\bsince\s+(?!\d{4}\b|then\b|the\s+\d)"),
-            (3, r"\bplays?\s+(?:a\s+)?(?:key|crucial|vital|important|central|critical)\s+role\b|\b(?:essential|crucial|vital|critical|indispensable|necessary)\b"),
-            (2, r"\bimportan(?:t|ce)\b|\bbenefits?\b|\bsupports?\b"),
+            (5, _SUBJ + r"(?:\w+\s+){0,3}?\b(?:is|are|plays?|provides?)\s+(?:\w+\s+){0,2}?(?:essential|crucial|vital|critical|important|"
+                r"necessary|indispensable|key|central|fundamental)\b"),
+            (5, r"\b(?:importance|benefits?|role|significance)\s+of\s+(?:\w+\s+){0,2}?<K>\b"),
+        ],
+        "boost": [
+            (2, r"\bbecause\b|\bdue\s+to\b|\bso\s+that\b|\bsince\s+(?!\d{4}\b|then\b|the\s+\d)"),
+            (1, r"\bprotects?\b|\bsupports?\b|\bprevents?\b|\bregulates?\b|\breduces?\b"),
         ],
         "neg": [],
     },
     "difference": {
-        # a contrast word is REQUIRED (weight 5) - two terms merely appearing together is not a difference
+        # the two terms must be on opposite sides of a real contrast word, in either order
         "pos": [
-            (5, r"\b(?:differs?|differences?|differing|differed|different|distinct|distinction|distinguish\w*|contrasts?|contrasted|"
-                r"compared?\s+(?:to|with)|unlike|whereas|in\s+contrast|rather\s+than)\b"),
-            (2, r"<K>.{0,80}?<K2>|<K2>.{0,80}?<K>"),
+            (7, r"<K>.{0,80}?\b(?:whereas|while|unlike|versus|vs\.?|compared\s+(?:to|with)|differs?\s+from|differ\s+in|in\s+contrast\s+(?:to|with)|"
+                r"rather\s+than)\b.{0,80}?<K2>"),
+            (7, r"<K2>.{0,80}?\b(?:whereas|while|unlike|versus|vs\.?|compared\s+(?:to|with)|differs?\s+from|differ\s+in|in\s+contrast\s+(?:to|with)|"
+                r"rather\s+than)\b.{0,80}?<K>"),
+            (7, r"\bunlike\b.{0,40}?<K>.{0,70}?<K2>|\bunlike\b.{0,40}?<K2>.{0,70}?<K>"),
+            (7, r"\b(?:differences?|distinctions?|contrasts?)\s+(?:between|among)\s+(?:\w+\s+){0,3}?(?:<K>.{0,25}?<K2>|<K2>.{0,25}?<K>)"),
         ],
         "neg": [],
-        "need": 5,
+        "need": 7,
     },
 }
+
+# a sentence that says the answer is NOT known is never an answer
+_GAP = _re.compile(r"\b(?:has|have)\s+not\s+been\s+(?:documented|studied|established|determined|investigated|clarified|elucidated)"
+                   r"|\bremains?\s+(?:elusive|unclear|unknown|poorly\s+understood|controversial|largely\s+unknown|to\s+be\s+(?:determined|elucidated|established))"
+                   r"|\blittle\s+is\s+known|\b(?:not|poorly)\s+(?:well\s+|fully\s+|yet\s+)?(?:understood|known|established|clear)\b"
+                   r"|\bis\s+not\s+straightforward|\bunclear\b|\bunknown\b|\bremains?\s+a\s+(?:challenge|mystery|puzzle)", _re.I)
 
 # words shown highlighted on the page so the reader sees WHY a sentence was picked
 _CUES = {
@@ -209,7 +248,18 @@ _CUES = {
 # Rejected outright: the sentence is about the paper itself, or only makes sense with the sentence before it.
 _HARD = _re.compile(r"\b(?:we|our|ours)\b|\bhere,?\s+we\b"
                     r"|\b(?:this|the\s+present|the\s+current|the\s+proposed)\s+(?:study|paper|article|review|work|chapter|thesis|research|survey|approach|method)\b"
-                    r"|\b(?:framework|questionnaire|simulations?|methodology)\b", _re.I)
+                    r"|\b(?:framework|questionnaire|simulations?|methodology)\b"
+                    # methods / purpose-of-the-paper sentences
+                    r"|purpose\s+of\s+this|position\s+stand|systematic\s+search|\bt[\s-]?tests?\b|chi[\s-]?square|data\s+analysis"
+                    r"|\b(?:was|were)\s+(?:conducted|performed|carried\s+out|searched|recruited|assigned|randomi[sz]ed|collected|included|excluded|measured|analy[sz]ed)\b"
+                    r"|\bwere\s+compared\s+with\s+(?:matched|control|healthy|placebo)"
+                    r"|\b(?:participants?|databases?|cohorts?)\b"
+                    r"|\b(?:is|are)\s+(?:described|discussed|presented|reviewed|outlined|examined|explored|summari[sz]ed|addressed)\b(?!\s+as\b)", _re.I)
+_LEAD = _re.compile(r"^\W*(?:finally|in\s+addition|additionally|moreover|furthermore|also|specifically|in\s+particular|importantly|notably)\s*,?\s+", _re.I)
+_LABEL = _re.compile(r"^\W*(BACKGROUND|CONCLUSIONS?|RESULTS?|FINDINGS|INTRODUCTION|CONTEXT|DISCUSSION|SIGNIFICANCE|IMPORTANCE|SUMMARY|"
+                     r"METHODS?|METHODOLOGY|OBJECTIVES?|PURPOSE|AIMS?|DESIGN|SETTING|PARTICIPANTS|MATERIALS(?:\s+AND\s+METHODS)?)\s*:\s*", _re.I)
+_BAD_LABELS = {"METHOD", "METHODS", "METHODOLOGY", "OBJECTIVE", "OBJECTIVES", "PURPOSE", "AIM", "AIMS", "DESIGN", "SETTING",
+               "PARTICIPANTS", "MATERIALS", "MATERIALS AND METHODS"}
 _ANAPH = _re.compile(r"^\W*(?:these|this|those|such|it|they|their|its|however|moreover|furthermore|therefore|thus|also|"
                      r"additionally|consequently|hence|nevertheless|meanwhile|overall|but|and|yet)\b"
                      r"|\bthese\b|\bsuch\s+(?!as\b)\w+", _re.I)
@@ -225,13 +275,34 @@ def _clean_abstract(text):
     return _re.sub(r"\s+", " ", t).strip()
 
 def _split_sentences(text):
-    """Split an abstract into sentences without breaking on 'et al.', 'e.g.', 'U.S.' and the like."""
+    """Split an abstract into sentences without breaking on 'et al.', 'e.g.', 'U.S.' and the like.
+    Section labels (BACKGROUND:, RESULTS: ...) are removed, and everything under METHODS / OBJECTIVE / AIM labels is skipped."""
     t = _ABBR.sub(lambda m: m.group(0)[:-1] + "\u2024", _clean_abstract(text))
     parts = _re.split(r"(?<=[.!?])\s+(?=[A-Z0-9\"'(\[])", t)
-    return [p.replace("\u2024", ".").strip() for p in parts if p.strip()]
+    out, skip = [], False
+    for p in parts:
+        p = p.replace("\u2024", ".").strip()
+        if not p:
+            continue
+        m = _LABEL.match(p)
+        if m:
+            skip = _re.sub(r"\s+", " ", m.group(1).upper()) in _BAD_LABELS
+            p = p[m.end():].strip()
+        if skip or not p:
+            continue
+        out.append(p)
+    return out
 
 def _score_sentence(sent, kw, ttype, idx, kw2=None):
     """-> (score, number of direction-aware patterns that matched). A rejected sentence scores -99."""
+    lead = bool(_LEAD.match(sent))
+    if lead:
+        sent = _LEAD.sub("", sent, count=1)          # "Finally, X is ..." -> "X is ..." (a small penalty below)
+    m = _LABEL.match(sent)
+    if m:
+        if _re.sub(r"\s+", " ", m.group(1).upper()) in _BAD_LABELS:
+            return -99, 0
+        sent = sent[m.end():]
     if _HARD.search(sent) or _ANAPH.search(sent):
         return -99, 0
     rules = _RULES.get(ttype) or _RULES["what_is"]
@@ -254,11 +325,17 @@ def _score_sentence(sent, kw, ttype, idx, kw2=None):
         p = build(pat)
         if p and _re.search(p, sent, _re.I):
             score -= w
+    if hits:
+        score += min(3, sum(w for w, pat in rules.get("boost", []) if (build(pat) and _re.search(build(pat), sent, _re.I))))
+    if _GAP.search(sent):
+        score -= 6
+    if lead:
+        score -= 1
     if _META.search(sent):
         score -= 3
     n = len(sent.split())
-    if n > 45: score -= 2
-    if n < 10: score -= 2
+    if n > 55: score -= 2
+    if n < 7: score -= 2
     if idx == 0:
         score += 1
     return score, hits
@@ -341,7 +418,7 @@ def _collect(papers, kw, ttype, kw2, cands, seen, min_score):
 
 def _rank(c):
     """Sentence quality first; citations add a gentle (log-scaled) boost instead of only breaking ties."""
-    return c["score"] + c.get("tboost", 0) + 1.2 * math.log10(1 + (c["paper"].get("citations") or 0))
+    return c["score"] + 0.5 * c.get("tboost", 0) + 1.2 * math.log10(1 + (c["paper"].get("citations") or 0))
 
 
 def _paper_key(p):
@@ -620,12 +697,24 @@ def _clean_text(text):
     text = _re.sub(r'[^\w\s]', ' ', text)
     return _re.sub(r'\s+', ' ', text)
 
+_GENERIC = {'different','caused','informs','including','however','study','studies','results','result','using','based',
+            'related','associated','among','several','within','across','through','analysis','research','effects','effect',
+            'paper','data','high','level','levels','rate','rates','increase','increased','number','important','significant',
+            'review','shown','showed','found','find','finds','suggest','suggests','suggested','provide','provides','number',
+            'between','during','after','before','whether','therefore','thus','since','through','following','known','often'}
+
 def _extract_keywords(text):
-    out = []
+    """Up to 8 distinctive words of the quote. Generic academic words ('different', 'caused'...) are dropped first;
+    the longest (rarest) words are kept, then put back in quote order."""
+    words = []
     for w in _re.findall(r'\b\w{4,}\b', (text or "").lower()):
-        if w not in _STOPWORDS and w not in out:
-            out.append(w)
-    return out[:8]
+        if w not in _STOPWORDS and w not in words:
+            words.append(w)
+    good = [w for w in words if w not in _GENERIC]
+    if len(good) < 3:
+        good = words
+    keep = set(sorted(good, key=len, reverse=True)[:8])
+    return [w for w in good if w in keep]
 
 def _best_match(abstract, quote):
     """Best similarity between the quote and any 1–2 sentence window of the abstract."""
@@ -641,19 +730,59 @@ def _best_match(abstract, quote):
             best, best_s = r, w
     return best, best_s
 
-def _score_paper(paper, quote, keywords):
-    """-> (score 0..1, best sentence, wording similarity, share of the quote's keywords found)."""
-    abstract = paper.get("abstract") or ""
-    if not abstract:
-        return 0.0, "", 0.0, 0.0
-    sim, sentence = _best_match(abstract, quote)
-    cov = sum(1 for k in keywords if term_in(abstract, k)) / max(len(keywords), 1)
-    return sim * 0.5 + cov * 0.5, sentence, sim, cov
+def _pkey(p):
+    doi = (p.get("doi") or "").strip().lower().replace("https://doi.org/", "")
+    return doi or (p.get("title") or "").strip().lower()[:60]
 
-def _confidence(score, sim, cov):
-    """A match only counts as 'found' when the words really overlap, not just by chance."""
-    if score >= 0.7 and sim >= 0.6:    return "high", True
-    if score >= 0.45 and cov >= 0.5:   return "medium", True
+def _trace_pool(quote, keywords, f):
+    """Find candidate papers with THREE searches, not one: the distinctive words, the opening words of the quote
+    (as a phrase) and the whole quote. Each source ranks its own results by relevance; a paper that comes out near the
+    top of several searches is rewarded (rank bonus). Returns (papers, {paper key: rank bonus 0..1})."""
+    words = quote.split()
+    queries = []
+    for q in (" ".join(keywords[:6]), " ".join(words[:14]), " ".join(words)[:220]):
+        q = q.strip()
+        if q and q not in queries:
+            queries.append(q)
+    pool_f = dict(f, sort="match")                       # relevance from each source, not "most cited first"
+    def run(q):
+        try:
+            return search_sources(q, 1, pool_f, per_source=15, loose=True)[0]
+        except Exception:
+            return []
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        batches = list(ex.map(run, queries))
+    rank, allraw = {}, []
+    for raw in batches:
+        pos = {}
+        for p in raw:
+            k, src = _pkey(p), (p.get("data_source") or "")
+            i = pos.get(src, 0); pos[src] = i + 1
+            rank[k] = rank.get(k, 0.0) + 1.0 / (1 + i)   # 1st result of a source = 1, 2nd = 0.5, 3rd = 0.33 ...
+        allraw.extend(raw)
+    papers = apply_filters_and_sort(merge_dedupe(allraw), pool_f, "")
+    return papers, {k: min(1.0, v / 1.5) for k, v in rank.items()}
+
+def _title_overlap(title, quote):
+    tw = [w for w in _re.findall(r"\b\w{4,}\b", (title or "").lower()) if w not in _STOPWORDS]
+    return sum(1 for w in tw if term_in(quote, w)) / len(tw) if tw else 0.0
+
+def _score_paper(paper, quote, keywords, rank_bonus=0.0):
+    """-> (score 0..1, best sentence, wording similarity, share of keywords found in title/abstract, rank bonus)."""
+    title, abstract = paper.get("title") or "", paper.get("abstract") or ""
+    sim, sentence = _best_match(abstract, quote) if abstract else (0.0, "")
+    text = title + " " + abstract
+    cov = sum(1 for k in keywords if term_in(text, k)) / max(len(keywords), 1)
+    tov = _title_overlap(title, quote)
+    score = 0.30 * sim + 0.30 * cov + 0.10 * tov + 0.30 * rank_bonus
+    return score, sentence, sim, cov, rank_bonus
+
+def _confidence(score, sim, cov, rb=0.0):
+    """A match only counts as 'found' when the words really overlap (or several searches agree), not just by chance."""
+    if (score >= 0.7 and sim >= 0.6) or (score >= 0.65 and rb >= 0.9 and cov >= 0.6):
+        return "high", True
+    if score >= 0.45 and (cov >= 0.5 or rb >= 0.7):
+        return "medium", True
     return ("low", False)
 
 @tools_bp.route("/api/source-tracer", methods=["POST"])
@@ -673,22 +802,21 @@ def source_tracer():
         f = read_filters(data.get)
         if data.get("sort") not in ("match", "cited", "recent"):
             f["sort"] = "match"
-        pool_f = dict(f, sort="cited")
-        papers, _ = search_papers(" ".join(keywords[:6]), 1, pool_f, per_source=20, loose=True)
+        papers, ranks = _trace_pool(quote, keywords, f)
 
         scored = []
         for p in papers:
-            score, sentence, sim, cov = _score_paper(p, quote, keywords)
+            score, sentence, sim, cov, rb = _score_paper(p, quote, keywords, ranks.get(_pkey(p), 0.0))
             row = _pick(p, abstract_chars=300)
             row["score"] = round(score, 4)
-            row["sim"], row["cov"] = round(sim, 3), round(cov, 3)
-            row["snippet"] = sentence if score >= 0.3 and sentence else row.get("abstract", "")
+            row["sim"], row["cov"], row["rb"] = round(sim, 3), round(cov, 3), round(rb, 3)
+            row["snippet"] = sentence if sim >= 0.25 and sentence else row.get("abstract", "")
             scored.append(row)
         scored.sort(key=lambda r: r["score"], reverse=True)
 
         top_score = scored[0]["score"] if scored else 0
         if scored:
-            confidence, found = _confidence(top_score, scored[0]["sim"], scored[0]["cov"])
+            confidence, found = _confidence(top_score, scored[0]["sim"], scored[0]["cov"], scored[0]["rb"])
         else:
             confidence, found = "none", False
 
