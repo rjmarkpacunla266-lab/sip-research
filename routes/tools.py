@@ -735,23 +735,27 @@ def _pkey(p):
     return doi or (p.get("title") or "").strip().lower()[:60]
 
 def _trace_pool(quote, keywords, f):
-    """Find candidate papers with THREE searches, not one: the distinctive words, the opening words of the quote
-    (as a phrase) and the whole quote. Each source ranks its own results by relevance; a paper that comes out near the
-    top of several searches is rewarded (rank bonus). Returns (papers, {paper key: rank bonus 0..1})."""
+    """Find candidate papers with three searches. The first two are run EXACTLY like Search Papers runs a search
+    (same function, default settings: the whole quote, then its opening words), because that is what finds the right
+    paper in practice. The third (distinctive words, loose) is a safety net. Each source ranks its own results; a
+    paper that comes out near the top of several searches gets a rank bonus.
+    Returns (papers, {paper key: rank bonus 0..1})."""
     words = quote.split()
-    queries = []
-    for q in (" ".join(keywords[:6]), " ".join(words[:14]), " ".join(words)[:220]):
+    jobs = []                                              # (query, loose, per_source or None for the default)
+    for q, loose, per in ((" ".join(words)[:300], False, None), (" ".join(words[:14]), False, None),
+                          (" ".join(keywords[:6]), True, 15)):
         q = q.strip()
-        if q and q not in queries:
-            queries.append(q)
-    pool_f = dict(f, sort="match")                       # relevance from each source, not "most cited first"
-    def run(q):
+        if q and all(q != j[0] for j in jobs):
+            jobs.append((q, loose, per))
+    def run(job):
+        q, loose, per = job
         try:
-            return search_sources(q, 1, pool_f, per_source=15, loose=True)[0]
+            kw = {"loose": True, "per_source": per} if loose else ({"per_source": per} if per else {})
+            return search_sources(q, 1, f, **kw)[0]       # f as given: same filters and sort setting as Search Papers
         except Exception:
             return []
     with ThreadPoolExecutor(max_workers=3) as ex:
-        batches = list(ex.map(run, queries))
+        batches = list(ex.map(run, jobs))
     rank, allraw = {}, []
     for raw in batches:
         pos = {}
@@ -760,7 +764,7 @@ def _trace_pool(quote, keywords, f):
             i = pos.get(src, 0); pos[src] = i + 1
             rank[k] = rank.get(k, 0.0) + 1.0 / (1 + i)   # 1st result of a source = 1, 2nd = 0.5, 3rd = 0.33 ...
         allraw.extend(raw)
-    papers = apply_filters_and_sort(merge_dedupe(allraw), pool_f, "")
+    papers = apply_filters_and_sort(merge_dedupe(allraw), dict(f, sort="cited"), "")
     return papers, {k: min(1.0, v / 1.5) for k, v in rank.items()}
 
 def _title_overlap(title, quote):
