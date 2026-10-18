@@ -1186,7 +1186,7 @@ def topics():
         cov = topicfinder.coverage(papers, extra_terms)
         papers = papers[:60]
 
-        ideas = topicfinder.extract_ideas(papers, subj_terms, prefer_specific=bool(broad))
+        ideas = topicfinder.extract_ideas(papers, subj_terms + extra_terms, prefer_specific=bool(broad))   # words the student typed are not suggested back
         forms = [i["topic"] for i in ideas]
         cands = []
         for p in papers:

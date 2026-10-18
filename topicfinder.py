@@ -42,7 +42,9 @@ including include includes included field fields system systems advance advances
 dynamic dynamics mechanism mechanisms strategy strategies opportunity opportunities trend trends progress insight insights understanding
 perspective topic topics issue issues aspect aspects feature features process processes variety range approach tool tools technique techniques
 knowledge science sciences technology technologies theory theories concept concepts principle principles basic fundamental modern traditional
-increasing growing rapid rapidly significantly relevant related various wide broad complex multiple diverse comprehensive critical essential""".split())
+increasing growing rapid rapidly significantly relevant related various wide broad complex multiple diverse comprehensive critical essential
+alternative alternatives sustainable sustainability property properties conventional improved improvement enhanced efficient efficiency effective
+potential promising novel advanced innovative industrial commercial practical future present current recent""".split())
 
 # ───────────────────────── small text helpers ─────────────────────────
 def _norm(text):
@@ -228,8 +230,15 @@ _GAP_NEG = re.compile(r"\bno\s+(?:further|more|additional)\b|\bnot\s+(?:be\s+)?(
 _LEAD = re.compile(r"^\W*(?:however|moreover|furthermore|therefore|thus|hence|finally|overall|in\s+addition|nevertheless|nonetheless|"
                    r"in\s+conclusion|in\s+summary|additionally|also|but|and|yet),?\s+", re.I)
 
+# a sentence that describes what THIS paper does ("The study includes a bibliometric analysis to ... identify knowledge gaps")
+# is not a gap the authors found, even though it contains gap words
+_SELF = re.compile(r"\b(?:this|the)\s+(?:present\s+|current\s+)?(?:study|paper|review|article|work|research|chapter)\s+(?:\w+ly\s+)?"
+                   r"(?:aims?|includes?|examines?|provides?|presents?|reviews?|explores?|investigates?|identifies|highlights?|discusses|"
+                   r"focuses|analy[sz]es?|seeks?|offers?|summari[sz]es?|addresses|covers?|uses?|employs?|conducts?|outlines?)\b"
+                   r"|\b(?:to|and)\s+(?:identify|highlight|reveal|uncover)\s+(?:the\s+)?(?:current\s+)?(?:knowledge|research)\s+gaps\b", re.I)
+
 def _gap_score(sent):
-    if _GAP_NEG.search(sent):
+    if _GAP_NEG.search(sent) or _SELF.search(sent):
         return 0
     return sum(w for w, rx in _GAP_RE if rx.search(sent))
 

@@ -400,8 +400,32 @@ function searchLink(tags){
   if (o.oa) p.set('oa', '1');
   if (o.sources.length) p.set('src', o.sources.join(','));
   if (o.sort === 'recent') p.set('sort', 'recent');
-  if (o.field !== 'both') p.set('field', o.field);
-  return '/search?' + p.toString();
+  return '/search?' + p.toString();            // 'Word in' is not carried over: title-only searches find almost nothing
+}
+/* what each filter costs: the buttons remove the most restrictive active filters first */
+function fRelaxList(){
+  const o = fGet(), out = [];
+  if (o.field !== 'both') out.push(['field', o.field === 'title' ? 'Search title or abstract (not title only)' : 'Search title or abstract (not abstract only)']);
+  if (o.ptype !== 'all')  out.push(['type', 'Allow all paper types (not only ' + F_TYPE_NAMES[o.ptype] + ')']);
+  if (o.oa)               out.push(['oa', 'Include papers that are not Open Access']);
+  if (o.year_from || o.year_to) out.push(['years', 'Any publication year']);
+  if (o.sources.length)   out.push(['src', 'Use all 5 sources']);
+  return out;
+}
+function fRelax(key){
+  if (key === 'field' && fEl('fField')) fEl('fField').value = 'both';
+  if (key === 'type')  fEl('fType').value = 'all';
+  if (key === 'oa')    fSetOA(false);
+  if (key === 'years') { fEl('fYf').value = ''; fEl('fYt').value = ''; }
+  if (key === 'src')   document.querySelectorAll('.fx-chip[data-src]').forEach(c => c.classList.add('active'));
+  presetClear();
+  fChanged();
+}
+function relaxHtml(what, few){
+  const list = fRelaxList();
+  const btns = list.map(([k, label]) => `<button class="fx-btn" style="margin:4px 4px 0 0" onclick="fRelax('${k}')">${esc(label)}</button>`).join('');
+  return `<div class="fx-empty"><div class="big">📭</div><p>${what}</p>` +
+    (list.length ? `<p style="margin-top:8px">${few ? 'Your filters are narrow.' : 'Your filters may be hiding results.'} Try relaxing one:</p><div style="margin-top:6px">${btns}</div>` : '') + `</div>`;
 }
 function fNoResultsHtml(what){
   const t = fSummaryText();
@@ -509,7 +533,7 @@ function filterLocally(){
   _topicPapers = _topicAll.filter(p => fitsFilters(p, o));
   _topicShown = 10; _topicLocal = true;
   if (!_topicPapers.length) {
-    document.getElementById('results').innerHTML = fNoResultsHtml('None of the loaded papers fit these filters.');
+    document.getElementById('results').innerHTML = relaxHtml('None of the loaded papers fit these filters.', false);
     return;
   }
   renderTopics();
@@ -558,7 +582,7 @@ async function findTopics() {
       return;
     }
     if (!data.results || !data.results.length) {
-      results.innerHTML = fNoResultsHtml(`No research found for <strong>${esc(field)}</strong>. Try a broader field or different keywords.`);
+      results.innerHTML = relaxHtml(`No research found for <strong>${esc(field)}</strong> with these words and filters.`, false);
       return;
     }
     _topicPapers = data.results; _topicAll = data.results; _topicShown = 10; _topicIdeas = data.ideas || [];
@@ -581,7 +605,7 @@ function matchRow(p){
 function coverageHtml(data){
   const c = data.coverage; if (!c) return data.message ? `<div class="cov warn">${esc(data.message)}</div>` : '';
   const parts = c.terms.map(t => `<b>${t.papers}</b> mention “${esc(t.term)}”`).join(' · ');
-  return `<div class="cov${c.all === 0 ? ' warn' : ''}">Of <b>${c.total}</b> papers analysed: ${parts}${c.terms.length > 1 ? ` · <b>${c.all}</b> mention all` : ''}.` +
+  return `<div class="cov${c.all === 0 ? ' warn' : ''}">Of the <b>${c.total}</b> papers found: ${parts}${c.terms.length > 1 ? ` · <b>${c.all}</b> mention all` : ''}.` +
     (data.message ? `<br>${esc(data.message)}` : '') + '</div>';
 }
 
@@ -644,6 +668,7 @@ function renderTopics() {
       ${usedLine}
       ${_topicLocal ? `<div class="local-note"><span>Showing <b>${_topicPapers.length}</b> of the ${_topicAll.length} loaded papers that fit your filters. Sub-topics and gaps below were built from all ${_topicAll.length}.</span><button class="btn xs" onclick="findTopics()">↻ Update them</button></div>` : ''}
       ${data.broad ? `<div class="broad-box"><b>“${esc(data.broad.term)}” is a very broad subject</b>, so these results are scattered and the numbers below say little. Pick something specific and search again:<div class="chip-group">${broadChips(data.broad.suggestions)}</div></div>` : ''}
+      ${(_topicPapers.length < 4 && fRelaxList().length) ? `<div class="broad-box">Only <b>${_topicPapers.length}</b> paper${_topicPapers.length === 1 ? '' : 's'} found.<div class="chip-group">${fRelaxList().map(([k, l]) => `<span class="chip" onclick="fRelax('${k}')">${esc(l)}</span>`).join('')}</div></div>` : ''}
       ${coverageHtml(data)}
       ${ideasHtml}
       ${gapsHtml}
