@@ -6,7 +6,7 @@ import difflib
 import math
 import time
 import traceback
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, wait
 import requests
 import xml.etree.ElementTree as ET
 from flask import Blueprint, render_template, request, jsonify
@@ -735,34 +735,46 @@ def _pkey(p):
     doi = (p.get("doi") or "").strip().lower().replace("https://doi.org/", "")
     return doi or (p.get("title") or "").strip().lower()[:60]
 
+SEARCH_DEADLINE = 12.0        # seconds: the tracer uses whatever the sources have answered by then (a slow source cannot stall it)
+
+def _content_words(quote, limit=28):
+    out = []
+    for w in _clean_text(quote).split():
+        if len(w) >= 3 and w not in _STOPWORDS and w not in out:
+            out.append(w)
+    return out[:limit]
+
 def _trace_pool(quote, keywords, f):
-    """Find candidate papers. The searches are run EXACTLY like Search Papers runs a search (same function, default
-    settings): the whole quote, then its opening words. Each is also run with 'Open Access only' switched on, because
-    each source returns only its top few results, and without that filter the right (open-access) paper can be crowded
-    out by closed-access ones. A last search with the distinctive words (loose) is a safety net. Each source ranks its own
-    results; a paper near the top of several searches gets a rank bonus. Returns (papers, {paper key: rank bonus 0..1})."""
-    words = quote.split()
-    f_oa = dict(f, oa_only=True)
-    jobs = []                                              # (query, loose, per_source or None for the default, filters)
-    base = [(" ".join(words)[:300], False, None), (" ".join(words[:14]), False, None)]
-    for q, loose, per in base:
-        q = q.strip()
-        if q and all((q, fl) not in [(j[0], j[3]) for j in jobs] for fl in (f,)):
-            jobs.append((q, loose, per, f))
-            if not f["oa_only"]:
-                jobs.append((q, loose, per, f_oa))
+    """Find candidate papers with three searches run at the same time. ALL of them use the sources' RELEVANCE mode
+    ("loose": OpenAlex/Crossref/Europe PMC/PubMed/arXiv rank by how well the words match). Search Papers uses the strict
+    mode, which needs every word of the quote in one paper and falls back to 'most cited first'. That is right for a topic,
+    but for a long quote it returns famous papers instead of the paper that contains the sentence.
+       1. the quote's content words (filler words removed),
+       2. the same with 'Open Access only' switched on (open-access papers can be read in full text),
+       3. the 6 most distinctive words, as a safety net.
+    A paper near the top of several searches gets a rank bonus. Returns (papers, {paper key: rank bonus 0..1})."""
+    f = dict(f, sort="match")                              # the pool is always relevance-ordered; the page's sort is applied later
+    q1 = " ".join(_content_words(quote)) or " ".join(keywords)
+    jobs = [(q1, 30, f)]
+    if not f["oa_only"]:
+        jobs.append((q1, 30, dict(f, oa_only=True)))
     kq = " ".join(keywords[:6]).strip()
-    if kq:
-        jobs.append((kq, True, 15, f))
+    if kq and kq != q1:
+        jobs.append((kq, 20, f))
     def run(job):
-        q, loose, per, fl = job
-        try:
-            kw = {"loose": True, "per_source": per} if loose else ({"per_source": per} if per else {})
-            return search_sources(q, 1, fl, **kw)[0]
-        except Exception:
-            return []
-    with ThreadPoolExecutor(max_workers=len(jobs)) as ex:
-        batches = list(ex.map(run, jobs))
+        q, per, fl = job
+        return search_sources(q, 1, fl, per_source=per, loose=True)[0]
+    ex = ThreadPoolExecutor(max_workers=len(jobs))
+    futs = [ex.submit(run, j) for j in jobs]
+    done, _pending = wait(futs, timeout=SEARCH_DEADLINE)
+    ex.shutdown(wait=False, cancel_futures=True)           # do not wait for slow sources
+    batches = []
+    for fu in futs:
+        if fu in done:
+            try:
+                batches.append(fu.result())
+            except Exception:
+                traceback.print_exc()
     rank, allraw = {}, []
     for raw in batches:
         pos = {}
@@ -771,7 +783,7 @@ def _trace_pool(quote, keywords, f):
             i = pos.get(src, 0); pos[src] = i + 1
             rank[k] = rank.get(k, 0.0) + 1.0 / (1 + i)   # 1st result of a source = 1, 2nd = 0.5, 3rd = 0.33 ...
         allraw.extend(raw)
-    papers = apply_filters_and_sort(merge_dedupe(allraw), dict(f, sort="cited"), "")
+    papers = apply_filters_and_sort(merge_dedupe(allraw), dict(f, sort="cited"), " ".join(keywords))
     return papers, {k: min(1.0, v / 1.5) for k, v in rank.items()}
 
 def _title_overlap(title, quote):
@@ -924,8 +936,12 @@ def source_tracer():
             "searched": len(papers), "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
             "fulltext_tried": ft_tried, "fulltext_read": ft_read,
         })
-    except Exception:
-        return _fail("Source tracing")
+    except Exception as e:
+        traceback.print_exc()
+        # a normal answer (not a 500) so the page shows the reason instead of a blank "Something went wrong"
+        return jsonify({"quote": quote, "keywords": keywords, "found": False, "confidence": "none", "confidence_pct": 0,
+                        "results": [], "searched": 0, "sources_used": [],
+                        "message": "Source tracing hit an error: " + type(e).__name__ + ": " + str(e)[:200]})
 
 @tools_bp.route("/source-tracer")
 @login_required
