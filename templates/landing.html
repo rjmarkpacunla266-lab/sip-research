@@ -224,6 +224,17 @@ footer a:hover{color:var(--accent)}
   .section{padding:38px 18px}
   .btn.lg{padding:11px 20px;font-size:.93rem}
 }
+
+/* What's new strip */
+.news-wrap{max-width:940px;margin:16px auto 0;padding:0 18px}
+.news-strip{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:12px;border:1px solid rgba(157,110,245,.28);background:linear-gradient(90deg,rgba(157,110,245,.10),rgba(79,141,232,.06));color:var(--text);text-decoration:none;font-size:.85rem;transition:border-color .2s,background .2s}
+.news-strip:hover{border-color:var(--accent2);background:linear-gradient(90deg,rgba(157,110,245,.16),rgba(79,141,232,.10));text-decoration:none}
+.news-tag{flex:none;font-family:monospace;font-size:.66rem;letter-spacing:.06em;padding:2px 8px;border-radius:5px;background:var(--accent2);color:#fff}
+.news-text{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.news-text b{font-weight:600}
+.news-date{color:var(--muted);margin-left:6px;font-size:.76rem}
+.news-go{flex:none;color:var(--accent2);font-size:.8rem;white-space:nowrap}
+@media(max-width:600px){.news-wrap{padding:0 12px;margin-top:12px}.news-strip{padding:8px 11px;font-size:.8rem}.news-date{display:none}.news-go{font-size:.74rem}}
 </style>
 </head>
 <body>
@@ -237,6 +248,17 @@ footer a:hover{color:var(--accent)}
 </nav>
 
 <main>
+
+{% if latest %}
+<!-- What's new: the newest update; click to see them all -->
+<div class="news-wrap fadein">
+  <a class="news-strip" href="/news" aria-label="What's new on Sturch: see all updates">
+    <span class="news-tag">NEW</span>
+    <span class="news-text"><b>{{ latest.title }}</b><span class="news-date">{{ latest.date_text }}</span></span>
+    <span class="news-go">What's new →</span>
+  </a>
+</div>
+{% endif %}
 
 <!-- Banner -->
 <header class="banner-wrap fadein">
@@ -561,7 +583,7 @@ footer a:hover{color:var(--accent)}
 </main>
 
 <footer>
-  <nav aria-label="Footer" style="margin-bottom:9px"><a href="/signup">Sign up free</a> &nbsp;·&nbsp; <a href="/login">Log in</a> &nbsp;·&nbsp; <a href="/donate">Support Sturch</a><br><a href="#tools">Tools</a> &nbsp;·&nbsp; <a href="#faq">FAQ</a> &nbsp;·&nbsp; <a href="#disclaimer">Disclaimer</a></nav>
+  <nav aria-label="Footer" style="margin-bottom:9px"><a href="/signup">Sign up free</a> &nbsp;·&nbsp; <a href="/login">Log in</a> &nbsp;·&nbsp; <a href="/donate">Support Sturch</a><br><a href="/news">What's new</a> &nbsp;·&nbsp; <a href="#tools">Tools</a> &nbsp;·&nbsp; <a href="#faq">FAQ</a> &nbsp;·&nbsp; <a href="#disclaimer">Disclaimer</a></nav>
   <p>
     Sturch — Built by a student, for students and researchers everywhere. &nbsp;·&nbsp;
     Data from <a href="https://openalex.org" target="_blank">OpenAlex</a>,

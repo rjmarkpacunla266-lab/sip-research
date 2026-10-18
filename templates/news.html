@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>What's New — Updates | Sturch</title>
+  <meta name="description" content="What is new on Sturch: the latest changes to paper search, Answer Finder, Source Tracer, Topic Finder and accounts."/>
+  <meta name="author" content="Sturch"/>
+  <meta name="robots" content="index, follow"/>
+  <meta name="theme-color" content="#0b0d12"/>
+  <link rel="canonical" href="{{ site_url }}/news"/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:site_name" content="Sturch"/>
+  <meta property="og:title" content="What's New | Sturch"/>
+  <meta property="og:description" content="The latest changes to Sturch, the free academic paper search for students."/>
+  <meta property="og:url" content="{{ site_url }}/news"/>
+  <meta property="og:image" content="{{ site_url }}/static/og-image.png"/>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml"/>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
+  --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
+  --gold:#e8b84b;--green:#3ecf8e;--red:#f06a6a;--orange:#f0914b;
+  --text:#d8e0f8;--muted:#5a6385;
+  --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;--r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.7}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+nav{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(11,13,18,.93);backdrop-filter:blur(14px)}
+.logo{font-family:var(--serif);font-size:1.45rem}
+.logo span{color:var(--accent)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 17px;border-radius:10px;font-family:var(--sans);font-size:.87rem;font-weight:500;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .2s;white-space:nowrap}
+.btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent}
+main{max-width:760px;margin:0 auto;padding:36px 18px 70px}
+h1{font-family:var(--serif);font-size:1.9rem;line-height:1.3;margin-bottom:6px}
+.lead{color:var(--muted);font-size:.9rem;margin-bottom:30px}
+.entry{position:relative;background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+.entry.latest{border-color:rgba(157,110,245,.35)}
+.meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;font-size:.74rem;color:var(--muted)}
+.tag{font-family:var(--mono);font-size:.66rem;padding:2px 8px;border-radius:5px;background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.22);color:var(--accent)}
+.new{font-family:var(--mono);font-size:.66rem;padding:2px 8px;border-radius:5px;background:var(--accent2);color:#fff}
+.entry h2{font-family:var(--serif);font-size:1.15rem;line-height:1.4;margin-bottom:8px}
+.entry p{font-size:.88rem;color:var(--muted);margin-bottom:8px}
+.entry ul{padding-left:18px;font-size:.87rem}
+.entry li{margin:4px 0}
+.entry li::marker{color:var(--accent2)}
+.entry .go{display:inline-block;margin-top:8px;font-size:.82rem}
+.note{font-size:.76rem;color:var(--muted);text-align:center;margin-top:26px;line-height:1.6}
+footer{text-align:center;padding:26px 18px 40px;border-top:1px solid var(--border);font-size:.76rem;color:var(--muted)}
+@media(max-width:600px){nav{padding:13px 14px}h1{font-size:1.5rem}.entry{padding:15px 15px}}
+</style>
+</head>
+<body>
+<nav>
+  <a class="logo" href="/" style="color:var(--text);text-decoration:none"><span>Sturch</span></a>
+  {% if session.get('user_id') %}<a href="/" class="btn">🏠 Home</a>{% else %}<a href="/login" class="btn">Log in</a>{% endif %}
+</nav>
+<main>
+  <h1>What's new</h1>
+  <p class="lead">The latest changes to Sturch, newest first. Sturch is still in beta, so tools keep getting better. Tell us what you notice.</p>
+
+  {% for u in updates %}
+  <article class="entry{% if loop.first %} latest{% endif %}">
+    <div class="meta">
+      {% if loop.first %}<span class="new">NEW</span>{% endif %}
+      <span class="tag">{{ u.tag }}</span>
+      <time datetime="{{ u.date }}">{{ u.date_text }}</time>
+    </div>
+    <h2>{{ u.title }}</h2>
+    {% if u.summary %}<p>{{ u.summary }}</p>{% endif %}
+    <ul>
+      {% for b in u.points %}<li>{{ b }}</li>{% endfor %}
+    </ul>
+    {% if u.link %}<a class="go" href="{{ u.link }}">{{ u.link_text or 'Try it' }} →</a>{% endif %}
+  </article>
+  {% endfor %}
+
+  <p class="note">Results from the tools are built from published papers and can be incomplete or wrong. Always check the original paper.</p>
+</main>
+<footer>
+  <a href="/">Home</a> &nbsp;·&nbsp; <a href="/donate">Support Sturch</a> &nbsp;·&nbsp; Built by a student, for students.
+</footer>
+</body>
+</html>
