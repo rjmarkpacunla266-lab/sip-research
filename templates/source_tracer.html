@@ -8,7 +8,7 @@
        SEO — searchability & visibility
   ═══════════════════════════════════════════════════ -->
   <title>Source Tracer — Find the Origin of a Quote | Sturch</title>
-  <meta name="description"  content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses AI similarity scoring across 5 academic databases."/>
+  <meta name="description"  content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses similarity scoring across 5 academic databases."/>
   <meta name="keywords"     content="source tracer, find quote source, academic fact checker, trace research quote, verify citation, plagiarism checker academic"/>
   <meta name="author"       content="Sturch"/>
   <meta name="robots"       content="noindex, nofollow"/>
@@ -19,7 +19,7 @@
   <meta property="og:type"        content="website"/>
   <meta property="og:site_name"   content="Sturch"/>
   <meta property="og:title"       content="Source Tracer — Find the Origin of a Quote | Sturch"/>
-  <meta property="og:description" content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses AI similarity scoring across 5 academic databases."/>
+  <meta property="og:description" content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses similarity scoring across 5 academic databases."/>
   <meta property="og:url"         content="{{ site_url }}/source-tracer"/>
   <meta property="og:image"       content="{{ site_url }}/static/og-image.png"/>
   <meta property="og:image:width"  content="1200"/>
@@ -30,7 +30,7 @@
   <meta name="twitter:card"        content="summary_large_image"/>
   <meta name="twitter:site"        content="@sturch_app"/>
   <meta name="twitter:title"       content="Source Tracer — Find the Origin of a Quote | Sturch"/>
-  <meta name="twitter:description" content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses AI similarity scoring across 5 academic databases."/>
+  <meta name="twitter:description" content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses similarity scoring across 5 academic databases."/>
   <meta name="twitter:image"       content="{{ site_url }}/static/og-image.png"/>
 
   <!-- ═══════════════════════════════════════════════ -->
@@ -158,6 +158,17 @@ textarea::placeholder{color:var(--muted)}
 .fx-note b{color:var(--text)}
 .fx-empty{text-align:center;padding:30px 14px;color:var(--muted);font-size:.84rem}
 .fx-empty .big{font-size:2.2rem;margin-bottom:6px}
+.btn-row{display:flex;flex-direction:column;gap:8px}
+.btn.quick{width:100%;justify-content:center;padding:10px;background:var(--surf2)}
+.quick-note{font-size:.72rem;color:var(--muted);line-height:1.5;text-align:center;margin-top:8px}
+.quick-note b{color:var(--orange);font-weight:500}
+.mode-tag{display:inline-block;font-size:.68rem;font-family:var(--mono);padding:2px 9px;border-radius:4px;margin-bottom:10px}
+.mode-tag.quick{background:rgba(240,145,75,.1);border:1px solid rgba(240,145,75,.25);color:var(--orange)}
+.mode-tag.full{background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.25);color:var(--accent2)}
+.progress-box{display:flex;align-items:center;gap:10px;background:rgba(79,141,232,.06);border:1px solid rgba(79,141,232,.2);border-radius:var(--r);padding:12px 14px;margin:12px 0;font-size:.8rem}
+.progress-box .spinner{margin:0;width:18px;height:18px;border-width:2px;flex:none}
+.progress-box small{display:block;color:var(--muted);font-size:.72rem}
+.quick-result .result-card{opacity:.97}
 </style>
 </head>
 <body>
@@ -211,9 +222,13 @@ textarea::placeholder{color:var(--muted)}
   </div>
 </div>
 
-  <button class="btn primary" onclick="traceSource()" style="width:100%;justify-content:center;padding:12px">
-    🔎 Trace Source
-  </button>
+  <div class="btn-row">
+    <button class="btn primary" id="traceBtn" onclick="traceSource()" style="width:100%;justify-content:center;padding:12px">
+      🔎 Trace Source
+    </button>
+    <button class="btn quick" id="quickBtn" onclick="quickTrace()">⚡ Quick Trace</button>
+  </div>
+  <div class="quick-note"><b>Note:</b> Quick Trace is faster but <b>less reliable</b> than the Source Tracer. It only checks titles and abstracts of open-access papers. Trace Source runs a Quick Trace first, then keeps searching (up to 2 minutes) if the quick result doesn't look right.</div>
 </div>
 
 <div id="results"></div>
@@ -317,39 +332,122 @@ document.getElementById('quoteInput').addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.ctrlKey) traceSource();
 });
 
-async function traceSource() {
-  const quote = document.getElementById('quoteInput').value.trim();
+const FULL_LIMIT_MS = 125000;      // the server stops at ~100 s; the page waits a little longer
+let traceRun = 0, traceTimer = null, traceAbort = null;
+
+function traceReady() {
   const ta = document.getElementById('quoteInput');
+  const quote = ta.value.trim();
   ta.classList.remove('error');
+  if (!quote) { ta.classList.add('error'); toast('⚠️ Paste a quote first'); return null; }
+  if (quote.length < 10) { ta.classList.add('error'); toast('⚠️ Quote is too short'); return null; }
+  return quote;
+}
 
-  if (!quote) { ta.classList.add('error'); toast('⚠️ Paste a quote first'); return; }
-  if (quote.length < 10) { ta.classList.add('error'); toast('⚠️ Quote is too short'); return; }
+function stopTrace() {                       // cancels a running trace (new click / new filters)
+  traceRun++;
+  clearInterval(traceTimer);
+  if (traceAbort) { try { traceAbort.abort(); } catch (e) {} traceAbort = null; }
+}
 
+async function postJSON(url, quote, signal) {
+  const resp = await fetch(url, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
+    body: JSON.stringify(Object.assign({ quote }, fBody()))
+  });
+  const data = await resp.json().catch(() => ({}));
+  return { ok: resp.ok, data };
+}
+
+function showError(msg) {
+  document.getElementById('results').innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>${esc(msg)}</p></div>`;
+}
+
+/* Quick Trace button: only the quick result */
+async function quickTrace() {
+  const quote = traceReady(); if (!quote) return;
+  stopTrace(); const run = traceRun;
+  fLastRun = quickTrace;
+  document.getElementById('results').innerHTML = '<div class="spinner"></div>';
+  try {
+    const r = await postJSON('/api/source-tracer/quick', quote);
+    if (run !== traceRun) return;
+    if (!r.ok) return showError(r.data.error || 'Something went wrong. Try again.');
+    renderResults(r.data, { mode: 'quick' });
+  } catch (e) { if (run === traceRun) showError('Connection error. Try again.'); }
+}
+
+/* Trace Source button: Quick Trace first, then the full trace only if the quick result doesn't look right */
+async function traceSource() {
+  const quote = traceReady(); if (!quote) return;
+  stopTrace(); const run = traceRun;
   fLastRun = traceSource;                    // filters re-run this search when changed
   const results = document.getElementById('results');
   results.innerHTML = '<div class="spinner"></div>';
 
+  let quick = null;
   try {
-    const resp = await fetch('/api/source-tracer', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(Object.assign({ quote }, fBody()))
-    });
-    const data = await resp.json().catch(() => ({}));
+    const r = await postJSON('/api/source-tracer/quick', quote);
+    if (run !== traceRun) return;
+    if (r.ok) quick = r.data;
+  } catch (e) { if (run !== traceRun) return; }   // a failed quick trace just means the full trace does all the work
 
-    if (!resp.ok) {
-      results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>${esc(data.error || 'Something went wrong. Try again.')}</p></div>`;
-      return;
-    }
-    renderResults(data);
-  } catch(e) {
-    results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>Connection error. Try again.</p></div>`;
+  if (quick && quick.confident) {            // the quick result looks right: stop here
+    renderResults(quick, { mode: 'quick', verified: true });
+    return;
+  }
+
+  // not sure: keep the quick result on screen (labelled) and continue with the full trace
+  const t0 = Date.now();
+  const progress = () => {
+    const s = Math.round((Date.now() - t0) / 1000);
+    const el = document.getElementById('progressBox');
+    if (el) el.innerHTML = `<div class="spinner"></div><div>Full trace running… ${s}s<small>This can take up to 2 minutes. The quick result below stays until the full trace finishes.</small></div>`;
+  };
+  renderResults(quick || { results: [], keywords: [], confidence: 'none', confidence_pct: 0, found: false }, { mode: 'quick', running: true, noQuick: !quick });
+  progress();
+  traceTimer = setInterval(progress, 1000);
+
+  traceAbort = new AbortController();
+  const killer = setTimeout(() => { try { traceAbort.abort(); } catch (e) {} }, FULL_LIMIT_MS);
+  let full = null, failed = '';
+  try {
+    const r = await postJSON('/api/source-tracer', quote, traceAbort.signal);
+    if (r.ok) full = r.data; else failed = r.data.error || 'The full trace failed.';
+  } catch (e) {
+    if (run !== traceRun) { clearTimeout(killer); return; }
+    failed = 'The full trace took too long or the connection dropped.';
+  }
+  clearTimeout(killer);
+  if (run !== traceRun) return;
+  clearInterval(traceTimer); traceAbort = null;
+
+  const qHas = quick && quick.results && quick.results.length;
+  if (full && full.results && full.results.length && (full.found || !qHas || full.confidence_pct >= (quick.confidence_pct || 0))) {
+    renderResults(full, { mode: 'full' });
+  } else if (qHas) {                          // the full trace found nothing better: keep the quick result, say so
+    renderResults(quick, { mode: 'quick', fullDone: true, fullMsg: failed || 'The full trace finished and found nothing better.' });
+  } else if (full) {
+    renderResults(full, { mode: 'full' });
+  } else {
+    showError(failed || 'Something went wrong. Try again.');
   }
 }
 
-function renderResults(data) {
+function renderResults(data, opt) {
+  opt = opt || {};
   const results = document.getElementById('results');
   let html = '';
+
+  if (opt.mode === 'quick') {
+    html += '<span class="mode-tag quick">⚡ quick trace</span>';
+    if (opt.verified) html += '<div class="fx-note">The wording matches closely, so the full search was skipped. Quick Trace is less reliable than the full Source Tracer; <a href="#" onclick="traceFull();return false">run the full trace anyway</a>.</div>';
+    if (opt.running) html += '<div class="progress-box" id="progressBox"><div class="spinner"></div><div>Full trace running…</div></div>';
+    if (opt.noQuick) html += '<div class="fx-note">Quick Trace had no result, waiting for the full trace.</div>';
+    if (opt.fullDone) html += '<div class="fx-note">' + esc(opt.fullMsg || '') + ' Showing the quick trace result.</div>';
+  } else if (opt.mode === 'full') {
+    html += '<span class="mode-tag full">🔎 full trace</span>';
+  }
 
   if (data.keywords && data.keywords.length) {
     html += `<div style="margin-bottom:12px">
@@ -425,6 +523,7 @@ function renderResults(data) {
 
   window._traceResults = data.results || [];
   results.innerHTML = html;
+  if (opt.running) { const pb = document.getElementById('progressBox'); if (pb) pb.dataset.on = '1'; }
 }
 
 function copyAPA(i) {
@@ -450,6 +549,23 @@ function toast(msg) {
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+/* run only the full trace (from the 'run the full trace anyway' link) */
+async function traceFull() {
+  const quote = traceReady(); if (!quote) return;
+  stopTrace(); const run = traceRun;
+  fLastRun = traceFull;
+  document.getElementById('results').innerHTML = '<div class="progress-box"><div class="spinner"></div><div>Full trace running… up to 2 minutes</div></div>';
+  traceAbort = new AbortController();
+  const killer = setTimeout(() => { try { traceAbort.abort(); } catch (e) {} }, FULL_LIMIT_MS);
+  try {
+    const r = await postJSON('/api/source-tracer', quote, traceAbort.signal);
+    if (run !== traceRun) return;
+    if (!r.ok) return showError(r.data.error || 'Something went wrong. Try again.');
+    renderResults(r.data, { mode: 'full' });
+  } catch (e) { if (run === traceRun) showError('The full trace took too long or the connection dropped.'); }
+  finally { clearTimeout(killer); }
 }
 </script>
 </body>

@@ -735,7 +735,8 @@ def _pkey(p):
     doi = (p.get("doi") or "").strip().lower().replace("https://doi.org/", "")
     return doi or (p.get("title") or "").strip().lower()[:60]
 
-SEARCH_DEADLINE = 12.0        # seconds: the tracer uses whatever the sources have answered by then (a slow source cannot stall it)
+SEARCH_DEADLINE = 35.0        # seconds: the tracer uses whatever the sources have answered by then (a slow source cannot stall it)
+TRACE_TOTAL     = 100.0       # seconds: the whole full trace stops here (the page allows 2 minutes, gunicorn --timeout 120)
 
 def _content_words(quote, limit=28):
     out = []
@@ -812,7 +813,7 @@ def _confidence(score, sim, cov, rb=0.0):
 # A quote copied from an article usually comes from its body. The abstract rarely repeats it, so abstract-only matching
 # can only guess from related words. For the best candidates that are open access (Europe PMC / PubMed Central hold the
 # full text), the quote is compared with every sentence of the paper.
-TRACE_FT_MAX = 8
+TRACE_FT_MAX = 15
 _TR_SKIP = _re.compile(r"reference|acknowledg|funding|conflict|competing|contribution|supplement|abbreviation|availability", _re.I)
 
 def _ft_best_match(ft, quote, keywords):
@@ -871,77 +872,121 @@ def _full_text_pass(scored, quote, keywords, budget=8.0):
         traceback.print_exc()
         return 0, 0
 
-@tools_bp.route("/api/source-tracer", methods=["POST"])
-@login_required
-def source_tracer():
-    """Params (JSON): quote + shared filters (sources, year_from, year_to, oa, sort = match | cited | recent)."""
+def _score_rows(papers, ranks, quote, keywords):
+    """Score papers against the quote (abstract only) -> rows sorted best first."""
+    scored = []
+    for p in papers:
+        score, sentence, sim, cov, rb, tov = _score_paper(p, quote, keywords, ranks.get(_pkey(p), 0.0))
+        row = _pick(p, abstract_chars=300)
+        row["score"] = round(score, 4)
+        row["sim"], row["cov"], row["rb"], row["tov"] = round(sim, 3), round(cov, 3), round(rb, 3), round(tov, 3)
+        row["match_in"] = "abstract" if sim >= 0.25 and sentence else ""
+        row["snippet"] = sentence if sim >= 0.25 and sentence else row.get("abstract", "")
+        scored.append(row)
+    scored.sort(key=lambda r: r["score"], reverse=True)
+    return scored
+
+def _trace_response(mode, quote, keywords, f, scored, n_papers, ft_tried=0, ft_read=0):
+    """Same answer format for the quick and the full trace."""
+    top_score = scored[0]["score"] if scored else 0
+    if scored:
+        confidence, found = _confidence(top_score, scored[0]["sim"], scored[0]["cov"], scored[0]["rb"])
+        scored[0]["is_best"] = found
+    else:
+        confidence, found = "none", False
+    shown = scored[:8]
+    if f["sort"] != "match":
+        relevant = [r for r in scored if r["score"] >= max(0.15, top_score * 0.4)]
+        shown = (relevant if len(relevant) >= 3 else scored[:5])
+        if f["sort"] == "cited":
+            shown = sorted(shown, key=lambda r: (r["citations"], r["score"]), reverse=True)[:8]
+        else:
+            shown = sorted(shown, key=lambda r: (sort_date(r), r["score"]), reverse=True)[:8]
+    message = ""
+    if not found:
+        message = ("No exact source found. Possible reasons: the source may not be indexed in OpenAlex, "
+                   "arXiv, PubMed, Crossref or Europe PMC, the quote may be paraphrased, or your filters "
+                   "may be hiding it. Only open-access papers can be checked inside their full text"
+                   + (f" ({ft_read} of the top {ft_tried} were readable)" if ft_tried else "")
+                   + ". Related papers are shown below.")
+    return {
+        "mode": mode, "quote": quote, "keywords": keywords, "found": found, "confidence": confidence,
+        "confidence_pct": int(top_score * 100), "results": shown, "message": message,
+        "searched": n_papers, "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
+        "fulltext_tried": ft_tried, "fulltext_read": ft_read,
+        # the quick trace is only trusted when the wording matches closely; anything weaker keeps the full trace running
+        "confident": bool(found and confidence == "high"),
+    }
+
+def _trace_input():
+    """-> (quote, keywords, filters, error response or None)"""
     data  = request.get_json(silent=True) or {}
     quote = str(data.get("quote") or "").strip()[:2000]
     if not quote:
-        return jsonify({"error": "Quote is required"}), 400
+        return None, None, None, (jsonify({"error": "Quote is required"}), 400)
     if len(quote) < 10:
-        return jsonify({"error": "Quote is too short. Please enter at least 10 characters."}), 400
+        return None, None, None, (jsonify({"error": "Quote is too short. Please enter at least 10 characters."}), 400)
     keywords = _extract_keywords(quote)
     if not keywords:
-        return jsonify({"error": "Could not extract keywords from the quote."}), 400
+        return None, None, None, (jsonify({"error": "Could not extract keywords from the quote."}), 400)
+    f = read_filters(data.get)
+    if data.get("sort") not in ("match", "cited", "recent"):
+        f["sort"] = "match"
+    return quote, keywords, f, None
+
+def _error_response(mode, quote, keywords, e):
+    traceback.print_exc()
+    # a normal answer (not a 500) so the page shows the reason instead of a blank "Something went wrong"
+    return jsonify({"mode": mode, "quote": quote, "keywords": keywords, "found": False, "confident": False,
+                    "confidence": "none", "confidence_pct": 0, "results": [], "searched": 0, "sources_used": [],
+                    "message": "Source tracing hit an error: " + type(e).__name__ + ": " + str(e)[:200]})
+
+QUICK_DEADLINE = 15.0         # seconds the quick trace may take
+QUICK_SCORE_MAX = 40          # only the best-looking papers get the slower wording comparison
+
+@tools_bp.route("/api/source-tracer/quick", methods=["POST"])
+@login_required
+def source_tracer_quick():
+    """Quick Trace = the Search Papers search (strict mode, Open Access ON) shown inside the Source Tracer.
+    Fast but less reliable: it only looks at titles and abstracts and needs the quote's words to appear together."""
+    quote, keywords, f, err = _trace_input()
+    if err:
+        return err
+    try:
+        fq = dict(f, oa_only=True)                                  # the Open Access filter is always on, like the index search
+        ex = ThreadPoolExecutor(max_workers=1)
+        fut = ex.submit(search_papers, quote, 1, fq)
+        try:
+            papers = fut.result(timeout=QUICK_DEADLINE)[0]
+        except Exception:
+            papers = []
+        ex.shutdown(wait=False, cancel_futures=True)
+        # cheap keyword check first so the slower wording comparison runs on 40 papers, not hundreds
+        papers = sorted(papers, key=lambda p: sum(1 for k in keywords if term_in((p.get("title") or "") + " " + (p.get("abstract") or ""), k)),
+                        reverse=True)[:QUICK_SCORE_MAX]
+        scored = _score_rows(papers, {}, quote, keywords)
+        return jsonify(_trace_response("quick", quote, keywords, fq, scored, len(papers)))
+    except Exception as e:
+        return _error_response("quick", quote, keywords, e)
+
+@tools_bp.route("/api/source-tracer", methods=["POST"])
+@login_required
+def source_tracer():
+    """Full trace (up to ~100 s). Params (JSON): quote + shared filters (sources, year_from, year_to, oa, sort = match | cited | recent)."""
+    quote, keywords, f, err = _trace_input()
+    if err:
+        return err
     t0 = time.monotonic()
     try:
-        f = read_filters(data.get)
-        if data.get("sort") not in ("match", "cited", "recent"):
-            f["sort"] = "match"
         papers, ranks = _trace_pool(quote, keywords, f)
-
-        scored = []
-        for p in papers:
-            score, sentence, sim, cov, rb, tov = _score_paper(p, quote, keywords, ranks.get(_pkey(p), 0.0))
-            row = _pick(p, abstract_chars=300)
-            row["score"] = round(score, 4)
-            row["sim"], row["cov"], row["rb"], row["tov"] = round(sim, 3), round(cov, 3), round(rb, 3), round(tov, 3)
-            row["match_in"] = "abstract" if sim >= 0.25 and sentence else ""
-            row["snippet"] = sentence if sim >= 0.25 and sentence else row.get("abstract", "")
-            scored.append(row)
-        scored.sort(key=lambda r: r["score"], reverse=True)
+        scored = _score_rows(papers, ranks, quote, keywords)
         ft_tried = ft_read = 0
         if scored and scored[0]["sim"] < 0.85:               # an almost word-for-word abstract match needs no more checking
-            ft_tried, ft_read = _full_text_pass(scored, quote, keywords, budget=min(8.0, 22.0 - (time.monotonic() - t0)))
+            ft_tried, ft_read = _full_text_pass(scored, quote, keywords, budget=min(40.0, TRACE_TOTAL - (time.monotonic() - t0)))
             scored.sort(key=lambda r: r["score"], reverse=True)
-
-        top_score = scored[0]["score"] if scored else 0
-        if scored:
-            confidence, found = _confidence(top_score, scored[0]["sim"], scored[0]["cov"], scored[0]["rb"])
-        else:
-            confidence, found = "none", False
-
-        if scored:
-            scored[0]["is_best"] = found
-        shown = scored[:8]
-        if f["sort"] != "match":
-            relevant = [r for r in scored if r["score"] >= max(0.15, top_score * 0.4)]
-            shown = (relevant if len(relevant) >= 3 else scored[:5])
-            if f["sort"] == "cited":
-                shown = sorted(shown, key=lambda r: (r["citations"], r["score"]), reverse=True)[:8]
-            else:
-                shown = sorted(shown, key=lambda r: (sort_date(r), r["score"]), reverse=True)[:8]
-
-        message = ""
-        if not found:
-            message = ("No exact source found. Possible reasons: the source may not be indexed in OpenAlex, "
-                       "arXiv, PubMed, Crossref or Europe PMC, the quote may be paraphrased, or your filters "
-                       "may be hiding it. Only open-access papers can be checked inside their full text"
-                       + (f" ({ft_read} of the top {ft_tried} were readable)" if ft_tried else "")
-                       + ". Related papers are shown below.")
-        return jsonify({
-            "quote": quote, "keywords": keywords, "found": found, "confidence": confidence,
-            "confidence_pct": int(top_score * 100), "results": shown, "message": message,
-            "searched": len(papers), "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
-            "fulltext_tried": ft_tried, "fulltext_read": ft_read,
-        })
+        return jsonify(_trace_response("full", quote, keywords, f, scored, len(papers), ft_tried, ft_read))
     except Exception as e:
-        traceback.print_exc()
-        # a normal answer (not a 500) so the page shows the reason instead of a blank "Something went wrong"
-        return jsonify({"quote": quote, "keywords": keywords, "found": False, "confidence": "none", "confidence_pct": 0,
-                        "results": [], "searched": 0, "sources_used": [],
-                        "message": "Source tracing hit an error: " + type(e).__name__ + ": " + str(e)[:200]})
+        return _error_response("full", quote, keywords, e)
 
 @tools_bp.route("/source-tracer")
 @login_required
