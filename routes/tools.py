@@ -1041,6 +1041,66 @@ def _balanced_key(p, terms, this_year):
     rel = relevance(p, terms) / (3.0 * len(terms)) if terms else 0.0
     return 0.4 * min(1.0, rate) + 0.4 * recent + 0.2 * min(1.0, rel)
 
+# ── Topic Finder: broad subjects and filler words ──
+# A broad subject such as "Biology" matches almost every paper, so the results are scattered and the coverage numbers mean
+# nothing. The page asks the student to pick something specific (a hand-written list, no AI), and filler words typed into
+# Focus / Keywords ("of", "effect") are not counted as required words.
+_BROAD = {
+    "biology": ["biofuel", "coral reef bleaching", "mangrove restoration", "antibiotic resistance", "CRISPR gene editing", "microplastics in fish", "pollinator decline", "invasive species"],
+    "chemistry": ["biofuel", "lithium-ion battery", "water purification", "plastic recycling", "green chemistry", "corrosion inhibitor", "perovskite solar cell", "catalyst"],
+    "physics": ["solar cell efficiency", "wind turbine", "superconductor", "quantum computing", "nuclear fusion", "thermoelectric", "ultrasound", "photonics"],
+    "psychology": ["social media and anxiety", "sleep deprivation", "classroom motivation", "bullying", "screen time children", "mindfulness", "procrastination", "memory and learning"],
+    "computer science": ["machine learning", "cybersecurity", "blockchain", "computer vision", "natural language processing", "internet of things", "cloud computing", "software testing"],
+    "environmental science": ["microplastics", "air pollution", "mangrove restoration", "plastic waste", "ocean acidification", "deforestation", "wastewater treatment", "carbon sequestration"],
+    "environment": ["microplastics", "air pollution", "plastic waste", "deforestation", "flood risk", "wastewater treatment", "urban heat island", "carbon sequestration"],
+    "science": ["biofuel", "solar energy", "microplastics", "water purification", "antibiotic resistance", "climate change", "renewable energy", "food preservation"],
+    "medicine": ["antibiotic resistance", "dengue", "diabetes", "vaccine", "tuberculosis", "hypertension", "telemedicine", "herbal medicine"],
+    "health": ["childhood obesity", "mental health students", "dengue prevention", "sleep and health", "vaccination", "nutrition", "air pollution and asthma", "hand hygiene"],
+    "engineering": ["bioplastic", "solar panel", "flood control", "3D printing", "wind turbine", "water filtration", "earthquake-resistant buildings", "electric vehicle battery"],
+    "technology": ["artificial intelligence in education", "3D printing", "internet of things", "solar technology", "electric vehicles", "drones", "virtual reality learning", "cybersecurity"],
+    "mathematics": ["cryptography", "graph theory", "machine learning mathematics", "game theory", "epidemic modelling", "optimization", "statistics education", "fractals"],
+    "agriculture": ["rice yield", "organic fertilizer", "hydroponics", "pest control", "drought-resistant crops", "soil erosion", "aquaponics", "food security"],
+    "ecology": ["coral reef", "mangrove", "invasive species", "pollination", "forest fragmentation", "food web", "biodiversity loss", "wetland"],
+    "genetics": ["CRISPR", "gene therapy", "genetically modified crops", "heredity disease", "DNA barcoding", "epigenetics", "genetic diversity", "mutation"],
+    "education": ["online learning", "classroom motivation", "reading comprehension", "STEM education", "homework", "teacher training", "bullying", "educational technology"],
+    "economics": ["inflation", "remittances", "poverty reduction", "minimum wage", "microfinance", "tourism", "e-commerce", "climate economics"],
+    "business": ["small business", "e-commerce", "customer loyalty", "social media marketing", "startup funding", "supply chain", "entrepreneurship", "employee motivation"],
+    "sociology": ["social media and youth", "poverty", "migration", "gender inequality", "urbanization", "family structure", "bullying", "volunteering"],
+    "geology": ["earthquake", "volcano", "landslide", "soil erosion", "groundwater", "mineral", "tsunami", "coastal erosion"],
+    "energy": ["solar energy", "biofuel", "wind power", "geothermal", "battery storage", "hydrogen fuel", "energy efficiency", "ocean energy"],
+    "nutrition": ["childhood obesity", "vitamin D", "malnutrition", "plant-based diet", "food fortification", "sugar intake", "breastfeeding", "intermittent fasting"],
+}
+_BROAD_ALIAS = {"biological": "biology", "chemical": "chemistry", "physical": "physics", "sciences": "science", "computer": "computer science",
+                "computing": "computer science", "informatics": "computer science", "mathematical": "mathematics", "math": "mathematics",
+                "maths": "mathematics", "medical": "medicine", "farming": "agriculture", "ecological": "ecology", "economy": "economics",
+                "environmental": "environment", "environmental sciences": "environmental science", "it": "technology"}
+
+def _broad_for(subject):
+    """-> list of specific suggestions when the subject is only a broad field name, else None."""
+    s = _re.sub(r"[^a-z ]", " ", (subject or "").lower())
+    s = _re.sub(r"\s+", " ", s).strip()
+    s = _re.sub(r"^(?:the\s+)?(?:field\s+of\s+|study\s+of\s+)", "", s)
+    s = _BROAD_ALIAS.get(s, s)
+    return _BROAD.get(s)
+
+# words that are not topics: they are dropped from the 'required words' (coverage line, word chips, search)
+_FILLER = {"of", "the", "a", "an", "and", "or", "in", "on", "for", "to", "with", "by", "from", "at", "as", "is", "are", "was",
+           "were", "be", "about", "between", "among", "how", "what", "why", "when", "does", "do", "that", "this", "its", "their",
+           "effect", "effects", "impact", "impacts", "influence", "influences", "role", "roles", "relationship", "relationships",
+           "cause", "causes", "comparison", "compare", "study", "studies", "analysis", "research", "factor", "factors", "using"}
+
+def _specific(terms):
+    """Terms without filler words (keeps the original order). Never returns an empty list for a non-empty input
+    unless every word was filler."""
+    return [t for t in terms if t.lower() not in _FILLER]
+
+@tools_bp.route("/api/topic-hint")
+@login_required
+def topic_hint():
+    """Called while the student types the subject: is it too broad, and what specific topics could they try instead?"""
+    sug = _broad_for(request.args.get("q", ""))
+    return jsonify({"broad": bool(sug), "suggestions": sug or []})
+
 @tools_bp.route("/api/topics")
 @login_required
 def topics():
@@ -1055,8 +1115,12 @@ def topics():
         return jsonify({"error": "Enter a field or subject area first"}), 400
     try:
         f = read_filters(request.args.get)
-        subj_terms = _dedupe_terms(_safe_terms(subject))[:6]
-        terms = _dedupe_terms(_safe_terms(f"{subject} {focus} {kw}"))[:10]
+        subj_terms = _dedupe_terms(_specific(_safe_terms(subject)) or _safe_terms(subject))[:6]
+        broad = _broad_for(subject)
+        # filler words ("of", "effect") are not topics: they are not searched and not counted as required words
+        focus_terms0 = _specific(_safe_terms(focus))
+        kw_terms0 = _specific(_safe_terms(kw))
+        terms = _dedupe_terms(subj_terms + focus_terms0 + kw_terms0)[:10]
         full_query = " ".join(terms)
         raw_sort = request.args.get("sort") or "balanced"
         balanced = raw_sort == "balanced"                            # read_filters turns unknown sorts into "cited"
@@ -1066,8 +1130,8 @@ def topics():
         pool_f = dict(f, sort="recent" if f["sort"] == "recent" else "cited")
 
         low = {x.lower() for x in subj_terms}
-        focus_terms = [x for x in _dedupe_terms(_safe_terms(focus)) if x.lower() not in low][:4]
-        kw_terms    = [x for x in _dedupe_terms(_safe_terms(kw)) if x.lower() not in low
+        focus_terms = [x for x in _dedupe_terms(focus_terms0) if x.lower() not in low][:4]
+        kw_terms    = [x for x in _dedupe_terms(kw_terms0) if x.lower() not in low
                        and x.lower() not in {y.lower() for y in focus_terms}][:4]
         extra_terms = focus_terms + kw_terms
 
@@ -1122,7 +1186,7 @@ def topics():
         cov = topicfinder.coverage(papers, extra_terms)
         papers = papers[:60]
 
-        ideas = topicfinder.extract_ideas(papers, subj_terms)
+        ideas = topicfinder.extract_ideas(papers, subj_terms, prefer_specific=bool(broad))
         forms = [i["topic"] for i in ideas]
         cands = []
         for p in papers:
@@ -1145,6 +1209,7 @@ def topics():
             "results": [dict(_pick(p, abstract_chars=260), matched=p.get("_matched", []), kind=_paper_kind(p),
                              missing=[x for x in extra_terms if x not in p.get("_matched", [])]) for p in papers[:60]],
             "ptype": ptype, "sort": raw_sort,
+            "broad": {"term": subject, "suggestions": broad} if broad else None,
             "coverage": cov, "extra_terms": extra_terms,
             "ideas": ideas, "gaps": gaps,
             "relaxed": len(papers) > strict_n, "analysed": len(papers), "fulltext_used": ft_used,

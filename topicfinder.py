@@ -37,7 +37,12 @@ demonstrated suggest suggests suggested propose proposed present presents presen
 report reports aim aims objective objectives background conclusion conclusions introduction methods purpose
 patients patient participants sample samples group groups total number numbers rate rates year years time long short
 large small major main key well good better best due need needs future available existing performance
-overall scale scales needed required lack known unknown unclear remains remain specific general common recently often first second third one two three type types""".split())
+overall scale scales needed required lack known unknown unclear remains remain specific general common recently often first second third one two three type types
+including include includes included field fields system systems advance advances challenge challenges emerging emerge emerges framework frameworks
+dynamic dynamics mechanism mechanisms strategy strategies opportunity opportunities trend trends progress insight insights understanding
+perspective topic topics issue issues aspect aspects feature features process processes variety range approach tool tools technique techniques
+knowledge science sciences technology technologies theory theories concept concepts principle principles basic fundamental modern traditional
+increasing growing rapid rapidly significantly relevant related various wide broad complex multiple diverse comprehensive critical essential""".split())
 
 # ───────────────────────── small text helpers ─────────────────────────
 def _norm(text):
@@ -123,12 +128,15 @@ def _contains(long_key, short_key):
     L, S = long_key.split(), short_key.split()
     return len(S) < len(L) and any(L[i:i + len(S)] == S for i in range(len(L) - len(S) + 1))
 
-def extract_ideas(papers, subject_terms, limit=12):
+def extract_ideas(papers, subject_terms, limit=12, prefer_specific=False):
     """Recurring sub-topics across `papers`. Each idea: topic, papers (count), in_titles, trend, examples."""
     N = len(papers)
     if N < 4:
         return []
     subj = {_stem(w) for t in subject_terms for w in _norm(t).split()}
+    subj_pre = {w[:5] for w in subj if len(w) >= 5}            # 'biology' also hides 'biological', 'biologist'
+    def _is_subj(tok):
+        return tok in subj or (len(tok) >= 5 and tok[:5] in subj_pre)
     years = [y for y in (_year(p) for p in papers) if y]
     ymax = max(years) if years else None
     recent_cut = (ymax - 3) if ymax else None
@@ -152,13 +160,15 @@ def extract_ideas(papers, subject_terms, limit=12):
     cands = []
     for key, d in df.items():
         toks = key.split()
-        if all(t in subj for t in toks):                   # just the subject again
+        if all(_is_subj(t) for t in toks):                 # just the subject again
             continue
         if len(toks) == 1 and d < min_df + 1 and title_df[key] < 2:   # one-word ideas must be clearly recurring
             continue
+        if prefer_specific and len(toks) == 1 and d < 0.5 * N:          # broad subject: lone words are rarely a real topic
+            continue
         if d < min_df or d > 0.8 * N:                      # too rare, or so common it is just the subject
             continue
-        score = d * (1 + 0.6 * title_df[key] / d) * (1 + 0.25 * (len(toks) - 1))
+        score = d * (1 + 0.6 * title_df[key] / d) * (1 + (0.6 if prefer_specific else 0.25) * (len(toks) - 1))
         cands.append((score, key, d))
     cands.sort(key=lambda c: (-c[0], c[1]))
 
@@ -244,7 +254,7 @@ def extract_gaps(text, paper, subject_terms, idea_forms=(), section_bonus=0):
         sc += section_bonus
         if re.search(r"\b(?:we|our)\s+(?:found|show|showed|observed|measured|collected|used|conducted)\b", s, re.I):
             sc -= 3                                         # reports the paper's own method/result, not a gap
-        clean = _LEAD.sub("", s)
+        clean = _tidy(_LEAD.sub("", s))
         clean = clean[:1].upper() + clean[1:]
         out.append({"text": clean, "score": sc, "paper": paper})
     return out
@@ -317,7 +327,7 @@ def _para_text(el):
     return _tidy("".join(out))
 
 def _tidy(t):
-    t = re.sub(r"\(\s*[,;\u2013-]?\s*\)|\[\s*[,;\u2013-]?\s*\]", "", t)   # brackets left empty by removed citations
+    t = re.sub(r"\(\s*(?:[,;:\u2013\u2212-]\s*)*\)|\[\s*(?:[,;:\u2013\u2212-]\s*)*\]", "", t)   # brackets left empty (or holding only ; , -) by removed citations
     t = re.sub(r"\s+", " ", t)
     t = re.sub(r"\s+([,.;:])", r"\1", t)
     return t.strip()
