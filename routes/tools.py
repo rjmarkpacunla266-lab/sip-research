@@ -5,6 +5,7 @@ import re as _re
 import difflib
 import math
 import time
+import datetime
 import traceback
 from concurrent.futures import ThreadPoolExecutor, wait
 import requests
@@ -13,7 +14,7 @@ from flask import Blueprint, render_template, request, jsonify
 from core import login_required, _safe_terms
 import topicfinder
 from engine import (read_filters, search_papers, apply_filters_and_sort, term_in, relevance,
-                    sort_date, SOURCE_LABELS, search_sources, merge_dedupe)
+                    sort_date, SOURCE_LABELS, search_sources, merge_dedupe, to_int)
 
 tools_bp = Blueprint("tools", __name__)
 
@@ -1014,11 +1015,38 @@ def _on_topic(p, subj_terms):
     hit = sum(1 for t in subj_terms if term_in(text, t))
     return hit >= need
 
+# ── Topic Finder: paper type (review / original study) and the "recommended" order ──
+# The sources do not all say whether a paper is a review, so it is judged from the title (and the first words of the
+# abstract). It is a good guess, not a guarantee, and the page says so.
+_REVIEW_TITLE = _re.compile(r"\b(review|reviews|meta[- ]?analys[ie]s|overview|scoping|umbrella|state[- ]of[- ]the[- ]art|"
+                           r"recent advances|advances in|progress in|challenges and opportunities|a primer|roadmap)\b", _re.I)
+_REVIEW_ABS = _re.compile(r"\b(this|present|current|in this|the present) (systematic |scoping |literature |narrative |critical )?"
+                          r"(review|meta[- ]?analysis|overview)\b", _re.I)
+
+def _paper_kind(p):
+    title = p.get("title") or ""
+    if _REVIEW_TITLE.search(title) or _REVIEW_ABS.search((p.get("abstract") or "")[:400]):
+        return "review"
+    if "arxiv" in (p.get("data_source") or "").lower() and _re.search(r"\bsurvey\b", title, _re.I):
+        return "review"                    # on arXiv 'survey' means a literature survey; elsewhere it is often a questionnaire
+    return "original"
+
+def _balanced_key(p, terms, this_year):
+    """'Recommended' order: papers that are recent, well cited FOR THEIR AGE, and on topic come first.
+    (Plain 'most cited' always puts the oldest famous papers on top.)"""
+    y = to_int(p.get("year")) or 0
+    age = max(0, this_year - y) if y else 15
+    rate = math.log10(1 + (p.get("citations") or 0) / (age + 1)) / 3.0        # ~1000 citations per year = 1
+    recent = max(0.0, 1.0 - age / 12.0)
+    rel = relevance(p, terms) / (3.0 * len(terms)) if terms else 0.0
+    return 0.4 * min(1.0, rate) + 0.4 * recent + 0.2 * min(1.0, rel)
+
 @tools_bp.route("/api/topics")
 @login_required
 def topics():
     """Params: subject (required), focus, kw + shared filters (sources, year_from, year_to, oa, sort),
     fulltext = 1 | 0 (read the Discussion/Conclusion of open-access papers for research gaps; default 1).
+    ptype = all | review | original (judged from the title). sort = balanced (default: recent + well cited) | cited | recent | match.
     Returns: results (papers), ideas (recurring sub-topics + trend), gaps (research-gap sentences)."""
     subject = request.args.get("subject", "").strip()[:200]
     focus   = request.args.get("focus", "").strip()[:200]
@@ -1030,6 +1058,11 @@ def topics():
         subj_terms = _dedupe_terms(_safe_terms(subject))[:6]
         terms = _dedupe_terms(_safe_terms(f"{subject} {focus} {kw}"))[:10]
         full_query = " ".join(terms)
+        raw_sort = request.args.get("sort") or "balanced"
+        balanced = raw_sort == "balanced"                            # read_filters turns unknown sorts into "cited"
+        ptype = request.args.get("ptype", "all")
+        ptype = ptype if ptype in ("review", "original") else "all"
+        this_year = datetime.date.today().year
         pool_f = dict(f, sort="recent" if f["sort"] == "recent" else "cited")
 
         low = {x.lower() for x in subj_terms}
@@ -1038,8 +1071,24 @@ def topics():
                        and x.lower() not in {y.lower() for y in focus_terms}][:4]
         extra_terms = focus_terms + kw_terms
 
-        papers, _ = search_papers(full_query, 1, pool_f, per_source=25)
-        papers = [p for p in papers if _on_topic(p, subj_terms)]
+        # first pool: the full query (plus its 'recent' side for the recommended order, so new papers are not missed)
+        jobs = [(full_query, pool_f["sort"])]
+        if balanced:
+            jobs.append((full_query, "recent"))
+        if ptype == "review":                                        # reviews rarely rank high on their own words: ask for them
+            rq = " ".join(subj_terms + focus_terms + ["review"])
+            jobs.append((rq, pool_f["sort"]))
+            if balanced:
+                jobs.append((rq, "recent"))
+        with ThreadPoolExecutor(max_workers=len(jobs)) as ex:
+            first = list(ex.map(lambda j: search_papers(j[0], 1, dict(f, sort=j[1]), per_source=25)[0], jobs))
+        papers, seen = [], set()
+        for batch in first:
+            for p in batch:
+                k = (p.get("doi") or p.get("title") or "").lower()
+                if k not in seen and _on_topic(p, subj_terms):
+                    seen.add(k)
+                    papers.append(p)
         strict_n = len(papers)
         if strict_n < 12 and extra_terms:
             # Too few papers match every word: search the subject with each extra group on its own
@@ -1059,6 +1108,11 @@ def topics():
                         have.add(k)
                         papers.append(p)
         papers = apply_filters_and_sort(papers, f, full_query)
+        if ptype != "all":
+            papers = [p for p in papers if _paper_kind(p) == ptype]
+        if balanced:
+            terms_b = _safe_terms(full_query)
+            papers.sort(key=lambda p: _balanced_key(p, terms_b, this_year), reverse=True)
         papers = papers[:120]
         _pubmed_abstracts(papers[:60])                              # PubMed sends no abstract; ideas need text
         for p in papers:
@@ -1088,8 +1142,9 @@ def topics():
             msg = ("No paper found mentions all of: " + ", ".join(extra_terms) + ". This combination may be unstudied "
                    "(a possible research gap) or worded differently. Papers matching the most words are shown first.")
         return jsonify({
-            "results": [dict(_pick(p, abstract_chars=260), matched=p.get("_matched", []),
-                             missing=[x for x in extra_terms if x not in p.get("_matched", [])]) for p in papers[:30]],
+            "results": [dict(_pick(p, abstract_chars=260), matched=p.get("_matched", []), kind=_paper_kind(p),
+                             missing=[x for x in extra_terms if x not in p.get("_matched", [])]) for p in papers[:60]],
+            "ptype": ptype, "sort": raw_sort,
             "coverage": cov, "extra_terms": extra_terms,
             "ideas": ideas, "gaps": gaps,
             "relaxed": len(papers) > strict_n, "analysed": len(papers), "fulltext_used": ft_used,

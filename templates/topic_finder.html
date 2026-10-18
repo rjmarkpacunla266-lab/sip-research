@@ -8,7 +8,7 @@
        SEO — searchability & visibility
   ═══════════════════════════════════════════════════ -->
   <title>Topic Finder — Research Topic Generator | Sturch</title>
-  <meta name="description"  content="Generate research paper topic ideas for your field of study. Sturch suggests unique, literature-backed topics tailored to your subject area and level."/>
+  <meta name="description"  content="Generate research paper topic ideas for your field of study. Sturch shows real published research for your subject area and level to help you build an original topic."/>
   <meta name="keywords"     content="research topic generator, research paper ideas, thesis topic finder, academic topic suggestions, dissertation topics, research question generator"/>
   <meta name="author"       content="Sturch"/>
   <meta name="robots"       content="noindex, nofollow"/>
@@ -19,7 +19,7 @@
   <meta property="og:type"        content="website"/>
   <meta property="og:site_name"   content="Sturch"/>
   <meta property="og:title"       content="Topic Finder — Research Topic Generator | Sturch"/>
-  <meta property="og:description" content="Generate research paper topic ideas for your field of study. Sturch suggests unique, literature-backed topics tailored to your subject area and level."/>
+  <meta property="og:description" content="Generate research paper topic ideas for your field of study. Sturch shows real published research for your subject area and level to help you build an original topic."/>
   <meta property="og:url"         content="{{ site_url }}/topic-generator"/>
   <meta property="og:image"       content="{{ site_url }}/static/og-image.png"/>
   <meta property="og:image:width"  content="1200"/>
@@ -30,7 +30,7 @@
   <meta name="twitter:card"        content="summary_large_image"/>
   <meta name="twitter:site"        content="@sturch_app"/>
   <meta name="twitter:title"       content="Topic Finder — Research Topic Generator | Sturch"/>
-  <meta name="twitter:description" content="Generate research paper topic ideas for your field of study. Sturch suggests unique, literature-backed topics tailored to your subject area and level."/>
+  <meta name="twitter:description" content="Generate research paper topic ideas for your field of study. Sturch shows real published research for your subject area and level to help you build an original topic."/>
   <meta name="twitter:image"       content="{{ site_url }}/static/og-image.png"/>
 
   <!-- ═══════════════════════════════════════════════ -->
@@ -176,6 +176,15 @@ select.form-input{cursor:pointer}
 .cov{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-size:.78rem;color:var(--muted);line-height:1.7}
 .cov b{color:var(--text)}
 .cov.warn{border-color:rgba(232,184,75,.3);background:rgba(232,184,75,.05);color:#c9a83a}
+
+/* ── filter upgrades ─────────────── */
+.fx-quick{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px}
+.fx-quick .lbl{font-size:.7rem;color:var(--muted)}
+.preset-note{font-size:.72rem;color:var(--accent2);margin:-4px 0 12px;line-height:1.5}
+.kind-b{font-size:.63rem;padding:1px 7px;border-radius:20px;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.22);color:var(--accent2)}
+.local-note{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:rgba(79,141,232,.06);border:1px solid rgba(79,141,232,.2);border-radius:var(--r);padding:9px 13px;margin-bottom:14px;font-size:.76rem;color:var(--muted);line-height:1.5}
+.local-note b{color:var(--text)}
+.fx-help{font-size:.68rem;color:var(--muted);margin-top:8px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -234,6 +243,8 @@ select.form-input{cursor:pointer}
     </div>
   </div>
 
+  <div class="preset-note hidden" id="presetNote"></div>
+
   <div class="form-group">
     <label class="form-label">Keywords (optional)</label>
     <input type="text" id="keywordsInput" class="form-input" placeholder="e.g. climate, renewable, urban…" autocomplete="off"/>
@@ -245,7 +256,13 @@ select.form-input{cursor:pointer}
     <div class="fx-row">
       <div class="fx-g"><label>From</label><input type="number" id="fYf" placeholder="Any" inputmode="numeric" onchange="fChanged()"/></div>
       <div class="fx-g"><label>To</label><input type="number" id="fYt" placeholder="Any" inputmode="numeric" onchange="fChanged()"/></div>
-      <div class="fx-g"><label>Sort</label><select id="fSort" onchange="fChanged()"><option value="cited" selected>Most cited</option><option value="recent">Most recent</option><option value="match">Best match</option></select></div>
+      <div class="fx-g"><label>Sort</label><select id="fSort" onchange="fChanged()"><option value="balanced" selected>Recommended (recent + cited)</option><option value="cited">Most cited</option><option value="recent">Most recent</option><option value="match">Best match</option></select></div>
+      <div class="fx-g"><label>Paper type</label>
+        <select id="fType" onchange="fChanged()">
+          <option value="all">All types</option>
+          <option value="review">Reviews &amp; overviews</option>
+          <option value="original">Original studies</option>
+        </select></div>
       <div class="fx-g"><label>Word in</label>
         <select id="fField" onchange="fChanged()">
           <option value="both">Title or abstract</option>
@@ -254,6 +271,12 @@ select.form-input{cursor:pointer}
         </select></div>
       <button type="button" class="fx-toggle" id="fOAbtn" onclick="fToggleOA()">🔓 OA only</button>
     </div>
+    <div class="fx-quick"><span class="lbl">Published:</span>
+      <span class="fx-chip" data-years="3" onclick="fYears(3)">Last 3 years</span>
+      <span class="fx-chip" data-years="5" onclick="fYears(5)">Last 5 years</span>
+      <span class="fx-chip" data-years="10" onclick="fYears(10)">Last 10 years</span>
+      <span class="fx-chip" data-years="0" onclick="fYears(0)">Any year</span>
+    </div>
     <div class="fx-src"><span class="lbl">Sources:</span>
       <span class="fx-chip active" data-src="openalex" onclick="fChip(this)">OpenAlex</span>
       <span class="fx-chip active" data-src="arxiv" onclick="fChip(this)">arXiv</span>
@@ -261,6 +284,7 @@ select.form-input{cursor:pointer}
       <span class="fx-chip active" data-src="crossref" onclick="fChip(this)">Crossref</span>
       <span class="fx-chip active" data-src="europepmc" onclick="fChip(this)">Europe PMC</span>
     </div>
+    <div class="fx-help">Numbers in brackets show how many of the loaded papers fit. “Reviews” are recognised from the title, so a few may be missed.</div>
     <button type="button" class="fx-btn sm" onclick="fReset()">↺ Reset filters</button>
   </div>
 </div>
@@ -284,12 +308,14 @@ select.form-input{cursor:pointer}
 /* ── shared: filters + source tags ─────────────── */
 let fOA = false, fLastRun = null, fTimer = null;
 const F_DEFAULT_SORT = document.getElementById('fSort') ? document.getElementById('fSort').value : 'cited';
-const F_SORT_NAMES = {match: 'Best match', cited: 'Most cited', recent: 'Most recent'};
+const F_SORT_NAMES = {balanced: 'Recommended', match: 'Best match', cited: 'Most cited', recent: 'Most recent'};
+const F_TYPE_NAMES = {review: 'reviews', original: 'original studies'};
 function fEl(id){ return document.getElementById(id); }
 function fGet(){
-  const on = [...document.querySelectorAll('.fx-chip.active')].map(c => c.dataset.src);
+  const on = [...document.querySelectorAll('.fx-chip[data-src].active')].map(c => c.dataset.src);
   const o = {sources: on.length === 5 ? [] : on, year_from: fEl('fYf').value.trim(), year_to: fEl('fYt').value.trim(), oa: fOA, sort: fEl('fSort').value};
   o.field = fEl('fField') ? fEl('fField').value : 'both';
+  o.ptype = fEl('fType') ? fEl('fType').value : 'all';
   return o;
 }
 function fQS(){
@@ -300,6 +326,7 @@ function fQS(){
   if (o.oa) q += '&oa=1';
   q += '&sort=' + o.sort;
   if (o.field !== 'both') q += '&field=' + o.field;
+  if (o.ptype !== 'all') q += '&ptype=' + o.ptype;
   return q;
 }
 function fBody(){ const o = fGet(); return {sources: o.sources, year_from: o.year_from || null, year_to: o.year_to || null, oa: o.oa, sort: o.sort, field: o.field}; }
@@ -310,25 +337,41 @@ function fSummaryText(){
   if (o.sources.length) p.push(o.sources.length + ' source' + (o.sources.length > 1 ? 's' : ''));
   if (o.sort !== F_DEFAULT_SORT) p.push(F_SORT_NAMES[o.sort] || o.sort);
   if (o.field !== 'both') p.push(o.field === 'title' ? 'title only' : 'abstract only');
+  if (o.ptype !== 'all') p.push(F_TYPE_NAMES[o.ptype]);
   return p.join(' · ');
 }
-function fRefreshSummary(){ const t = fSummaryText(); fEl('fSum').textContent = t ? '· ' + t : ''; }
+function fRefreshSummary(){
+  const t = fSummaryText(); fEl('fSum').textContent = t ? '· ' + t : '';
+  const o = fGet(), now = new Date().getFullYear();                       // highlight the matching "Last N years" chip
+  document.querySelectorAll('.fx-chip[data-years]').forEach(c => {
+    const n = parseInt(c.dataset.years, 10);
+    const on = n === 0 ? (!o.year_from && !o.year_to) : (!o.year_to && String(o.year_from) === String(now - n));
+    c.classList.toggle('active', on);
+  });
+  fUpdateCounts();
+}
+function fYears(n){ fEl('fYf').value = n ? new Date().getFullYear() - n : ''; fEl('fYt').value = ''; fChanged(); }
 function fToggle(){ fEl('fPanel').classList.toggle('hidden'); }
 function fToggleOA(){ fOA = !fOA; fEl('fOAbtn').classList.toggle('on', fOA); fChanged(); }
-function fSetOA(on){ fOA = !!on; fEl('fOAbtn').classList.toggle('on', fOA); fRefreshSummary(); }
+function fSetOA(on){ fOA = !!on; fEl('fOAbtn').classList.toggle('on', fOA); }
 function fChip(el){
-  if (el.classList.contains('active') && document.querySelectorAll('.fx-chip.active').length === 1) { toast('⚠️ Keep at least one source on'); return; }
+  if (el.classList.contains('active') && document.querySelectorAll('.fx-chip[data-src].active').length === 1) { toast('⚠️ Keep at least one source on'); return; }
   el.classList.toggle('active'); fChanged();
 }
 function fChanged(){
   fRefreshSummary();
   clearTimeout(fTimer);
-  fTimer = setTimeout(() => { if (typeof fLastRun === 'function') fLastRun(); }, 350);   // re-run the last search with the new filters
+  fTimer = setTimeout(() => {
+    if (fLastRun === findTopics && canFilterLocally()) filterLocally();     // narrowing: just hide cards, no new search
+    else if (typeof fLastRun === 'function') fLastRun();                    // widening or new sort/words: search again
+  }, 250);
 }
 function fReset(){
   fEl('fYf').value = ''; fEl('fYt').value = ''; fEl('fSort').value = F_DEFAULT_SORT;
   if (fEl('fField')) fEl('fField').value = 'both';
-  document.querySelectorAll('.fx-chip').forEach(c => c.classList.add('active'));
+  if (fEl('fType')) fEl('fType').value = 'all';
+  document.querySelectorAll('.fx-chip[data-src]').forEach(c => c.classList.add('active'));
+  presetClear();
   fOA = false; fEl('fOAbtn').classList.remove('on'); fChanged();
 }
 function safeUrl(u){ u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? u : ''; }
@@ -378,13 +421,86 @@ document.getElementById('keywordsInput').addEventListener('keydown', e => {
 
 let _topicPapers = [], _topicShown = 10, _topicMeta = {}, _topicIdeas = [];
 
+/* ── 1. Level presets: the level sets the filters (you can still change them) ── */
+const LEVEL_PRESETS = {
+  'high school': {oa: true,  years: 10, ptype: 'review',   text: 'High School: Open Access papers (free to read), last 10 years, reviews & overviews first.'},
+  'college':     {oa: false, years: 10, ptype: 'all',      text: 'College: last 10 years, all paper types.'},
+  'graduate':    {oa: false, years: 5,  ptype: 'original', text: 'Graduate: last 5 years, original studies (where the gaps are).'},
+  '':            {oa: false, years: 0,  ptype: 'all',      text: ''}
+};
+function presetClear(){ const n = fEl('presetNote'); n.classList.add('hidden'); n.textContent = ''; }
 function onLevelChange() {
-  // High school students usually cannot open paywalled papers, so start with Open Access ones.
-  if (document.getElementById('levelSelect').value === 'high school' && !fOA) {
-    fSetOA(true); toast('🔓 Showing Open Access papers — easier to read in full');
-    if (typeof fLastRun === 'function') fLastRun();
-  }
+  const lv = document.getElementById('levelSelect').value, p = LEVEL_PRESETS[lv] || LEVEL_PRESETS[''];
+  fSetOA(p.oa);
+  fEl('fYf').value = p.years ? new Date().getFullYear() - p.years : ''; fEl('fYt').value = '';
+  fEl('fType').value = p.ptype;
+  const n = fEl('presetNote');
+  if (p.text) { n.textContent = '⚙ Filters set for ' + p.text + ' Change any filter to customise.'; n.classList.remove('hidden'); } else presetClear();
+  fChanged();
 }
+
+/* ── 5. Instant filtering: narrowing filters only hide cards that are already loaded ── */
+let _topicAll = [], _topicFetched = null, _topicLocal = false;
+function srcKey(ds){
+  const s = String(ds || '').toLowerCase();
+  return s.includes('arxiv') ? 'arxiv' : s.includes('pubmed') ? 'pubmed' : s.includes('crossref') ? 'crossref' : s.includes('europe') ? 'europepmc' : 'openalex';
+}
+function fitsFilters(p, o, skip){
+  const y = parseInt(p.year, 10) || null;
+  if (skip !== 'years') {
+    if (o.year_from && (!y || y < +o.year_from)) return false;
+    if (o.year_to   && (!y || y > +o.year_to))   return false;
+  }
+  if (skip !== 'oa' && o.oa && !p.is_oa) return false;
+  if (skip !== 'src' && o.sources.length && !o.sources.includes(srcKey(p.data_source))) return false;
+  if (skip !== 'type' && o.ptype !== 'all' && p.kind !== o.ptype) return false;
+  return true;
+}
+function canFilterLocally(){
+  if (!_topicAll.length || !_topicFetched) return false;
+  const a = _topicFetched, b = fGet();
+  if (a.sort !== b.sort || a.field !== b.field) return false;
+  if (a.ptype !== 'all' && b.ptype !== a.ptype) return false;                       // widening the type needs new data
+  if (a.oa && !b.oa) return false;
+  if (a.year_from && (!b.year_from || +b.year_from < +a.year_from)) return false;
+  if (a.year_to   && (!b.year_to   || +b.year_to   > +a.year_to))   return false;
+  if (a.sources.length && (!b.sources.length || b.sources.some(x => !a.sources.includes(x)))) return false;
+  // a full list of 60 may hide more matches: when the narrowed list gets short, search again instead
+  const left = _topicAll.filter(p => fitsFilters(p, b)).length;
+  if (_topicAll.length >= 60 && left < 8) return false;
+  return true;
+}
+function filterLocally(){
+  const o = fGet();
+  _topicPapers = _topicAll.filter(p => fitsFilters(p, o));
+  _topicShown = 10; _topicLocal = true;
+  if (!_topicPapers.length) {
+    document.getElementById('results').innerHTML = fNoResultsHtml('None of the loaded papers fit these filters.');
+    return;
+  }
+  renderTopics();
+}
+function fUpdateCounts(){                       // "(n)" next to a filter = how many loaded papers fit if it is on
+  const oaBtn = fEl('fOAbtn'), o = fGet();
+  if (!_topicAll.length) {
+    oaBtn.textContent = '🔓 OA only';
+    document.querySelectorAll('.fx-chip[data-years]').forEach(c => c.textContent = c.textContent.replace(/ \(\d+\)$/, ''));
+    [...fEl('fType').options].forEach(op => op.textContent = op.textContent.replace(/ \(\d+\)$/, ''));
+    return;
+  }
+  const now = new Date().getFullYear();
+  oaBtn.textContent = '🔓 OA only (' + _topicAll.filter(p => fitsFilters(p, dict(o, {oa: true}))).length + ')';
+  document.querySelectorAll('.fx-chip[data-years]').forEach(c => {
+    const n = parseInt(c.dataset.years, 10), base = c.textContent.replace(/ \(\d+\)$/, '');
+    const k = _topicAll.filter(p => fitsFilters(p, dict(o, {year_from: n ? String(now - n) : '', year_to: ''}))).length;
+    c.textContent = base + ' (' + k + ')';
+  });
+  [...fEl('fType').options].forEach(op => {
+    const base = op.textContent.replace(/ \(\d+\)$/, '');
+    op.textContent = base + ' (' + _topicAll.filter(p => fitsFilters(p, dict(o, {ptype: op.value}))).length + ')';
+  });
+}
+function dict(a, b){ return Object.assign({}, a, b); }
 
 async function findTopics() {
   const field    = document.getElementById('fieldInput').value.trim();
@@ -394,6 +510,7 @@ async function findTopics() {
   if (!field) { toast('⚠️ Enter a field or subject area first'); return; }
 
   fLastRun = findTopics;                     // filters re-run this search when changed
+  _topicAll = []; _topicFetched = null;
   const results = document.getElementById('results');
   results.innerHTML = '<div class="spinner"></div>';
 
@@ -410,7 +527,8 @@ async function findTopics() {
       results.innerHTML = fNoResultsHtml(`No research found for <strong>${esc(field)}</strong>. Try a broader field or different keywords.`);
       return;
     }
-    _topicPapers = data.results; _topicShown = 10; _topicIdeas = data.ideas || [];
+    _topicPapers = data.results; _topicAll = data.results; _topicShown = 10; _topicIdeas = data.ideas || [];
+    _topicFetched = fGet(); _topicLocal = false; fRefreshSummary();
     _topicMeta = {field, focus, keywords, relaxed: !!data.relaxed, data};
     renderTopics();
   } catch(e) {
@@ -449,7 +567,7 @@ function renderTopics() {
     const doi = safeUrl(p.doi), oa = safeUrl(p.oa_url);
     return `
     <div class="topic-card" style="animation-delay:${Math.min(i, 9) * 50}ms">
-      <div class="topic-num">Research ${i + 1} of ${_topicPapers.length} ${tagRow(p)}</div>
+      <div class="topic-num">Research ${i + 1} of ${_topicPapers.length} ${tagRow(p)} ${p.kind === 'review' ? '<span class="kind-b">review</span>' : ''}</div>
       ${matchRow(p)}
       <div class="topic-title">${esc(title)}</div>
       <div class="topic-meta">
@@ -490,6 +608,7 @@ function renderTopics() {
     <div class="results-section">
       <div class="section-label">Related research in <strong style="color:var(--accent)">${esc(field)}</strong></div>
       ${usedLine}
+      ${_topicLocal ? `<div class="local-note"><span>Showing <b>${_topicPapers.length}</b> of the ${_topicAll.length} loaded papers that fit your filters. Sub-topics and gaps below were built from all ${_topicAll.length}.</span><button class="btn xs" onclick="findTopics()">↻ Update them</button></div>` : ''}
       ${coverageHtml(data)}
       ${ideasHtml}
       ${gapsHtml}
