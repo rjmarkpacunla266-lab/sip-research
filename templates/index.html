@@ -275,28 +275,67 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
   .user-pill{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
 
+
+/* ── Simple / Advanced mode ── */
+body.simple .adv-only{display:none!important}
+body.adv .simple-only{display:none!important}
+.mode-sw{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:.76rem;font-weight:500;color:var(--muted);padding:4px 4px 4px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surf2)}
+.mode-sw input{position:absolute;opacity:0;pointer-events:none}
+.mode-sw .sw{position:relative;width:36px;height:21px;border-radius:11px;background:var(--surf3);border:1px solid var(--border);transition:background .2s,border-color .2s}
+.mode-sw .sw::after{content:'';position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
+.mode-sw input:checked + .sw{background:rgba(79,141,232,.2);border-color:var(--accent)}
+.mode-sw input:checked + .sw::after{transform:translateX(15px);background:var(--accent)}
+.mode-sw input:focus-visible + .sw{box-shadow:0 0 0 3px rgba(79,141,232,.3)}
+body.adv .mode-sw{color:var(--accent);border-color:rgba(79,141,232,.35)}
+.sbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px}
+.sbar label{display:inline-flex;align-items:center;gap:7px;font-size:.78rem;color:var(--muted)}
+.sbar select{padding:7px 28px 7px 10px;background:var(--surf);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:.82rem;outline:none}
+.sbar select:focus{border-color:var(--accent)}
+.sbar .s-chk{cursor:pointer;color:var(--text)}
+.sbar .s-chk input{width:16px;height:16px;accent-color:var(--accent)}
+.simple-note{font-size:.72rem;color:var(--muted);margin:12px 2px 0}
+.simple-more{font-size:.74rem;color:var(--muted);margin:6px 2px 0}
+.simple-more a{cursor:pointer}
+body.simple #results{gap:0}
+.s-card{background:none;border:0;border-bottom:1px solid var(--border);border-radius:0;padding:16px 2px;overflow:visible}
+.s-card:hover{border-color:var(--border)}
+.s-title{font-family:var(--serif);font-size:1.05rem;line-height:1.4;margin-bottom:3px}
+.s-title a{color:var(--accent)}
+.s-meta{font-size:.8rem;color:#3f9a6e;margin-bottom:5px}
+[data-theme="light"] .s-meta{color:#2a7a52}
+.s-meta .journal{font-style:italic}
+.s-snip{font-size:.86rem;line-height:1.6;color:var(--text);opacity:.88;margin-bottom:7px}
+.s-foot{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:.78rem;color:var(--muted)}
+.s-free{color:var(--green);font-weight:500}
+.s-link{background:none;border:0;padding:0;font-family:var(--sans);font-size:.78rem;color:var(--accent);cursor:pointer}
+.s-link:hover{text-decoration:underline}
+.s-link.gold{color:var(--gold);background:none;border:0}
+body.simple .toolbar{margin-top:16px}
+@media(max-width:520px){.mode-sw span.t{display:none}.sbar{gap:10px}}
 </style>
 </head>
-<body>
+<body class="simple">
+<script>try{ if (localStorage.getItem('sturch_mode') === 'adv') { document.body.classList.remove('simple'); document.body.classList.add('adv'); } }catch(e){}</script>
 <div id="app">
 
 <!-- Header -->
 <header>
   <a href="/" class="logo" style="text-decoration:none"><span>Sturch</span><span class="beta">BETA</span></a>
   <div class="header-right">
-    <span class="user-pill" id="userEmail">…</span>
+    <label class="mode-sw" title="Show every filter, source and tag"><span class="t">Advanced mode</span><input type="checkbox" id="modeSwitch" onchange="setMode(this.checked)" aria-label="Advanced mode"/><span class="sw"></span></label>
+    <span class="user-pill adv-only" id="userEmail">…</span>
     <button class="btn sm" id="themeBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
     <a href="/history" class="btn sm" title="Search history">🕐</a>
     <a href="/saved" class="btn sm" title="Saved papers">🔖</a>
     <a href="/collections" class="btn sm" title="Collections">📚</a>
-    <button class="btn sm" onclick="showExportMenu()">↓ Export</button>
+    <button class="btn sm adv-only" onclick="showExportMenu()">↓ Export</button>
     <a href="/donate" class="btn sm" style="background:linear-gradient(135deg,rgba(79,141,232,.15),rgba(157,110,245,.15));border-color:rgba(157,110,245,.3);color:#9d6ef5">💙 Donate</a>
     <a href="/logout" class="btn sm danger">Logout</a>
   </div>
 </header>
 
 <!-- Notice -->
-<div class="notice" id="noticeBanner">
+<div class="notice adv-only" id="noticeBanner">
   <span>⚠️</span>
   <div><strong>Reference Notice:</strong> Results from OpenAlex, arXiv, PubMed, Crossref &amp; Europe PMC. References are <strong>auto-generated</strong> — always verify before academic submission.</div>
   <button class="notice-x" onclick="this.closest('.notice').remove()">✕</button>
@@ -304,13 +343,22 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 
 <!-- Search -->
 <div class="search-section">
-  <div class="tags-wrap" id="tagsWrap"></div>
+  <div class="tags-wrap adv-only" id="tagsWrap"></div>
   <div class="search-wrap">
     <svg class="si" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="text" id="searchInput" placeholder="Type a keyword, press Enter" autocomplete="off"/>
-    <button class="btn primary" onclick="doSearch()">Search</button>
+    <input type="text" id="searchInput" placeholder="Search papers" autocomplete="off"/>
+    <button class="btn primary" id="searchBtn" onclick="doSearch()">Search</button>
   </div>
-  <div class="hint">Enter adds a keyword as a tag · add several for a sharper search</div>
+  <div class="hint adv-only">Enter adds a keyword as a tag · add several for a sharper search</div>
+  <div class="simple-only simple-note">Type what you are looking for and press Enter. Citations are auto-generated, so check them before you submit.</div>
+
+  <!-- Simple filters -->
+  <div class="sbar simple-only" id="simpleBar">
+    <label>Date <select id="sSince" onchange="simpleChanged()"></select></label>
+    <label>Sort <select id="sSort" onchange="simpleChanged()"><option value="cited">Most cited</option><option value="recent">Most recent</option></select></label>
+    <label class="s-chk"><input type="checkbox" id="sOA" onchange="simpleChanged()"/> Free to read only</label>
+  </div>
+  <div class="simple-more simple-only">Need more control? <a onclick="document.getElementById('modeSwitch').click()">Switch on Advanced mode</a></div>
 
   <!-- Quick topic suggestions -->
   <div class="suggest-wrap" id="suggestWrap">
@@ -326,7 +374,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
   </div>
 
   <!-- Filters -->
-  <div class="fx" id="fx">
+  <div class="fx adv-only" id="fx">
     <button type="button" class="fx-head" id="fxHead" onclick="toggleFilters()" aria-expanded="false" aria-controls="fxPanel">
       <span>⚙ Filters</span>
       <span class="fx-count" id="fxCount" data-n="0">0</span>
@@ -373,7 +421,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 </div>
 
 <!-- Stats bar -->
-<div class="stats-bar hidden" id="statsBar">
+<div class="stats-bar adv-only hidden" id="statsBar">
   <div class="stat"><div><div class="val" id="s_total">—</div><div class="lbl">Total found</div></div></div>
   <div class="stat"><div><div class="val" id="s_shown">—</div><div class="lbl">Showing</div></div></div>
   <div class="stat"><div><div class="val" id="s_sources">5</div><div class="lbl">Sources</div></div></div>
@@ -382,10 +430,10 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 <!-- Toolbar -->
 <div class="toolbar hidden" id="toolbar">
   <span class="count" id="toolbarCount"></span>
-  <span class="cite-counter" id="citeCounter">📋 0 copied</span>
-  <button class="btn sm" onclick="expandAll()">Expand All</button>
-  <button class="btn sm" onclick="collapseAll()">Collapse All</button>
-  <button class="btn sm" onclick="copyAllAPA()">📋 Copy All APA</button>
+  <span class="cite-counter adv-only" id="citeCounter">📋 0 copied</span>
+  <button class="btn sm adv-only" onclick="expandAll()">Expand All</button>
+  <button class="btn sm adv-only" onclick="collapseAll()">Collapse All</button>
+  <button class="btn sm adv-only" onclick="copyAllAPA()">📋 Copy All APA</button>
 </div>
 
 <!-- Results -->
@@ -544,6 +592,69 @@ function toggleTheme() {
   }
 })();
 
+// ── Simple / Advanced mode ─────────────────────
+// Simple (default): one search box and three filters. Advanced: the full page (tags, sources, field, every filter).
+function isSimple() { return !document.body.classList.contains('adv'); }
+function buildSinceOptions(extraFrom) {
+  const y = new Date().getFullYear(), sel = document.getElementById('sSince');
+  const opts = [['', 'Any time'], [String(y), 'Since ' + y], [String(y - 1), 'Since ' + (y - 1)], [String(y - 4), 'Since ' + (y - 4)], [String(y - 9), 'Since ' + (y - 9)]];
+  if (extraFrom && !opts.some(o => o[0] === String(extraFrom))) opts.push([String(extraFrom), 'Since ' + extraFrom]);
+  sel.innerHTML = opts.map(o => `<option value="${o[0]}">${o[1]}</option>`).join('');
+}
+function syncSimpleFromFilters() {
+  const yf = document.getElementById('yearFrom').value.trim();
+  buildSinceOptions(yf);
+  document.getElementById('sSince').value = yf;
+  document.getElementById('sSort').value = document.getElementById('sortBy').value || 'cited';
+  document.getElementById('sOA').checked = oaOnly;
+}
+function simpleChanged() {                         // the three simple filters write into the same fields the Advanced panel uses
+  document.getElementById('yearFrom').value = document.getElementById('sSince').value;
+  document.getElementById('yearTo').value = '';
+  document.getElementById('sortBy').value = document.getElementById('sSort').value;
+  oaOnly = document.getElementById('sOA').checked;
+  const el = document.getElementById('oaToggle'); el.classList.toggle('active', oaOnly); el.setAttribute('aria-checked', String(oaOnly));
+  fxSummary();
+  if (currentQuery) doSearch(); else applyView();
+}
+function rerenderCards() {
+  if (!currentResults.length || !document.querySelector('#results .card')) return;
+  const shown = displayedCount;
+  const c = document.getElementById('results');
+  c.innerHTML = currentResults.slice(0, shown).map((item, i) => buildCard(item, i)).join('');
+  document.getElementById('toolbarCount').innerHTML = countHtml(currentResults.length, shown, lastSources);
+}
+function setMode(adv, init) {
+  const input = document.getElementById('searchInput');
+  document.body.classList.toggle('adv', !!adv);
+  document.body.classList.toggle('simple', !adv);
+  document.getElementById('modeSwitch').checked = !!adv;
+  try { localStorage.setItem('sturch_mode', adv ? 'adv' : 'simple'); } catch (e) {}
+  let cleared = false;
+  if (adv) {
+    const v = input.value.trim();
+    if (v && v.toLowerCase() !== searchTags.join(' ')) addTag(v); else input.value = '';
+    renderTags();
+    input.placeholder = 'Type a keyword, press Enter';
+    if (!init) checkTutorial();
+  } else {
+    // Simple mode has no sources / end year / field options, so they go back to their defaults
+    cleared = !!document.getElementById('yearTo').value.trim() || document.getElementById('fieldBy').value !== 'both' || document.querySelectorAll('.src-chip.active').length < 5;
+    document.getElementById('yearTo').value = '';
+    document.getElementById('fieldBy').value = 'both';
+    document.querySelectorAll('.src-chip').forEach(c => c.classList.add('active'));
+    fxSummary();
+    syncSimpleFromFilters();
+    input.placeholder = 'Search papers';
+    if (searchTags.length) input.value = searchTags.join(' ');
+  }
+  if (!init) {
+    if (cleared) toast('Simple mode: extra filters were reset');
+    if (cleared && currentQuery) { doSearch(); return; }
+    rerenderCards();
+  }
+}
+
 // ── Init ──────────────────────────────────────
 // Handle quick access panel from home
 window.addEventListener('load', () => {
@@ -560,10 +671,12 @@ window.addEventListener('load', () => {
 
   loadUserInfo();
   loadBookmarkState();
+  setMode(!isSimple(), true);                           // apply the saved mode before anything is drawn
   if (!applyRerunFromURL()) restoreLastSearch();
   fxSummary();
+  syncSimpleFromFilters();
   if (window.innerWidth >= 760) toggleFilters(true);   // roomy screens: show the panel open
-  checkTutorial();
+  if (!isSimple()) checkTutorial();                     // the guide explains tags and sources: only shown in Advanced mode
 });
 
 // ── Tutorial ──────────────────────────────────
@@ -631,7 +744,9 @@ function onSortChange() {
 // ── Quick topic search ─────────────────────────
 function quickSearch(topic) {
   searchTags = [topic];
+  document.getElementById('searchInput').value = '';
   renderTags();
+  if (isSimple()) document.getElementById('searchInput').value = topic;
   document.getElementById('suggestWrap').classList.add('hidden');
   doSearch();
 }
@@ -666,6 +781,7 @@ function applyRerunFromURL() {
   const p    = new URLSearchParams(location.search);
   const tags = p.getAll('tag').map(t => t.trim().toLowerCase()).filter(Boolean).slice(0, 10);
   if (!tags.length) return false;
+  if (p.get('yt') || p.get('src') || (p.get('field') && p.get('field') !== 'both')) setMode(true, true);   // that search used Advanced options
   searchTags = [...new Set(tags)]; renderTags();
   document.getElementById('yearFrom').value = p.get('yf') || '';
   document.getElementById('yearTo').value   = p.get('yt') || '';
@@ -693,6 +809,7 @@ function addTag(val) {
 }
 function removeTag(idx) { searchTags.splice(idx, 1); renderTags(); }
 function renderTags() {
+  if (isSimple() && searchTags.length) document.getElementById('searchInput').value = searchTags.join(' ');   // the box shows the search
   document.getElementById('tagsWrap').innerHTML = searchTags.map((t, i) =>
     `<span class="tag-chip">${esc(t)}<span class="tag-x" onclick="removeTag(${i})">×</span></span>`
   ).join('');
@@ -700,11 +817,12 @@ function renderTags() {
 document.getElementById('searchInput').addEventListener('keydown', e => {
   const val = document.getElementById('searchInput').value.trim();
   if (e.key === 'Enter') {
+    if (isSimple()) { e.preventDefault(); if (val) doSearch(); else toast('⚠️ Type something to search for'); return; }
     if (val) { e.preventDefault(); addTag(val); }
     else if (searchTags.length) doSearch();
     else toast('⚠️ Type a keyword first');
   }
-  if (e.key === ',') { e.preventDefault(); if (val) addTag(val); }
+  if (e.key === ',' && !isSimple()) { e.preventDefault(); if (val) addTag(val); }
 });
 
 // ── Load User Info ─────────────────────────────
@@ -734,7 +852,8 @@ function getPaperId(item) {
 // ── Search ─────────────────────────────────────
 async function doSearch(page = 1) {
   const inputVal = document.getElementById('searchInput').value.trim();
-  if (inputVal) { addTag(inputVal); return; }
+  if (inputVal && isSimple()) { searchTags = [inputVal.toLowerCase()]; }       // Simple mode: the box is the whole query, no tags
+  else if (inputVal) { addTag(inputVal); return; }
   const query = searchTags.join(' ');
   if (!query) { toast('⚠️ Please add at least one keyword'); return; }
 
@@ -743,7 +862,7 @@ async function doSearch(page = 1) {
   document.getElementById('suggestWrap').classList.add('hidden');
 
   // Disable search button
-  const searchBtn = document.querySelector('.btn.primary');
+  const searchBtn = document.getElementById('searchBtn');
   if (searchBtn) { searchBtn.disabled = true; searchBtn.textContent = 'Searching…'; }
 
   showLoading();
@@ -836,8 +955,7 @@ function renderResults(data) {
   if (srcEl && data.sources_used) srcEl.textContent = data.sources_used.length;
 
   document.getElementById('toolbar').classList.remove('hidden');
-  document.getElementById('toolbarCount').innerHTML =
-    `<strong>${results.length}</strong> fetched · showing first 10 · ${(data.sources_used||['OpenAlex']).join(', ')}`;
+  document.getElementById('toolbarCount').innerHTML = countHtml(results.length, Math.min(DISPLAY_PER_PAGE, results.length), data.sources_used);
 
   // Show only first 10
   displayedCount = Math.min(DISPLAY_PER_PAGE, results.length);
@@ -893,13 +1011,40 @@ function showNextTen() {
 
   displayedCount = end;
   document.getElementById('s_shown').textContent = displayedCount;
-  document.getElementById('toolbarCount').innerHTML =
-    `<strong>${currentResults.length}</strong> fetched · showing ${displayedCount}`;
+  document.getElementById('toolbarCount').innerHTML = countHtml(currentResults.length, displayedCount, lastSources);
   updateLoadMoreBar();
 }
 
 // ── Build Card HTML ────────────────────────────
+function buildSimpleCard(item, i) {
+  const n = i + 1, cites = item.citations || 0;
+  const au = item.authors || [];
+  const authors = au.slice(0, 3).join(', ') + (au.length > 3 ? ' …' : '');
+  const ab = String(item.abstract || '').trim();
+  const snip = ab.length > 280 ? ab.slice(0, 280).replace(/\s+\S*$/, '') + '…' : ab;
+  const isBookmark = !!bookmarkMap[getPaperId(item)];
+  return `<div class="card s-card" id="card-${n}">
+    <div class="s-title"><a href="#" onclick="openPaperPage(${i},event);return false">${esc(stripTags(item.title || 'Untitled'))}</a></div>
+    <div class="s-meta">${esc(authors)}${authors ? ' – ' : ''}${item.journal ? '<span class="journal">' + esc(item.journal) + '</span>, ' : ''}${item.year || '?'}</div>
+    ${snip ? `<div class="s-snip">${esc(snip)}</div>` : ''}
+    <div class="s-foot">
+      ${cites ? `<span>Cited by ${cites.toLocaleString()}</span>` : ''}
+      ${item.is_oa ? '<span class="s-free">Free to read</span>' : ''}
+      <button class="s-link" onclick="showCitationPicker(${i},${n},event)">Cite</button>
+      <button class="s-link ${isBookmark ? 'gold' : ''}" id="bk-${n}" onclick="toggleBookmark(${i},${n},event)">${isBookmark ? '🔖 Saved' : '🔖 Save'}</button>
+      <button class="s-link" onclick="openPaperPage(${i},event)">Read</button>
+      ${item.oa_url ? `<a class="s-link" href="${esc(item.oa_url)}" target="_blank" rel="noopener noreferrer">Full text</a>` : ''}
+      ${item.doi ? `<a class="s-link" href="${esc(item.doi)}" target="_blank" rel="noopener noreferrer">DOI</a>` : ''}
+    </div>
+  </div>`;
+}
+function countHtml(fetched, shown, sources) {
+  return isSimple()
+    ? `About <strong>${(totalResults || fetched).toLocaleString()}</strong> results · showing ${shown}`
+    : (shown >= fetched ? `<strong>${fetched}</strong> fetched · showing ${shown}` : `<strong>${fetched}</strong> fetched · showing first ${shown} · ${(sources || ['OpenAlex']).join(', ')}`);
+}
 function buildCard(item, i) {
+  if (isSimple()) return buildSimpleCard(item, i);
   const n       = i + 1;
   const cites   = item.citations || 0;
   const cColor  = cites>1000?'var(--gold)':cites>100?'var(--accent)':'var(--muted)';
@@ -1201,7 +1346,7 @@ function doExport(fmt) {
 
 // ── Loading / Error states ─────────────────────
 function showLoading() {
-  document.getElementById('results').innerHTML=`<div class="state"><div class="spinner"></div><h3>Searching 5 sources…</h3><p style="margin-top:5px;font-size:.8rem">OpenAlex · arXiv · PubMed · Crossref · Europe PMC</p></div>`;
+  document.getElementById('results').innerHTML=`<div class="state"><div class="spinner"></div><h3>Searching…</h3><p style="margin-top:5px;font-size:.8rem">${isSimple() ? 'Looking through millions of papers' : 'OpenAlex · arXiv · PubMed · Crossref · Europe PMC'}</p></div>`;
   ['statsBar','toolbar','loadMoreBar'].forEach(id=>document.getElementById(id).classList.add('hidden'));
 }
 function showError(msg) {
