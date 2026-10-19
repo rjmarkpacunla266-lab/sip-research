@@ -238,6 +238,53 @@ _SELF = re.compile(r"\b(?:this|the)\s+(?:present\s+|current\s+)?(?:study|paper|r
                    r"focuses|analy[sz]es?|seeks?|offers?|summari[sz]es?|addresses|covers?|uses?|employs?|conducts?|outlines?)\b"
                    r"|\b(?:to|and)\s+(?:identify|highlight|reveal|uncover)\s+(?:the\s+)?(?:current\s+)?(?:knowledge|research)\s+gaps\b", re.I)
 
+# what KIND of gap a sentence states (the page offers these as filters)
+GAP_TYPES = [("unknown", "Unclear / unknown"), ("lacking", "Little data / understudied"), ("future", "Needs more research")]
+_GT_UNKNOWN = re.compile(r"\bremains?\s+(?:largely\s+|still\s+|poorly\s+|currently\s+|rather\s+|relatively\s+)?(?:unclear|unknown|unresolved|controversial|debated|uncertain|poorly\s+understood|to\s+be\s+(?:determined|elucidated|established))"
+                         r"|\bis\s+(?:little|not)\s+(?:yet\s+)?(?:known|clear|understood)\b|\bit\s+is\s+(?:not\s+)?(?:yet\s+)?(?:clear|known|understood)\b|\bnot\s+(?:yet\s+)?(?:fully\s+)?understood\b|\bopen\s+questions?\b", re.I)
+_GT_LACKING = re.compile(r"\b(?:lack\s+of|limited\s+(?:evidence|data|research|understanding|knowledge|information|studies)|insufficient|scarc\w+|"
+                         r"(?:few|little|scarce)\s+(?:studies|research|attention|evidence|data|work)|understudied|under-studied|underexplored|under-explored|unexplored|"
+                         r"(?:has|have)\s+(?:rarely|seldom|not\s+(?:yet\s+|been\s+)?(?:been\s+)?))", re.I)
+
+def gap_type(text):
+    if _GT_UNKNOWN.search(text): return "unknown"
+    if _GT_LACKING.search(text): return "lacking"
+    return "future"
+
+# research METHODS that show up in a paper's title/abstract (plain word matching, no AI)
+METHODS = [
+    ("Survey / questionnaire",       r"\b(?:survey|surveys|surveyed|questionnaires?)\b"),
+    ("Interviews / focus groups",    r"\binterviews?\b|\bfocus\s+groups?\b"),
+    ("Case study",                   r"\bcase\s+stud(?:y|ies)\b"),
+    ("Experiment / lab work",        r"\bexperiments?\b|\bexperimental(?:ly)?\b|\blaborator(?:y|ies)\b|\blab-scale\b|\bbench-scale\b|\bin\s+vitro\b"),
+    ("Field study / sampling",       r"\bfield\s+(?:study|studies|survey|surveys|work|trials?|experiments?|measurements?|sampling)\b|\bsamples?\s+were\s+(?:collected|taken)\b|\bin\s+situ\b"),
+    ("Computer simulation / model",  r"\bsimulat\w+|\bnumerical(?:ly)?\s+(?:model|stud|analy|simulat)\w*|\bcomputational\s+(?:model|fluid)\w*|\bfinite[-\s]element\b|\bCFD\b|\bmathematical\s+model\w*"),
+    ("Machine learning",             r"\bmachine[-\s]learning\b|\bdeep[-\s]learning\b|\bneural\s+networks?\b|\brandom\s+forests?\b|\bsupport\s+vector\b|\bgradient\s+boost\w*"),
+    ("Statistics / regression",      r"\bregression\b|\bANOVA\b|\bcorrelation(?:s)?\s+analys\w+|\bmultivariate\b|\bstructural\s+equation\b|\bstatistical(?:ly)?\s+(?:analys|model|test)\w*"),
+    ("Systematic / literature review", r"\bsystematic\s+review\b|\bmeta-?analys[ie]s\b|\bscoping\s+review\b|\bliterature\s+review\b|\bbibliometric\b"),
+    ("Clinical / cohort study",      r"\brandomi[sz]ed\b|\bclinical\s+trials?\b|\bcohort\b|\bcross-sectional\b|\bcase-control\b"),
+    ("Qualitative analysis",         r"\bqualitative\b|\bthematic\s+analysis\b|\bgrounded\s+theory\b|\bethnograph\w+"),
+    ("Chemical / molecular analysis",r"\bchromatograph\w*|\bGC-?MS\b|\bHPLC\b|\bspectroscop\w+|\bspectromet\w+|\bPCR\b|\bsequencing\b|\bmicroscop\w+"),
+    ("Life-cycle / cost analysis",   r"\blife[-\s]cycle\s+(?:assessment|analysis)\b|\bLCA\b|\btechno-?economic\b|\bcost-benefit\b"),
+    ("Remote sensing / GIS",         r"\bremote\s+sensing\b|\bGIS\b|\bsatellite\b|\bgeospatial\b"),
+]
+_METHOD_RE = [(n, re.compile(p, re.I)) for n, p in METHODS]
+
+def detect_methods(p):
+    t = ((p.get("title") or "") + ". " + (p.get("abstract") or ""))
+    return [n for n, rx in _METHOD_RE if rx.search(t)]
+
+def method_summary(papers, limit=10):
+    """-> [{name, papers}] most common first. Methods seen in only one paper are hidden when there are enough papers."""
+    cnt = {}
+    for p in papers:
+        for m in p.get("_methods") or []:
+            cnt[m] = cnt.get(m, 0) + 1
+    floor = 2 if len(papers) >= 12 else 1
+    rows = sorted(((n, c) for n, c in cnt.items() if c >= floor), key=lambda x: -x[1])
+    return [{"name": n, "papers": c} for n, c in rows[:limit]]
+
+
 def _gap_score(sent):
     if _GAP_NEG.search(sent) or _SELF.search(sent):
         return 0
@@ -285,7 +332,7 @@ def pick_gaps(cands, limit=8):
         (rest if pk in seen_p else first).append(c)
         seen_p.add(pk)
     out = (first + rest)[:limit]
-    return [{"text": c["text"], "paper": paper_ref(c["paper"]), "from": c.get("from", "abstract")} for c in out]
+    return [{"text": c["text"], "paper": paper_ref(c["paper"]), "from": c.get("from", "abstract"), "type": gap_type(c["text"])} for c in out]
 
 
 # ═════════════════════════════════════════════════════════════════════

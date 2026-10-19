@@ -193,6 +193,15 @@ select.form-input{cursor:pointer}
 .field-tip{font-size:.7rem;color:var(--muted);margin-top:6px;line-height:1.5}
 
 /* ── trail, meter, toolbar, local, save ── */
+.yr-box{margin:0 0 14px;padding:12px 14px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r)}
+.yr-bars{display:flex;align-items:flex-end;gap:3px;height:74px;margin-top:8px}
+.yr-bar{flex:1;min-width:0;height:100%;display:flex;align-items:flex-end;background:none;border:0;padding:0;cursor:pointer}
+.yr-bar i{display:block;width:100%;min-height:2px;border-radius:3px 3px 0 0;background:var(--accent);opacity:.65;transition:opacity .15s}
+.yr-bar:hover i,.yr-bar:focus-visible i{opacity:1;background:var(--accent2)}
+.yr-bar.zero i{background:var(--border);opacity:1}
+.yr-axis{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.64rem;color:var(--muted);margin-top:4px}
+.chip .n{font-family:var(--mono);font-size:.64rem;margin-left:4px;opacity:.85}
+.chip.clear{border-style:dashed}
 .trail{margin:0 0 12px}
 .trail-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
 .trail-step{font-family:var(--sans);font-size:.78rem;padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:var(--surf);color:var(--muted);cursor:pointer}
@@ -561,9 +570,13 @@ function canFilterLocally(){
   if (_topicAll.length >= 60 && left < 8) return false;
   return true;
 }
+function visiblePapers(){
+  const o = fGet();
+  return _topicAll.filter(p => fitsFilters(p, o) && (!_methodSel || (p.methods || []).includes(_methodSel)));
+}
 function filterLocally(){
   const o = fGet();
-  _topicPapers = _topicAll.filter(p => fitsFilters(p, o));
+  _topicPapers = visiblePapers();
   _topicShown = 10; _topicLocal = true;
   if (!_topicPapers.length) {
     document.getElementById('results').innerHTML = relaxHtml('None of the loaded papers fit these filters.', false);
@@ -594,7 +607,7 @@ function fUpdateCounts(){                       // "(n)" next to a filter = how 
 function dict(a, b){ return Object.assign({}, a, b); }
 
 /* ── trail, topic size, gaps (fast first), local check, save, brief ── */
-let _trail = [], _pendingTrail = null, _runId = 0, _gaps = [], _gapLoading = false, _local = null, _saved = new Set();
+let _methodSel = null, _gapType = null, _trail = [], _pendingTrail = null, _runId = 0, _gaps = [], _gapLoading = false, _local = null, _saved = new Set();
 
 function pid(p){ return String(p.openalex_id || p.doi || (p.title || '').slice(0, 60)).trim(); }
 function stateKey(s){ return [s.field, s.focus, s.keywords].map(x => (x || '').trim().toLowerCase()).join('|'); }
@@ -680,17 +693,25 @@ function mergeGaps(abs, ft){
 }
 function gapsInner(){
   const status = _gapLoading ? '<div class="fx-note">⏳ Reading the full text of open-access papers for more gaps…</div>' : '';
-  const cards = _gaps.map((g, i) => { const p = g.paper || {}, d = safeUrl(p.doi), o = safeUrl(p.oa_url); return `
+  const types = (_topicMeta && _topicMeta.data && _topicMeta.data.gap_types) || [];
+  const tcount = {}; _gaps.forEach(g => { tcount[g.type] = (tcount[g.type] || 0) + 1; });
+  const present = types.filter(t => tcount[t.key]);
+  if (_gapType && !tcount[_gapType]) _gapType = null;
+  const typeChips = present.length > 1 ? `<div class="chip-group" style="margin:0 0 10px"><span class="chip${_gapType ? '' : ' active'}" data-gtype="">All <span class="n">${_gaps.length}</span></span>` +
+    present.map(t => `<span class="chip${_gapType === t.key ? ' active' : ''}" data-gtype="${t.key}">${esc(t.label)} <span class="n">${tcount[t.key]}</span></span>`).join('') + '</div>' : '';
+  const tlabel = k => (types.find(t => t.key === k) || {}).label || '';
+  const cards = _gaps.map((g, i) => [g, i]).filter(([g]) => !_gapType || g.type === _gapType).map(([g, i]) => { const p = g.paper || {}, d = safeUrl(p.doi), o = safeUrl(p.oa_url); return `
     <div class="gap-card">
       <div class="gap-q">“${esc(g.text)}”</div>
       <div class="gap-src">
         <span class="src-b ${g.from === 'full text' ? 'ft' : 'ab'}">${g.from === 'full text' ? 'from full text' : 'from abstract'}</span>
+        ${present.length > 1 && tlabel(g.type) ? `<span class="kind-b">${esc(tlabel(g.type))}</span>` : ''}
         <span>${d ? `<a href="${esc(d)}" target="_blank" rel="noopener noreferrer">${esc(p.title || 'Source')}</a>` : esc(p.title || 'Source')}${p.year ? ' · ' + esc(p.year) : ''}</span>
         ${o ? `<a href="${esc(o)}" target="_blank" rel="noopener noreferrer">Read</a>` : ''}
         <button class="btn xs" data-gsave="${i}">${_saved.has(pid(p)) ? '✓ Saved' : '🔖 Save paper'}</button>
       </div>
     </div>`; }).join('');
-  return status + (cards || (_gapLoading ? '' : '<p class="sub-note">No clear research gaps were found in these papers.</p>'));
+  return status + typeChips + (cards || (_gapLoading ? '' : '<p class="sub-note">No clear research gaps were found in these papers.</p>'));
 }
 function refreshGaps(){
   const b = document.getElementById('gapsBox'); if (b) b.innerHTML = gapsInner();
@@ -750,10 +771,12 @@ function briefText(){
   if (d.size) L.push('', 'Topic size: ' + d.size.label + ' (about ' + nf(d.size.count) + ' papers contain all the words, OpenAlex)', d.size.advice);
   if (_local && typeof _local === 'object' && !_local.error) L.push('', 'Local check (Philippines): ' + nf(_local.mentions) + ' paper(s) mention the Philippines' + (_local.authors != null ? '; ' + nf(_local.authors) + ' with Philippine-based authors' : '') + '.');
   const ideas = (d.ideas || []).slice(0, 8);
+  const ms = (d.methods || []).slice(0, 6);
+  if (ms.length) L.push('', 'METHODS SEEN: ' + ms.map(x => x.name + ' (' + x.papers + ')').join('; '));
   if (ideas.length) L.push('', 'SUB-TOPICS THAT KEEP COMING UP', ...ideas.map(x => '- ' + x.topic + ' (' + x.papers + ' papers' + (x.trend === 'rising' ? ', rising' : '') + ')'));
   if (_gaps.length) {
     L.push('', 'RESEARCH GAPS (quotes from the papers)');
-    _gaps.forEach((g, i) => { const p = g.paper || {}; L.push((i + 1) + '. "' + g.text + '"', '   Source: ' + (p.title || '') + (p.year ? ' (' + p.year + ')' : '') + (p.doi ? ' ' + p.doi : '')); });
+    _gaps.forEach((g, i) => { const p = g.paper || {}; const gt = ((d.gap_types || []).find(t => t.key === g.type) || {}).label; L.push((i + 1) + '. "' + g.text + '"' + (gt ? ' [' + gt + ']' : ''), '   Source: ' + (p.title || '') + (p.year ? ' (' + p.year + ')' : '') + (p.doi ? ' ' + p.doi : '')); });
   }
   const ps = _topicPapers.slice(0, 5);
   if (ps.length) L.push('', 'KEY PAPERS (APA)', ...ps.map((p, i) => (i + 1) + '. ' + apaOf(p)));
@@ -776,7 +799,7 @@ async function findTopics() {
   if (!field) { toast('⚠️ Enter a field or subject area first'); return; }
 
   fLastRun = findTopics;                     // filters re-run this search when changed
-  _topicAll = []; _topicFetched = null; _local = null; _gaps = []; _gapLoading = false;
+  _topicAll = []; _topicFetched = null; _local = null; _gaps = []; _gapLoading = false; _methodSel = null; _gapType = null;
   const run = ++_runId;
   const results = document.getElementById('results');
   results.innerHTML = '<div class="spinner"></div>';
@@ -825,6 +848,23 @@ function coverageHtml(data){
     (data.message ? `<br>${esc(data.message)}` : '') + '</div>';
 }
 
+function yearsHtml(y){
+  const bars = y && y.bars; if (!bars || bars.length < 2) return '';
+  const max = Math.max.apply(null, bars.map(b => b.count)) || 1, tot = bars.reduce((a, b) => a + b.count, 0);
+  const peak = bars.reduce((a, b) => b.count > a.count ? b : a, bars[0]);
+  const basis = y.basis === 'all' ? 'all ' + nf(tot) + ' matching papers (OpenAlex)' : 'the ' + nf(tot) + ' papers loaded here';
+  return `<div class="yr-box"><div class="section-label" style="margin-bottom:0">Papers per year</div>
+    <p class="sub-note" style="margin:4px 0 0">Counted from ${basis}. Most in ${peak.year} (${nf(peak.count)}). Tap a bar to look at that year only.</p>
+    <div class="yr-bars">${bars.map(b => `<button type="button" class="yr-bar${b.count ? '' : ' zero'}" data-year="${b.year}" title="${b.year}: ${nf(b.count)} paper${b.count === 1 ? '' : 's'}" aria-label="${b.year}: ${b.count} papers"><i style="height:${b.count ? Math.max(4, Math.round(b.count / max * 100)) : 0}%"></i></button>`).join('')}</div>
+    <div class="yr-axis"><span>${bars[0].year}</span><span>${bars[bars.length - 1].year}</span></div></div>`;
+}
+function methodsHtml(data){
+  const ms = data.methods || []; if (!ms.length) return '';
+  return `<div class="section-label" style="margin-top:22px">Methods seen in these papers</div>
+    <p class="sub-note">Research methods named in the titles and abstracts. Tap one to show only the papers that mention it, so you can see how others tested this topic.</p>
+    <div class="chip-group">${ms.map((m, i) => `<span class="chip${_methodSel === m.name ? ' active' : ''}" data-method="${i}">${esc(m.name)} <span class="n">${m.papers}</span></span>`).join('')}${_methodSel ? '<span class="chip clear" data-method="-1">✕ Show all papers</span>' : ''}</div>
+    ${_methodSel ? `<p class="sub-note" style="margin-top:8px">Showing <b>${_topicPapers.length}</b> paper${_topicPapers.length === 1 ? '' : 's'} that mention “${esc(_methodSel)}”.</p>` : ''}`;
+}
 function showMoreTopics() { _topicShown += 10; renderTopics(); }
 
 function renderTopics() {
@@ -886,7 +926,9 @@ function renderTopics() {
       ${(_topicPapers.length < 4 && fRelaxList().length) ? `<div class="broad-box">Only <b>${_topicPapers.length}</b> paper${_topicPapers.length === 1 ? '' : 's'} found.<div class="chip-group">${fRelaxList().map(([k, l]) => `<span class="chip" onclick="fRelax('${k}')">${esc(l)}</span>`).join('')}</div></div>` : ''}
       ${data.broad ? `<div class="broad-box"><b>“${esc(data.broad.term)}” is a very broad subject</b>, so these results are scattered and the numbers below say little. Pick something specific and search again:<div class="chip-group">${broadChips(data.broad.suggestions)}</div></div>` : ''}
       ${coverageHtml(data)}
+      ${yearsHtml(data.years)}
       ${ideasHtml}
+      ${methodsHtml(data)}
       ${gapsHtml}
       <div class="section-label" style="margin-top:22px">Papers${data.extra_terms && data.extra_terms.length && data.sort === 'match' ? ' (most matching words first)' : ''}</div>
       ${cards}
@@ -901,6 +943,16 @@ function renderTopics() {
     </div>`;
 }
 document.getElementById('results').addEventListener('click', e => {
+  const yb = e.target.closest('button[data-year]');
+  if (yb) { fEl('fYf').value = yb.dataset.year; fEl('fYt').value = yb.dataset.year; fChanged(); return; }
+  const mc = e.target.closest('[data-method]');
+  if (mc) {
+    const m = ((_topicMeta.data && _topicMeta.data.methods) || [])[parseInt(mc.dataset.method, 10)];
+    _methodSel = (m && _methodSel !== m.name) ? m.name : null;
+    _topicPapers = visiblePapers(); _topicShown = 10; renderTopics(); return;
+  }
+  const gt = e.target.closest('[data-gtype]');
+  if (gt) { _gapType = gt.dataset.gtype || null; refreshGaps(); return; }
   const ib = e.target.closest('button[data-idea]');
   if (ib) {
     const d = _topicIdeas[parseInt(ib.dataset.idea, 10)];

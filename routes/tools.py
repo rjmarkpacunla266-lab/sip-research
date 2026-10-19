@@ -1129,6 +1129,30 @@ def _oa_query(filter_str, per_page=1, sort=None):
     except Exception:
         return None, []
 
+def _oa_years(filter_str):
+    """How many papers per publication year for the same words and filters -> [{year, count}] (oldest first) or None. Never raises."""
+    try:
+        r = requests.get(OPENALEX_URL, params={"filter": filter_str, "group_by": "publication_year"}, timeout=10)
+        if not r.ok:
+            return None
+        out = []
+        for g in (r.json().get("group_by") or []):
+            y, c = to_int(g.get("key")), to_int(g.get("count"))
+            if y and c:
+                out.append({"year": y, "count": c})
+        return sorted(out, key=lambda x: x["year"])
+    except Exception:
+        return None
+
+def _year_bars(rows, this_year, span=20):
+    rows = [r for r in (rows or []) if this_year - span < r["year"] <= this_year]
+    if not rows:
+        return None
+    lo = min(r["year"] for r in rows)
+    have = {r["year"]: r["count"] for r in rows}
+    return [{"year": y, "count": have.get(y, 0)} for y in range(lo, this_year + 1)]
+
+
 _SIZE_LEVELS = [   # (smallest count, key, label, advice)
     (0,    "none",   "No match",      "No paper contains all your words together. This could be a research gap, or papers may use different words. Try a synonym or remove one word."),
     (1,    "tiny",   "Very narrow",   "Very few papers cover exactly this. It may be too narrow to find enough to read, or it may be a real gap. Try dropping one word."),
@@ -1264,8 +1288,10 @@ def topics():
                 jobs.append((rq, "recent"))
         # how many papers (OpenAlex) contain ALL the words, with the same filters: the "topic size"
         size_total = None
-        count_ex = ThreadPoolExecutor(max_workers=1)
-        count_fut = count_ex.submit(_oa_query, _oa_filter(f, " AND ".join(terms))) if "openalex" in f["sources"] else None
+        count_ex = ThreadPoolExecutor(max_workers=2)
+        _cf = _oa_filter(f, " AND ".join(terms))
+        count_fut = count_ex.submit(_oa_query, _cf) if "openalex" in f["sources"] else None
+        years_fut = count_ex.submit(_oa_years, _cf) if "openalex" in f["sources"] else None
         with ThreadPoolExecutor(max_workers=len(jobs)) as ex:
             first = list(ex.map(lambda j: search_papers(j[0], 1, dict(f, sort=j[1]), per_source=25)[0], jobs))
         if count_fut is not None:
@@ -1273,6 +1299,12 @@ def topics():
                 size_total = count_fut.result(timeout=8)[0]
             except Exception:
                 size_total = None
+        year_rows = None
+        if years_fut is not None:
+            try:
+                year_rows = years_fut.result(timeout=4)
+            except Exception:
+                year_rows = None
         count_ex.shutdown(wait=False)
         papers, seen = [], set()
         for batch in first:
@@ -1313,6 +1345,19 @@ def topics():
             papers.sort(key=lambda p: len(p["_matched"]), reverse=True)   # stable: keeps the earlier order inside a group
         cov = topicfinder.coverage(papers, extra_terms)
         papers = papers[:60]
+        for p in papers:
+            p["_methods"] = topicfinder.detect_methods(p)
+        methods = topicfinder.method_summary(papers)
+        bars = _year_bars(year_rows, this_year)
+        years = {"bars": bars, "basis": "all"} if bars else None
+        if not years:                                                # OpenAlex not used or no answer: count the papers we loaded
+            cnt = {}
+            for p in papers:
+                y = to_int(p.get("year"))
+                if y:
+                    cnt[y] = cnt.get(y, 0) + 1
+            bars = _year_bars([{"year": y, "count": c} for y, c in cnt.items()], this_year)
+            years = {"bars": bars, "basis": "loaded"} if bars else None
 
         ideas = topicfinder.extract_ideas(papers, subj_terms + extra_terms, prefer_specific=bool(broad))   # words the student typed are not suggested back
         forms = [i["topic"] for i in ideas]
@@ -1337,14 +1382,14 @@ def topics():
             msg = ("No paper found mentions all of: " + ", ".join(extra_terms) + ". This combination may be unstudied "
                    "(a possible research gap) or worded differently. Papers matching the most words are shown first.")
         return jsonify({
-            "results": [dict(_pick(p, abstract_chars=260), matched=p.get("_matched", []), kind=_paper_kind(p),
+            "results": [dict(_pick(p, abstract_chars=260), matched=p.get("_matched", []), kind=_paper_kind(p), methods=p.get("_methods", []),
                              abstract_full=(p.get("abstract") or "")[:1200],
                              missing=[x for x in extra_terms if x not in p.get("_matched", [])]) for p in papers[:60]],
             "size": _size_info(size_total), "fulltext_pending": ft_pending,
             "ptype": ptype, "sort": raw_sort,
             "broad": {"term": subject, "suggestions": broad} if broad else None,
             "coverage": cov, "extra_terms": extra_terms,
-            "ideas": ideas, "gaps": gaps,
+            "ideas": ideas, "gaps": gaps, "methods": methods, "years": years, "gap_types": [{"key": k, "label": l} for k, l in topicfinder.GAP_TYPES],
             "relaxed": len(papers) > strict_n, "analysed": len(papers), "fulltext_used": ft_used,
             "subject": subject, "query": full_query, "terms": terms, "message": msg,
             "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
