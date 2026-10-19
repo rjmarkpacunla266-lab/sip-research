@@ -9,6 +9,19 @@ pages_bp = Blueprint("pages", __name__)
 # Add a new update at the TOP of this list. The newest one is shown on the landing page strip and on /news.
 # Fields: date (YYYY-MM-DD), tag, title, summary (optional), points (list), link / link_text (optional)
 NEWS = [
+    {"date": "2026-10-19", "tag": "New", "title": "Paper counter: how many papers can Sturch search?",
+     "summary": "A live count from each database, shown on the home page.",
+     "points": ["Total papers per database: OpenAlex, Crossref, PubMed, Europe PMC and arXiv.",
+                "How many of them are open access (free to read) and how many are not.",
+                "Because one paper can be in several databases, we show a range: at least this many different papers, and up to this many records."],
+     "link": "/#numbers", "link_text": "See the numbers"},
+    {"date": "2026-10-19", "tag": "Search", "title": "Search Papers: a simpler Simple mode, plus Advanced mode",
+     "summary": "Search now opens in a clean, Google Scholar style view. Need every option? Switch on Advanced mode.",
+     "points": ["Simple mode is the new default: one search box, and just three filters (date, sort and free to read).",
+                "Results show the title, authors, a short snippet, how many times it was cited, and Cite, Save and Read.",
+                "Advanced mode is the full search you know, with tags, all sources, title or abstract only and every filter.",
+                "Use the Advanced mode switch in the top corner. Sturch remembers your choice, and your results stay when you switch."],
+     "link": "/search", "link_text": "Open Search"},
     {"date": "2026-10-19", "tag": "Answer Finder", "title": "Answer Finder: more questions, quotes and citations",
      "summary": "Ask more kinds of questions and use the answers in your paper.",
      "points": ["New question types: Benefits of, Risks of, Examples of, How to, and Is … safe/effective.",
@@ -72,6 +85,20 @@ def home():
         return render_template("home.html")
     news = _news()
     return render_template("landing.html", latest=news[0] if news else None)
+
+@pages_bp.route("/api/paper-count")
+def paper_count():
+    """How many papers Sturch can search, counted from each database (cached for hours, see papercount.py). Public."""
+    try:
+        import papercount
+        data = papercount.get_counts()
+    except Exception:
+        data = None
+    if not data:
+        return jsonify({"error": "The paper count is not available right now."}), 503
+    resp = jsonify(data)
+    resp.headers["Cache-Control"] = "public, max-age=600"
+    return resp
 
 @pages_bp.route("/news")
 def news():

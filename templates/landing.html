@@ -235,6 +235,25 @@ footer a:hover{color:var(--accent)}
 .news-date{color:var(--muted);margin-left:6px;font-size:.76rem}
 .news-go{flex:none;color:var(--accent2);font-size:.8rem;white-space:nowrap}
 @media(max-width:600px){.news-wrap{padding:0 12px;margin-top:12px}.news-strip{padding:8px 11px;font-size:.8rem}.news-date{display:none}.news-go{font-size:.74rem}}
+
+/* ── Paper counter ── */
+.counter-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.count-card{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px 18px 16px}
+.count-card .big{font-family:var(--serif);font-size:2.2rem;line-height:1.1;color:var(--accent)}
+.count-card.oa .big{color:var(--green,#3ecf8e)}
+.count-card .lbl{font-size:.82rem;margin-top:5px}
+.count-card .sub{font-size:.74rem;color:var(--muted);margin-top:3px;line-height:1.5}
+.count-table{background:var(--surf);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.count-row{display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid var(--border);font-size:.82rem}
+.count-row:first-child{border-top:0}
+.count-row.head{font-size:.64rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);background:var(--surf2)}
+.count-row .n{font-family:monospace;font-size:.8rem}
+.count-row .nm{font-weight:600}
+.count-row .na{color:var(--muted);font-size:.74rem}
+.count-note{font-size:.74rem;color:var(--muted);line-height:1.6;margin-top:12px}
+.count-skel{height:96px;border-radius:14px;background:var(--surf);border:1px solid var(--border);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.5}}
+@media(max-width:560px){.counter-grid{grid-template-columns:1fr}.count-row{grid-template-columns:1fr 1fr 1fr;padding:10px 12px}.count-row .nm{grid-column:1/-1}.count-row.head span:first-child{display:none}}
 </style>
 </head>
 <body>
@@ -285,6 +304,43 @@ footer a:hover{color:var(--accent)}
 
 
 </div>
+
+<!-- Paper counter -->
+<section class="section" id="numbers" hidden>
+  <div class="section-label">By the numbers</div>
+  <h2>How many papers can Sturch search?</h2>
+  <p class="section-intro">Counted live from each database, not a guess.</p>
+  <div id="countBody"><div class="count-skel"></div></div>
+</section>
+<script>
+(function(){
+  var sec = document.getElementById('numbers'), body = document.getElementById('countBody');
+  function compact(n){ if (n == null) return null; if (n >= 1e9) return (n / 1e9).toFixed(2).replace(/\.?0+$/, '') + 'B'; if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M'; if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K'; return String(n); }
+  function full(n){ return Number(n).toLocaleString('en-US'); }
+  function esc(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  fetch('/api/paper-count').then(function(r){ return r.ok ? r.json() : Promise.reject(); }).then(function(d){
+    if (!d || !d.sources || !d.unique_min) return;
+    var rows = d.sources.map(function(s){
+      if (!s.total) return '<div class="count-row"><span class="nm">' + esc(s.name) + '</span><span class="na" style="grid-column:2/-1">not available right now</span></div>';
+      return '<div class="count-row"><span class="nm">' + esc(s.name) + '</span><span class="n" title="' + full(s.total) + '">' + compact(s.total) + '</span>' +
+        (s.oa_reported ? '<span class="n" title="' + full(s.oa) + '">' + compact(s.oa) + '</span><span class="n" title="' + full(s.closed) + '">' + compact(s.closed) + '</span>'
+                       : '<span class="na">not reported</span><span class="na">not reported</span>') + '</div>';
+    }).join('');
+    body.innerHTML =
+      '<div class="counter-grid">' +
+        '<div class="count-card"><div class="big" title="' + full(d.unique_min) + '">' + compact(d.unique_min) + '+</div><div class="lbl">different papers, at least</div>' +
+          '<div class="sub">Up to ' + compact(d.sum_total) + ' records if every database is added together. The same paper can be in more than one.</div></div>' +
+        '<div class="count-card oa"><div class="big" title="' + full(d.oa_min) + '">' + compact(d.oa_min) + '+</div><div class="lbl">free to read (open access), at least</div>' +
+          '<div class="sub">Up to ' + compact(d.sum_oa) + ' open-access records across the databases that report it.</div></div>' +
+      '</div>' +
+      '<div class="count-table"><div class="count-row head"><span>Database</span><span>Papers</span><span>Open access</span><span>Not open access</span></div>' + rows + '</div>' +
+      '<p class="count-note">Each number comes from the database\'s own count and is refreshed about every 6 hours (last counted ' + esc(d.updated) + ').' +
+      (d.complete ? '' : ' One or more databases did not answer, so the totals may be low.') +
+      ' Duplicates between databases cannot be removed exactly, so the real number of different papers is between the two big numbers. Crossref does not say which of its records are open access.</p>';
+    sec.hidden = false;
+  }).catch(function(){ /* no counter: the section stays hidden */ });
+})();
+</script>
 
 <div class="divider"></div>
 
