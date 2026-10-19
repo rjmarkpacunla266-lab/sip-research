@@ -191,6 +191,39 @@ select.form-input{cursor:pointer}
 .broad-box .chip{color:var(--text);border-color:rgba(232,184,75,.3)}
 .broad-box .chip:hover{border-color:var(--gold);color:var(--gold)}
 .field-tip{font-size:.7rem;color:var(--muted);margin-top:6px;line-height:1.5}
+
+/* ── trail, meter, toolbar, local, save ── */
+.trail{margin:0 0 12px}
+.trail-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.trail-step{font-family:var(--sans);font-size:.78rem;padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:var(--surf);color:var(--muted);cursor:pointer}
+.trail-step:hover{border-color:var(--accent2);color:var(--accent2)}
+.trail-step.cur{border-color:var(--accent);color:var(--accent);background:rgba(79,141,232,.08)}
+.trail-step .n{font-family:var(--mono);font-size:.64rem;margin-left:3px;opacity:.85}
+.trail-sep{color:var(--muted);font-size:.9rem}
+.meter{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin:0 0 12px}
+.meter-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:.8rem;margin-bottom:8px}
+.meter-top b{color:var(--text)}
+.meter-top span{color:var(--muted);font-size:.74rem}
+.segs{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.seg{height:7px;border-radius:4px;background:var(--surf3)}
+.seg-labels{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:4px}
+.seg-labels span{font-size:.56rem;color:var(--muted);text-align:center;line-height:1.2}
+.meter p{font-size:.78rem;color:var(--muted);margin-top:8px;line-height:1.5}
+.meter.lv-none .seg.on{background:var(--red)}
+.meter.lv-tiny .seg.on{background:var(--orange)}
+.meter.lv-small .seg.on{background:var(--gold)}
+.meter.lv-good .seg.on{background:var(--green)}
+.meter.lv-broad .seg.on{background:var(--gold)}
+.meter.lv-huge .seg.on{background:var(--orange)}
+.meter.lv-good{border-color:rgba(62,207,142,.3)}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.local-box{background:rgba(79,141,232,.05);border:1px solid rgba(79,141,232,.2);border-radius:var(--r);padding:12px 14px;margin:0 0 12px;font-size:.8rem;color:var(--muted);line-height:1.6}
+.local-box b{color:var(--text)}
+.local-box p{margin:6px 0}
+.local-list{margin:6px 0 10px;padding-left:18px;font-size:.78rem}
+.local-list li{margin:3px 0}
+.n{font-family:var(--mono);font-size:.68rem;color:var(--muted)}
+@media(max-width:600px){.seg-labels span{font-size:.5rem}}
 </style>
 </head>
 <body>
@@ -560,6 +593,181 @@ function fUpdateCounts(){                       // "(n)" next to a filter = how 
 }
 function dict(a, b){ return Object.assign({}, a, b); }
 
+/* ── trail, topic size, gaps (fast first), local check, save, brief ── */
+let _trail = [], _pendingTrail = null, _runId = 0, _gaps = [], _gapLoading = false, _local = null, _saved = new Set();
+
+function pid(p){ return String(p.openalex_id || p.doi || (p.title || '').slice(0, 60)).trim(); }
+function stateKey(s){ return [s.field, s.focus, s.keywords].map(x => (x || '').trim().toLowerCase()).join('|'); }
+function nf(n){ return (n == null) ? '?' : Number(n).toLocaleString(); }
+
+/* 2. Narrowing trail: Biofuel > flammability > diesel, each step with its paper count */
+function trailUpdate(st, size){
+  const count = size ? size.count : null;
+  if (_pendingTrail) { _trail.push(Object.assign({label: _pendingTrail, count}, st)); _pendingTrail = null; return; }
+  const last = _trail[_trail.length - 1];
+  if (last && stateKey(last) === stateKey(st)) { last.count = count; return; }      // same words, only the filters changed
+  _trail = [Object.assign({label: [st.field, st.focus, st.keywords].filter(Boolean).join(' + '), count}, st)];
+}
+function trailGo(i){
+  const s = _trail[i]; if (!s) return;
+  _trail = _trail.slice(0, i + 1);
+  document.getElementById('fieldInput').value = s.field || '';
+  document.getElementById('focusInput').value = s.focus || '';
+  document.getElementById('keywordsInput').value = s.keywords || '';
+  findTopics();
+}
+function trailHtml(){
+  if (_trail.length < 2) return '';
+  const last = _trail.length - 1;
+  return `<div class="trail"><div class="trail-row">` +
+    _trail.map((t, i) => `<button class="trail-step${i === last ? ' cur' : ''}" data-trail="${i}" title="Go back to this step">${esc(t.label)}${t.count != null ? ` <span class="n">${nf(t.count)}</span>` : ''}</button>`).join('<span class="trail-sep">›</span>') +
+    `<button class="btn xs" data-trail="${last - 1}">↩ Back</button></div><p class="sub-note" style="margin:6px 0 0">Each sub-topic you tap narrows the topic. The number is how many papers contain all the words at that step.</p></div>`;
+}
+
+/* 1. Topic size meter */
+function sizeHtml(sz){
+  if (!sz) return '';
+  const idx = sz.scale.findIndex(s => s.key === sz.level);
+  const segs = sz.scale.map((s, i) => `<span class="seg${i <= idx ? ' on' : ''}" title="${esc(s.label)}"></span>`).join('');
+  const hasF = !!fSummaryText();
+  return `<div class="meter lv-${sz.level}">
+    <div class="meter-top"><b>Topic size: ${esc(sz.label)}</b><span>${sz.count === 0 ? 'no papers' : '≈ ' + nf(sz.count) + ' papers'} contain all your words${hasF ? ' (with your filters)' : ''} · OpenAlex</span></div>
+    <div class="segs">${segs}</div>
+    <div class="seg-labels">${sz.scale.map(s => `<span>${esc(s.label)}</span>`).join('')}</div>
+    <p>${esc(sz.advice)}</p></div>`;
+}
+
+/* 3. Local check (Philippines) */
+function localHtml(){
+  if (!_local) return '';
+  if (_local === 'loading') return '<div class="local-box"><div class="fx-note" style="margin:0">⏳ Checking local research…</div></div>';
+  if (_local.error) return `<div class="local-box"><p>${esc(_local.error)}</p></div>`;
+  const L = _local, words = esc((L.terms || []).join(' '));
+  const m = L.mentions, a = L.authors;
+  let msg;
+  if (m === 0 && (L.subject_mentions || 0) > 0)
+    msg = `No paper on all your words mentions the Philippines, but <b>${nf(L.subject_mentions)}</b> papers on “${esc(_topicMeta.field)}” alone do. Studying your exact angle locally could be original.`;
+  else if (m === 0)
+    msg = 'No paper mentions the Philippines for these words. This could be a local gap, or Philippine studies may use other wording (try a city or province name).';
+  else
+    msg = `<b>${nf(m)}</b> paper${m === 1 ? '' : 's'} mention the Philippines in the title or abstract.`;
+  const ex = (L.examples || []).map(p => { const d = safeUrl(p.doi); return `<li>${d ? `<a href="${esc(d)}" target="_blank" rel="noopener noreferrer">${esc(p.title || 'Untitled')}</a>` : esc(p.title || 'Untitled')} <span class="n">${esc(p.year || '')}</span></li>`; }).join('');
+  return `<div class="local-box"><b>🇵🇭 Local check for “${words}”</b>
+    <p>${msg}${a != null ? ` <b>${nf(a)}</b> have authors at Philippine institutions.` : ''}${L.filtered ? ' <span class="n">(your year / OA filters apply)</span>' : ''}</p>
+    ${ex ? `<ul class="local-list">${ex}</ul>` : ''}
+    <button class="btn xs" data-act="localadd">➕ Add “Philippines” to my keywords and search</button>
+    <p class="sub-note" style="margin:8px 0 0">Counts come from OpenAlex only, the one source that can filter by author country.</p></div>`;
+}
+async function checkLocal(){
+  const m = _topicMeta; if (!m || !m.field) return;
+  _local = 'loading'; refreshLocal();
+  try {
+    const r = await fetch(`/api/topics/local?subject=${encodeURIComponent(m.field)}&focus=${encodeURIComponent(m.focus || '')}&kw=${encodeURIComponent(m.keywords || '')}${fQS()}`);
+    const d = await r.json().catch(() => ({}));
+    _local = r.ok ? d : {error: d.error || 'The local check failed. Try again.'};
+  } catch (e) { _local = {error: 'Connection error. Try again.'}; }
+  refreshLocal();
+}
+function refreshLocal(){ const b = document.getElementById('localBox'); if (b) b.innerHTML = localHtml(); }
+
+/* 4. Gaps: the abstract ones show at once, the full-text ones join a few seconds later */
+function gapKey(g){ return String(g.text || '').toLowerCase().replace(/\W+/g, ' ').slice(0, 70); }
+function mergeGaps(abs, ft){
+  const out = [], seen = new Set();
+  const add = g => { const k = gapKey(g); if (k && !seen.has(k)) { seen.add(k); out.push(g); } };
+  ft.slice(0, 5).forEach(add); abs.forEach(add); ft.slice(5).forEach(add);   // full-text gaps first: they come from the Discussion
+  return out.slice(0, 8);
+}
+function gapsInner(){
+  const status = _gapLoading ? '<div class="fx-note">⏳ Reading the full text of open-access papers for more gaps…</div>' : '';
+  const cards = _gaps.map((g, i) => { const p = g.paper || {}, d = safeUrl(p.doi), o = safeUrl(p.oa_url); return `
+    <div class="gap-card">
+      <div class="gap-q">“${esc(g.text)}”</div>
+      <div class="gap-src">
+        <span class="src-b ${g.from === 'full text' ? 'ft' : 'ab'}">${g.from === 'full text' ? 'from full text' : 'from abstract'}</span>
+        <span>${d ? `<a href="${esc(d)}" target="_blank" rel="noopener noreferrer">${esc(p.title || 'Source')}</a>` : esc(p.title || 'Source')}${p.year ? ' · ' + esc(p.year) : ''}</span>
+        ${o ? `<a href="${esc(o)}" target="_blank" rel="noopener noreferrer">Read</a>` : ''}
+        <button class="btn xs" data-gsave="${i}">${_saved.has(pid(p)) ? '✓ Saved' : '🔖 Save paper'}</button>
+      </div>
+    </div>`; }).join('');
+  return status + (cards || (_gapLoading ? '' : '<p class="sub-note">No clear research gaps were found in these papers.</p>'));
+}
+function refreshGaps(){
+  const b = document.getElementById('gapsBox'); if (b) b.innerHTML = gapsInner();
+  const u = document.getElementById('usedLine'); if (u) u.innerHTML = usedLineInner();
+}
+function usedLineInner(){
+  const data = (_topicMeta && _topicMeta.data) || {};
+  return `${data.analysed ? data.analysed + ' papers analysed · ' : ''}${data.fulltext_used ? 'full text read for ' + data.fulltext_used + ' open-access paper' + (data.fulltext_used > 1 ? 's' : '') + ' · ' : ''}${esc((data.sources_used || []).join(', '))}`;
+}
+async function loadFullTextGaps(run, data){
+  _gapLoading = true; refreshGaps();
+  try {
+    const oa = _topicAll.filter(p => p.is_oa && p.doi).slice(0, 40).map(p => ({title: p.title, year: p.year, doi: p.doi, oa_url: p.oa_url,
+      citations: p.citations, journal: p.journal, authors: p.authors, data_source: p.data_source, openalex_id: p.openalex_id, apa_reference: p.apa_reference}));
+    const r = await fetch('/api/topics/gaps', {method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({subject: _topicMeta.field, forms: (data.ideas || []).map(i => i.topic), papers: oa})});
+    const d = await r.json().catch(() => ({}));
+    if (run !== _runId) return;
+    if (r.ok && d.gaps) { _gaps = mergeGaps(_gaps, d.gaps); data.fulltext_used = d.used || 0; }
+  } catch (e) { /* the abstract gaps stay */ }
+  if (run !== _runId) return;
+  _gapLoading = false; refreshGaps();
+}
+
+/* 5. Save a paper to Saved (the same bookmark list the other pages use) */
+async function savePaper(p, btn){
+  if (!p) return;
+  const body = Object.assign({}, p, {abstract: p.abstract_full || p.abstract || ''});
+  ['abstract_full', 'matched', 'missing', 'kind'].forEach(k => delete body[k]);
+  try {
+    const r = await fetch('/api/bookmarks', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    if (r.ok || r.status === 409) {
+      _saved.add(pid(p));
+      document.querySelectorAll('button[data-save], button[data-gsave]').forEach(b => {
+        const q = b.dataset.save != null ? _topicPapers[+b.dataset.save] : (_gaps[+b.dataset.gsave] || {}).paper;
+        if (q && pid(q) === pid(p)) b.textContent = '✓ Saved';
+      });
+      toast(r.status === 409 ? '🔖 Already in Saved' : '🔖 Saved to your library');
+    } else toast('❌ Could not save');
+  } catch (e) { toast('❌ Could not save'); }
+}
+
+/* 6. Topic brief: plain text a student can paste or send */
+function apaOf(p){
+  if (p.apa_reference) return p.apa_reference;
+  const au = (p.authors || []).slice(0, 3).join(', ') + ((p.authors || []).length > 3 ? ', et al.' : '');
+  return `${au || 'Unknown'} (${p.year || 'n.d.'}). ${p.title || ''}. ${p.journal || ''}${p.doi ? ' ' + p.doi : ''}`;
+}
+function briefText(){
+  const m = _topicMeta, d = m.data || {}, L = [];
+  const date = new Date().toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'});
+  L.push('TOPIC BRIEF (Sturch Topic Finder, ' + date + ')', '', 'Subject: ' + m.field);
+  if (m.focus) L.push('Focus: ' + m.focus);
+  if (m.keywords) L.push('Keywords: ' + m.keywords);
+  const fs = fSummaryText(); if (fs) L.push('Filters: ' + fs);
+  if (_trail.length > 1) L.push('Narrowing steps: ' + _trail.map(t => t.label + (t.count != null ? ' (' + nf(t.count) + ')' : '')).join(' > '));
+  if (d.size) L.push('', 'Topic size: ' + d.size.label + ' (about ' + nf(d.size.count) + ' papers contain all the words, OpenAlex)', d.size.advice);
+  if (_local && typeof _local === 'object' && !_local.error) L.push('', 'Local check (Philippines): ' + nf(_local.mentions) + ' paper(s) mention the Philippines' + (_local.authors != null ? '; ' + nf(_local.authors) + ' with Philippine-based authors' : '') + '.');
+  const ideas = (d.ideas || []).slice(0, 8);
+  if (ideas.length) L.push('', 'SUB-TOPICS THAT KEEP COMING UP', ...ideas.map(x => '- ' + x.topic + ' (' + x.papers + ' papers' + (x.trend === 'rising' ? ', rising' : '') + ')'));
+  if (_gaps.length) {
+    L.push('', 'RESEARCH GAPS (quotes from the papers)');
+    _gaps.forEach((g, i) => { const p = g.paper || {}; L.push((i + 1) + '. "' + g.text + '"', '   Source: ' + (p.title || '') + (p.year ? ' (' + p.year + ')' : '') + (p.doi ? ' ' + p.doi : '')); });
+  }
+  const ps = _topicPapers.slice(0, 5);
+  if (ps.length) L.push('', 'KEY PAPERS (APA)', ...ps.map((p, i) => (i + 1) + '. ' + apaOf(p)));
+  L.push('', 'These are quotes and papers found by Sturch, not a finished topic. Check each original paper and write your own question.');
+  return L.join('\n');
+}
+function copyBrief(){ copyText(briefText()); }
+function downloadBrief(){
+  const blob = new Blob([briefText()], {type: 'text/plain'}), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'topic-brief-' + ((_topicMeta.field || 'topic').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'topic') + '.txt';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
 async function findTopics() {
   const field    = document.getElementById('fieldInput').value.trim();
   const focus    = document.getElementById('focusInput').value.trim();
@@ -568,29 +776,37 @@ async function findTopics() {
   if (!field) { toast('⚠️ Enter a field or subject area first'); return; }
 
   fLastRun = findTopics;                     // filters re-run this search when changed
-  _topicAll = []; _topicFetched = null;
+  _topicAll = []; _topicFetched = null; _local = null; _gaps = []; _gapLoading = false;
+  const run = ++_runId;
   const results = document.getElementById('results');
   results.innerHTML = '<div class="spinner"></div>';
 
   try {
-    const url = `/api/topics?subject=${encodeURIComponent(field)}&focus=${encodeURIComponent(focus)}&kw=${encodeURIComponent(keywords)}${fQS()}`;
+    // fast first: papers, sub-topics, topic size and abstract gaps. The slow full-text gaps are fetched afterwards.
+    const url = `/api/topics?subject=${encodeURIComponent(field)}&focus=${encodeURIComponent(focus)}&kw=${encodeURIComponent(keywords)}${fQS()}&fulltext=0`;
     const resp = await fetch(url);
     const data = await resp.json().catch(() => ({}));
+    if (run !== _runId) return;
 
     if (!resp.ok) {
       results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>${esc(data.error || 'Something went wrong. Try again.')}</p></div>`;
       return;
     }
     if (!data.results || !data.results.length) {
+      _pendingTrail = null;
       results.innerHTML = relaxHtml(`No research found for <strong>${esc(field)}</strong> with these words and filters.`, false);
       return;
     }
     _topicPapers = data.results; _topicAll = data.results; _topicShown = 10; _topicIdeas = data.ideas || [];
+    _gaps = data.gaps || [];
     _topicFetched = fGet(); _topicLocal = false; fRefreshSummary();
     _topicMeta = {field, focus, keywords, relaxed: !!data.relaxed, data};
+    trailUpdate({field, focus, keywords}, data.size);
+    _gapLoading = !!data.fulltext_pending;
     renderTopics();
+    if (data.fulltext_pending) loadFullTextGaps(run, data);
   } catch(e) {
-    results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>Connection error. Try again.</p></div>`;
+    if (run === _runId) results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>Connection error. Try again.</p></div>`;
   }
 }
 
@@ -638,37 +854,37 @@ function renderTopics() {
       <div class="topic-actions">
         ${doi ? `<a href="${esc(doi)}" target="_blank" rel="noopener noreferrer" class="btn xs">↗ View Source</a>` : ''}
         ${oa ? `<a href="${esc(oa)}" target="_blank" rel="noopener noreferrer" class="btn xs">↗ Read</a>` : ''}
+        <button class="btn xs" data-save="${i}">${_saved.has(pid(p)) ? '✓ Saved' : '🔖 Save'}</button>
         <button class="btn xs" data-copy="${i}">📋 Copy Title</button>
       </div>
     </div>`;
   }).join('');
 
   const left = _topicPapers.length - shown.length;
-  const ideas = data.ideas || [], gaps = data.gaps || [];
+  const ideas = data.ideas || [];
   const ideasHtml = ideas.length ? `
       <div class="section-label">Sub-topics to explore</div>
-      <p class="sub-note">Themes that keep coming up across these papers. Tap one to narrow the search to it.</p>
+      <p class="sub-note">Themes that keep coming up across these papers. Tap one to narrow your topic to it.</p>
       <div class="idea-wrap">${ideas.map((d, i) => `<button class="idea" data-idea="${i}" title="${esc(d.papers + ' papers' + (d.examples && d.examples[0] ? ' · e.g. ' + d.examples[0].title : ''))}">${esc(d.topic)} <span class="n">${d.papers}</span>${d.trend === 'rising' ? '<span class="tr tr-rising">↑ rising</span>' : d.trend === 'established' ? '<span class="tr tr-established">established</span>' : ''}</button>`).join('')}</div>` : '';
-  const gapsHtml = gaps.length ? `
+  const gapsHtml = (_gaps.length || _gapLoading) ? `
       <div class="section-label" style="margin-top:22px">Research gaps mentioned in the papers</div>
       <p class="sub-note">Sentences quoted from the papers where the authors say something is unknown, missing or needs more study. Use them as starting points for an original question.</p>
-      ${gaps.map(g => { const p = g.paper || {}, d = safeUrl(p.doi), o = safeUrl(p.oa_url); return `
-      <div class="gap-card">
-        <div class="gap-q">“${esc(g.text)}”</div>
-        <div class="gap-src">
-          <span class="src-b ${g.from === 'full text' ? 'ft' : 'ab'}">${g.from === 'full text' ? 'from full text' : 'from abstract'}</span>
-          <span>${d ? `<a href="${esc(d)}" target="_blank" rel="noopener noreferrer">${esc(p.title || 'Source')}</a>` : esc(p.title || 'Source')}${p.year ? ' · ' + esc(p.year) : ''}</span>
-          ${o ? `<a href="${esc(o)}" target="_blank" rel="noopener noreferrer">Read</a>` : ''}
-        </div>
-      </div>`; }).join('')}` : '';
-  const usedLine = `<div class="fx-note">${data.analysed ? data.analysed + ' papers analysed · ' : ''}${data.fulltext_used ? 'full text read for ' + data.fulltext_used + ' open-access paper' + (data.fulltext_used > 1 ? 's' : '') + ' · ' : ''}${esc((data.sources_used || []).join(', '))}</div>`;
+      <div id="gapsBox">${gapsInner()}</div>` : '<div id="gapsBox"></div>';
   results.innerHTML = `
     <div class="results-section">
       <div class="section-label">Related research in <strong style="color:var(--accent)">${esc(field)}</strong></div>
-      ${usedLine}
+      <div class="fx-note" id="usedLine">${usedLineInner()}</div>
+      ${trailHtml()}
+      ${sizeHtml(data.size)}
+      <div class="toolbar">
+        <button class="btn xs" data-act="brief">📋 Copy topic brief</button>
+        <button class="btn xs" data-act="brieftxt">⬇ Download .txt</button>
+        <button class="btn xs" data-act="local">🇵🇭 Check local research</button>
+      </div>
+      <div id="localBox">${localHtml()}</div>
       ${_topicLocal ? `<div class="local-note"><span>Showing <b>${_topicPapers.length}</b> of the ${_topicAll.length} loaded papers that fit your filters. Sub-topics and gaps below were built from all ${_topicAll.length}.</span><button class="btn xs" onclick="findTopics()">↻ Update them</button></div>` : ''}
-      ${data.broad ? `<div class="broad-box"><b>“${esc(data.broad.term)}” is a very broad subject</b>, so these results are scattered and the numbers below say little. Pick something specific and search again:<div class="chip-group">${broadChips(data.broad.suggestions)}</div></div>` : ''}
       ${(_topicPapers.length < 4 && fRelaxList().length) ? `<div class="broad-box">Only <b>${_topicPapers.length}</b> paper${_topicPapers.length === 1 ? '' : 's'} found.<div class="chip-group">${fRelaxList().map(([k, l]) => `<span class="chip" onclick="fRelax('${k}')">${esc(l)}</span>`).join('')}</div></div>` : ''}
+      ${data.broad ? `<div class="broad-box"><b>“${esc(data.broad.term)}” is a very broad subject</b>, so these results are scattered and the numbers below say little. Pick something specific and search again:<div class="chip-group">${broadChips(data.broad.suggestions)}</div></div>` : ''}
       ${coverageHtml(data)}
       ${ideasHtml}
       ${gapsHtml}
@@ -688,9 +904,32 @@ document.getElementById('results').addEventListener('click', e => {
   const ib = e.target.closest('button[data-idea]');
   if (ib) {
     const d = _topicIdeas[parseInt(ib.dataset.idea, 10)];
-    if (d) { document.getElementById('keywordsInput').value = d.topic; toast('🔎 Narrowing to “' + d.topic + '”'); findTopics(); window.scrollTo({top: 0, behavior: 'smooth'}); }
+    if (d) {
+      const kwEl = document.getElementById('keywordsInput'), cur = kwEl.value.trim();
+      if (!cur.toLowerCase().includes(d.topic.toLowerCase())) kwEl.value = cur ? cur + ' ' + d.topic : d.topic;   // adds to the trail, no longer replaces
+      _pendingTrail = d.topic; toast('🔎 Narrowing to “' + d.topic + '”'); findTopics(); window.scrollTo({top: 0, behavior: 'smooth'});
+    }
     return;
   }
+  const tr = e.target.closest('button[data-trail]');
+  if (tr) { trailGo(parseInt(tr.dataset.trail, 10)); return; }
+  const ac = e.target.closest('button[data-act]');
+  if (ac) {
+    const a = ac.dataset.act;
+    if (a === 'brief') copyBrief();
+    else if (a === 'brieftxt') downloadBrief();
+    else if (a === 'local') checkLocal();
+    else if (a === 'localadd') {
+      const kwEl = document.getElementById('keywordsInput'), cur = kwEl.value.trim();
+      if (!/philippine/i.test(cur)) kwEl.value = cur ? cur + ' Philippines' : 'Philippines';
+      _pendingTrail = 'Philippines'; findTopics(); window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+    return;
+  }
+  const sv = e.target.closest('button[data-save]');
+  if (sv) { savePaper(_topicPapers[parseInt(sv.dataset.save, 10)], sv); return; }
+  const gs = e.target.closest('button[data-gsave]');
+  if (gs) { const g = _gaps[parseInt(gs.dataset.gsave, 10)]; if (g) savePaper(g.paper, gs); return; }
   const b = e.target.closest('button[data-copy]');
   if (b) { const p = _topicPapers[parseInt(b.dataset.copy, 10)]; if (p) copyText(p.title || ''); }
 });

@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, wait
 import requests
 import xml.etree.ElementTree as ET
 from flask import Blueprint, render_template, request, jsonify
-from core import login_required, _safe_terms
+from core import login_required, _safe_terms, OPENALEX_URL, format_paper
 import topicfinder
 from engine import (read_filters, search_papers, apply_filters_and_sort, term_in, relevance,
                     sort_date, SOURCE_LABELS, search_sources, merge_dedupe, to_int)
@@ -1101,6 +1101,124 @@ def topic_hint():
     sug = _broad_for(request.args.get("q", ""))
     return jsonify({"broad": bool(sug), "suggestions": sug or []})
 
+# ── Topic Finder: how big is the topic, and what exists locally ──
+def _oa_filter(f, terms_expr, extra=""):
+    """An OpenAlex 'filter' string for the same words and filters as the search (title+abstract, years, Open Access)."""
+    base = []
+    if f.get("year_from"): base.append(f"from_publication_date:{f['year_from']}-01-01")
+    if f.get("year_to"):   base.append(f"to_publication_date:{f['year_to']}-12-31")
+    if f.get("oa_only"):   base.append("is_oa:true")
+    fkey = {"title": "title.search", "abstract": "abstract.search"}.get(f.get("field"), "title_and_abstract.search")
+    if terms_expr:
+        base.append(f"{fkey}:{terms_expr}")
+    if extra:
+        base.append(extra)
+    return ",".join(base)
+
+def _oa_query(filter_str, per_page=1, sort=None):
+    """-> (number of matching papers or None, list of raw OpenAlex works). Never raises."""
+    try:
+        params = {"filter": filter_str, "per-page": per_page}
+        if sort:
+            params["sort"] = sort
+        r = requests.get(OPENALEX_URL, params=params, timeout=10)
+        if not r.ok:
+            return None, []
+        d = r.json()
+        return (d.get("meta") or {}).get("count"), d.get("results") or []
+    except Exception:
+        return None, []
+
+_SIZE_LEVELS = [   # (smallest count, key, label, advice)
+    (0,    "none",   "No match",      "No paper contains all your words together. This could be a research gap, or papers may use different words. Try a synonym or remove one word."),
+    (1,    "tiny",   "Very narrow",   "Very few papers cover exactly this. It may be too narrow to find enough to read, or it may be a real gap. Try dropping one word."),
+    (5,    "small",  "Narrow",        "A small, focused topic. Doable, but you may need to read around the edges."),
+    (30,   "good",   "Good size",     "Enough research to build on, and small enough to focus on."),
+    (601,  "broad",  "Broad",         "A lot of research. Add a focus word or tap a sub-topic to narrow it down."),
+    (5001, "huge",   "Too broad",     "Too broad for one paper. Pick a more specific subject or tap a sub-topic."),
+]
+
+def _size_info(total):
+    if total is None:
+        return None
+    level = _SIZE_LEVELS[0]
+    for lv in _SIZE_LEVELS:
+        if total >= lv[0]:
+            level = lv
+    return {"count": int(total), "level": level[1], "label": level[2], "advice": level[3],
+            "scale": [{"key": k, "label": lab} for _, k, lab, _ in _SIZE_LEVELS]}
+
+_PH = "(Philippines OR Philippine OR Filipino OR Filipinos)"
+
+@tools_bp.route("/api/topics/local")
+@login_required
+def topics_local():
+    """Local check: how many papers on this topic mention the Philippines or have authors at Philippine institutions.
+    Uses OpenAlex only (it is the one source that can filter by author country)."""
+    subject = request.args.get("subject", "").strip()[:200]
+    focus   = request.args.get("focus", "").strip()[:200]
+    kw      = request.args.get("kw", "").strip()[:200]
+    if not subject:
+        return jsonify({"error": "Enter a subject first"}), 400
+    try:
+        f = read_filters(request.args.get)
+        subj_terms = _dedupe_terms(_specific(_safe_terms(subject)) or _safe_terms(subject))[:6]
+        terms = _dedupe_terms(subj_terms + _specific(_safe_terms(focus)) + _specific(_safe_terms(kw)))[:10]
+        expr, subj_expr = " AND ".join(terms), " AND ".join(subj_terms)
+        jobs = {
+            "mentions": (_oa_filter(f, f"{expr} AND {_PH}"), 5, "cited_by_count:desc"),
+            "authors":  (_oa_filter(f, expr, "authorships.countries:PH"), 3, "cited_by_count:desc"),
+            "topic":    (_oa_filter(f, expr), 1, None),
+        }
+        if terms != subj_terms:
+            jobs["subject_mentions"] = (_oa_filter(f, f"{subj_expr} AND {_PH}"), 1, None)
+        with ThreadPoolExecutor(max_workers=len(jobs)) as ex:
+            futs = {k: ex.submit(_oa_query, *v) for k, v in jobs.items()}
+            res = {k: fu.result() for k, fu in futs.items()}
+        examples, seen = [], set()
+        for work in (res["mentions"][1] + res["authors"][1]):
+            p = format_paper(work)
+            k = (p.get("doi") or p.get("title") or "").lower()
+            if k and k not in seen:
+                seen.add(k)
+                examples.append(_pick(p))
+        mentions, authors = res["mentions"][0], res["authors"][0]
+        if mentions is None and authors is None:
+            return jsonify({"error": "Could not reach OpenAlex for the local check. Try again."}), 502
+        return jsonify({
+            "terms": terms, "topic_total": res["topic"][0],
+            "mentions": mentions, "authors": authors,
+            "subject_mentions": (res.get("subject_mentions") or (None, []))[0],
+            "examples": examples[:5],
+            "filtered": bool(f["year_from"] or f["year_to"] or f["oa_only"]),
+        })
+    except Exception:
+        return _fail("Local check")
+
+@tools_bp.route("/api/topics/gaps", methods=["POST"])
+@login_required
+def topics_gaps():
+    """Second step of the Topic Finder. Body (JSON): subject, forms (the sub-topic names) and papers (the papers the first step returned).
+    Reads the Discussion / Conclusion / Limitations of the open-access ones and returns research-gap sentences from the full text.
+    This is the slowest part, so the page asks for it AFTER it has already shown the papers and sub-topics."""
+    data = request.get_json(silent=True) or {}
+    subject = str(data.get("subject") or "").strip()[:200]
+    subj_terms = _dedupe_terms(_specific(_safe_terms(subject)) or _safe_terms(subject))[:6]
+    forms = [x[:80] for x in (data.get("forms") or [])[:15] if isinstance(x, str)]
+    papers = []
+    for p in (data.get("papers") or [])[:40]:
+        if not isinstance(p, dict):
+            continue
+        cp = _client_paper(p)
+        doi = _re.sub(r"^https?://(?:dx\.)?doi\.org/", "", (cp.get("doi") or "").strip())
+        if _DOI_OK.match(doi):
+            papers.append(cp)
+    try:
+        cands, used = topicfinder.fulltext_gaps(papers, subj_terms, forms, max_papers=8, budget=14.0)
+        return jsonify({"gaps": topicfinder.pick_gaps(cands, 8), "used": used})
+    except Exception:
+        return _fail("Full-text gap search")
+
 @tools_bp.route("/api/topics")
 @login_required
 def topics():
@@ -1144,8 +1262,18 @@ def topics():
             jobs.append((rq, pool_f["sort"]))
             if balanced:
                 jobs.append((rq, "recent"))
+        # how many papers (OpenAlex) contain ALL the words, with the same filters: the "topic size"
+        size_total = None
+        count_ex = ThreadPoolExecutor(max_workers=1)
+        count_fut = count_ex.submit(_oa_query, _oa_filter(f, " AND ".join(terms))) if "openalex" in f["sources"] else None
         with ThreadPoolExecutor(max_workers=len(jobs)) as ex:
             first = list(ex.map(lambda j: search_papers(j[0], 1, dict(f, sort=j[1]), per_source=25)[0], jobs))
+        if count_fut is not None:
+            try:
+                size_total = count_fut.result(timeout=8)[0]
+            except Exception:
+                size_total = None
+        count_ex.shutdown(wait=False)
         papers, seen = [], set()
         for batch in first:
             for p in batch:
@@ -1194,9 +1322,12 @@ def topics():
                 c["from"] = "abstract"
                 cands.append(c)
         ft_used = 0
-        if request.args.get("fulltext", "1") != "0":
+        want_ft = request.args.get("fulltext", "1") != "0"
+        if want_ft:
             ft_cands, ft_used = topicfinder.fulltext_gaps(papers, subj_terms, forms)
             cands += ft_cands
+        # when the page asks for the fast version it fetches the full-text gaps in a second step (/api/topics/gaps)
+        ft_pending = (not want_ft) and any(p.get("is_oa") and p.get("doi") for p in papers)
         gaps = topicfinder.pick_gaps(cands, 8)
 
         msg = ""
@@ -1207,7 +1338,9 @@ def topics():
                    "(a possible research gap) or worded differently. Papers matching the most words are shown first.")
         return jsonify({
             "results": [dict(_pick(p, abstract_chars=260), matched=p.get("_matched", []), kind=_paper_kind(p),
+                             abstract_full=(p.get("abstract") or "")[:1200],
                              missing=[x for x in extra_terms if x not in p.get("_matched", [])]) for p in papers[:60]],
+            "size": _size_info(size_total), "fulltext_pending": ft_pending,
             "ptype": ptype, "sort": raw_sort,
             "broad": {"term": subject, "suggestions": broad} if broad else None,
             "coverage": cov, "extra_terms": extra_terms,

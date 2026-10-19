@@ -80,7 +80,8 @@ def paper_ref(p):
     """The few fields the page needs to cite a paper."""
     return {"title": p.get("title"), "year": p.get("year"), "doi": p.get("doi"), "oa_url": p.get("oa_url"),
             "is_oa": p.get("is_oa"), "citations": p.get("citations") or 0, "journal": p.get("journal"),
-            "authors": (p.get("authors") or [])[:3], "data_source": p.get("data_source")}
+            "authors": (p.get("authors") or [])[:3], "data_source": p.get("data_source"),
+            "openalex_id": p.get("openalex_id"), "apa_reference": p.get("apa_reference")}
 
 
 # ═════════════════════════════════════════════════════════════════════

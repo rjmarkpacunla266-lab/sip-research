@@ -9,6 +9,15 @@ pages_bp = Blueprint("pages", __name__)
 # Add a new update at the TOP of this list. The newest one is shown on the landing page strip and on /news.
 # Fields: date (YYYY-MM-DD), tag, title, summary (optional), points (list), link / link_text (optional)
 NEWS = [
+    {"date": "2026-10-19", "tag": "Topic Finder", "title": "Topic Finder: topic size, narrowing trail and local check",
+     "summary": "Pick a topic that is not too big and not too small.",
+     "points": ["Topic size meter: shows how many papers contain all your words, from too narrow to too broad.",
+                "Narrowing trail: every sub-topic you tap adds a step with its paper count, and you can step back at any time.",
+                "Local check: see how many papers on your topic mention the Philippines or have Philippine authors.",
+                "Faster results: papers and sub-topics appear first, and gaps from the full papers join a few seconds later.",
+                "Save any paper (or the paper behind a research gap) to your library with one tap.",
+                "Copy or download a topic brief with your sub-topics, gaps and APA references."],
+     "link": "/topic-generator", "link_text": "Open Topic Finder"},
     {"date": "2026-10-18", "tag": "Source Tracer", "title": "Quick Trace added to Source Tracer",
      "summary": "Find where a quote came from, faster and more often.",
      "points": ["New Quick Trace button: a fast first answer from open-access papers, clearly labelled as less reliable.",
