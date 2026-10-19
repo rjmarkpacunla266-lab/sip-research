@@ -9,6 +9,13 @@ pages_bp = Blueprint("pages", __name__)
 # Add a new update at the TOP of this list. The newest one is shown on the landing page strip and on /news.
 # Fields: date (YYYY-MM-DD), tag, title, summary (optional), points (list), link / link_text (optional)
 NEWS = [
+    {"date": "2026-10-19", "tag": "Answer Finder", "title": "Answer Finder: more questions, quotes and citations",
+     "summary": "Ask more kinds of questions and use the answers in your paper.",
+     "points": ["New question types: Benefits of, Risks of, Examples of, How to, and Is … safe/effective.",
+                "Type a whole question. If it fits no pattern, Sturch shows the closest sentences and says so.",
+                "See how your question was read, and switch to another reading with one tap.",
+                "Show the sentences around an answer, copy it with an APA citation, or save its paper to your library."],
+     "link": "/answer", "link_text": "Open Answer Finder"},
     {"date": "2026-10-19", "tag": "Topic Finder", "title": "Topic Finder: topic size, narrowing trail and local check",
      "summary": "Pick a topic that is not too big and not too small.",
      "points": ["Topic size meter: shows how many papers contain all your words, from too narrow to too broad.",

@@ -39,6 +39,15 @@ def _pick(p, abstract_chars=0):
 # ANSWER FINDER
 # ═════════════════════════════════════════════════════════════════════
 ANSWER_TEMPLATES = [
+    (r"^(?:what (?:is|are) )?(?:the )?(?:benefits?|advantages?|pros)(?: and (?:advantages?|benefits?))? (?:of|for|from) (.+)$",  "benefits"),
+    (r"^(?:what (?:is|are) )?(?:the )?(?:risks?|dangers?|hazards?|disadvantages?|drawbacks?|limitations?|side[- ]effects?|cons)(?: and \w+)? (?:of|from|for|with) (.+)$", "risks"),
+    (r"^(?:what (?:are|is) )?(?:some )?(?:examples?|types?|kinds?) of (.+)$",                    "examples"),
+    (r"^(?:what (?:is|are) )?(?:the )?(?:ways?|strategies|methods|steps|measures|solutions) (?:to|for) (.+)$", "how_to"),
+    (r"^how (?:to|can (?:we |i |you |people )?|do (?:we |i |you )|should (?:we |i |you ))(.+)$", "how_to"),
+    (r"^(?:is|are|does|do|can|could) (.+?) (safe|effective|harmful|dangerous|beneficial|healthy|toxic|useful|sustainable|reliable)(?: to .+| for .+)?$", "is_adj"),
+    (r"^(?:which is better,? )?(.+?) (?:vs\.?|versus) (.+)$",                                    "difference"),
+    (r"^(?:which is better,? )(.+?) or (.+)$",                                                    "difference"),
+    (r"^(?:compare|comparison of|comparing) (.+?) (?:and|with|to|vs\.?|versus) (.+)$",           "difference"),
     (r"^(?:what (?:is|are) )?(?:the )?differences? between (.+?) and (.+)$",                    "difference"),
     (r"^(?:what (?:is|are) )?the (?:effects?|impacts?|consequences?) of (.+)$",                 "effect"),
     (r"^(?:effects?|impacts?|consequences?) of (.+)$",                                          "effect"),
@@ -53,7 +62,8 @@ ANSWER_TEMPLATES = [
     (r"^why is (.+)$",                                  "why_is"),
     (r"^define (.+)$",                                  "define"),
 ]
-_TWO = ("difference", "how_affect")        # templates that carry a second term
+_TWO = ("difference", "how_affect")        # templates that carry a second term that must also be in the sentence
+_ADJ = {"is_adj"}                         # the second group is an adjective (safe, effective...), not a topic
 
 # words the user may have typed after the topic ("why is X important", "how does X works")
 _TRAIL = {
@@ -76,17 +86,40 @@ def _extract_keyword(query):
         if not m:
             continue
         kw  = m.group(1)
-        kw2 = m.group(2) if ttype in _TWO else None
+        kw2 = m.group(2) if (ttype in _TWO or ttype in _ADJ) else None
         if ttype in _TRAIL:
             kw = _re.sub(_TRAIL[ttype], "", kw.strip())
+        if ttype == "how_to":                      # "how to reduce plastic waste" -> topic "plastic waste"; "how can X be reduced" -> "X"
+            kw = _re.split(r"\s+(?:be|is|are)\s+", kw.strip())[0]
+            w = kw.split()
+            if len(w) >= 2 and not w[-1].endswith("ly") and w[0] not in ("climate", "plastic"):
+                kw = " ".join(w[1:])
         kw, kw2 = _clean_kw(kw), (_clean_kw(kw2) if kw2 else None)
         if kw and (kw2 or ttype not in _TWO):
             return kw, ttype, kw2
-    return None, None, None
+    return _loose_keyword(q)
+
+# A question that fits no pattern is still answered, loosely: the content words are searched and the closest sentences shown
+_Q_WORDS = set("""what whats how why when where who whom whose which does do did is are was were can could should would will shall
+the a an of to in on for and or with by about from at as into than then that this these those it its be been being there their
+tell me explain please kindly""".split())
+def _loose_keyword(q):
+    words = [w for w in _re.findall(r"[a-z0-9][a-z0-9\-']*", q.lower()) if w not in _Q_WORDS and len(w) > 2]
+    if not words:
+        return None, None, None
+    return " ".join(words[:5]), "loose", None
 
 def _kw_regex(kw):
     parts = [_re.escape(w) for w in kw.split()]
     return r"\b" + r"\s+".join(parts) + r"(?:s|es)?\b"
+
+def _loose_present(sent, kw):
+    """Loose questions: at least half of the content words (and never fewer than two) must be in the sentence."""
+    words = kw.split()
+    if len(words) < 2:
+        return bool(words) and term_in(sent, words[0])
+    need = max(2, (len(words) + 1) // 2)
+    return sum(1 for w in words if term_in(sent, w)) >= need
 
 def _kw_present(sent, kw):
     if term_in(sent, kw):
@@ -130,7 +163,66 @@ _OUT = (r"(?:causes?|leads?\s+to|results?\s+in|increases?|decreases?|reduces?|im
         r"exacerbates?|worsens?|enhances?|induces?|promotes?|inhibits?|damages?|harms?|lowers?|raises?|contributes?\s+to|"
         r"(?:is|are)\s+associated\s+with)")
 
+_ADJ_RE = {   # words that show a sentence is talking about the quality asked about
+    "safe": r"safe|safety|unsafe|adverse|tolerated|tolerability|toxicity|side\s+effects?|well[- ]tolerated|risks?",
+    "effective": r"effective|effectiveness|efficacy|efficacious|ineffective|reduced|improved|significantly",
+    "harmful": r"harmful|harm|harms|damage|damaging|adverse|toxic|detrimental|negative",
+    "dangerous": r"dangerous|danger|hazard\w*|risks?|harmful|toxic|lethal",
+    "beneficial": r"beneficial|benefits?|advantages?|improv\w+|positive|helpful",
+    "healthy": r"healthy|health|benefits?|beneficial|nutritious",
+    "toxic": r"toxic|toxicity|poisonous|harmful|adverse",
+    "useful": r"useful|usefulness|utility|valuable|effective|applications?",
+    "sustainable": r"sustainable|sustainability|renewable|long[- ]term|environmentally",
+    "reliable": r"reliable|reliability|accurate|accuracy|robust|consistent",
+}
 _RULES = {
+    "benefits": {
+        "pos": [
+            (5, r"\b(?:benefits?|advantages?)\s+of\s+(?:\w+\s+){0,2}?<K>\b"),
+            (5, _SUBJ + r"(?:\w+\s+){0,4}?\b(?:provides?|offers?|improves?|enhances?|increases?|reduces?|lowers?|promotes?|supports?|helps?|enables?|"
+                r"boosts?|protects?|prevents?|contributes?\s+to)\s+\w+"),
+            (4, r"<K>.{0,80}?\b(?:benefits?|advantages?|beneficial|advantageous)\b|\b(?:benefits?|advantages?)\b.{0,60}?<K>"),
+        ],
+        "boost": [(2, r"\b(?:include|includes|such\s+as|namely|including)\b"), (1, r"\b(?:significantly|improved|reduced|enhanced)\b")],
+        "neg": [(3, r"\b(?:drawbacks?|disadvantages?)\b")],
+    },
+    "risks": {
+        "pos": [
+            (5, r"\b(?:risks?|dangers?|hazards?|drawbacks?|disadvantages?|limitations?|side\s+effects?|adverse\s+effects?)\s+(?:of|from|associated\s+with|related\s+to|posed\s+by)\s+(?:\w+\s+){0,2}?<K>"),
+            (5, r"<K>.{0,80}?\b(?:poses?|carries|increases\s+the\s+risk|is\s+associated\s+with\s+(?:an?\s+)?(?:increased|higher|elevated)|can\s+cause|may\s+cause|"
+                r"can\s+lead\s+to|may\s+lead\s+to|can\s+result\s+in|may\s+result\s+in|is\s+(?:toxic|harmful|hazardous|dangerous|unsafe))\b"),
+            (4, r"\b(?:risks?|drawbacks?|limitations?|disadvantages?|hazards?)\b.{0,60}?<K>|<K>.{0,60}?\b(?:risks?|drawbacks?|limitations?|disadvantages?|hazards?)\b"),
+        ],
+        "boost": [(1.5, r"\b(?:include|includes|such\s+as|including)\b")],
+        "neg": [(3, r"\b(?:benefits?|advantages?)\s+of\b")],
+    },
+    "examples": {
+        "pos": [
+            (6, r"<K>\s*,?\s+(?:such\s+as|including|like)\s+\w+"),
+            (6, r"<K>.{0,30}?\((?:e\.g\.?|such\s+as|including|for\s+example)[^)]{3,}\)"),
+            (5, r"\b(?:examples?|instances?)\s+of\s+(?:\w+\s+){0,2}?<K>"),
+            (4, r"<K>\s+(?:include|includes|are\s+(?:divided|classified|grouped)\s+into)\s+\w+"),
+        ],
+        "boost": [(1, r"\b(?:and|or)\s+\w+\b.*,")],
+        "neg": [],
+    },
+    "how_to": {
+        "pos": [
+            (6, r"\b(?:strategies|measures|approaches|methods|ways|steps|practices|interventions|solutions|options)\s+(?:to|for|of)\s+(?:\w+\s+){0,3}?<K>"),
+            (7, r"<K>.{0,70}?\b(?:can|could|may|should|must)\s+be\s+(?:\w+\s+)?(?:reduced|prevented|mitigated|minimi[sz]ed|improved|achieved|controlled|addressed|managed|"
+                r"treated|solved|enhanced|increased|avoided|restored|protected)\b.{0,70}?\b(?:by|through|via|using|with)\b"),
+            (5, r"\b(?:by|through|via)\s+(?:\w+\s+){0,2}?\w+ing\b.{0,70}?<K>"),
+            (5, _SUBJ + r"(?:\w+\s+){0,3}?\b(?:can|could|may|should)\s+be\s+\w+ed\b"),
+        ],
+        "boost": [(1.5, r"\b(?:such\s+as|include|includes|including)\b")],
+        "neg": [],
+    },
+    "is_adj": {
+        "pos": [(6, r"<K>.{0,100}?\b(?:<A>)\b"), (5, r"\b(?:<A>)\b.{0,60}?<K>")],
+        "boost": [(1.5, r"\b(?:studies|evidence|trials?)\s+(?:show|showed|suggest|suggested|indicate|found|demonstrate)\w*\b"),
+                  (1, r"\b(?:significantly|generally|widely)\b")],
+        "neg": [],
+    },
     "what_is":  {"pos": _DEF_POS, "neg": _DEF_NEG, "boost": _DEF_BOOST},
     "define":   {"pos": _DEF_POS, "neg": _DEF_NEG, "boost": _DEF_BOOST},
     "what_are": {"pos": _DEF_POS + [
@@ -244,6 +336,12 @@ _CUES = {
     "define":     ["refers to", "defined as", "known as", "consists of", "means"],
     "how_does":   ["mechanism", "process", "through", "via"],
     "why_is":     ["because", "important", "essential", "crucial", "critical", "vital", "due to"],
+    "benefits":   ["benefits of", "benefit", "advantages", "improves", "enhances", "provides", "reduces", "supports"],
+    "risks":      ["risks of", "risk", "adverse", "side effects", "harmful", "toxic", "can cause", "may lead to", "drawbacks", "limitations"],
+    "examples":   ["such as", "including", "include", "examples of", "e.g."],
+    "how_to":     ["strategies", "measures", "can be reduced", "can be prevented", "by", "through", "via"],
+    "is_adj":     ["safe", "safety", "effective", "efficacy", "harmful", "toxic", "beneficial", "adverse", "reliable"],
+    "loose":      [],
     "difference": ["differ", "differs", "compared to", "compared with", "whereas", "in contrast", "unlike", "rather than"],
 }
 
@@ -307,10 +405,21 @@ def _score_sentence(sent, kw, ttype, idx, kw2=None):
         sent = sent[m.end():]
     if _HARD.search(sent) or _ANAPH.search(sent):
         return -99, 0
+    if ttype == "loose":                                     # no pattern: every clean sentence that has the words, no bonus for wording
+        score = 5.0
+        if _GAP.search(sent): score -= 6
+        if _META.search(sent): score -= 3
+        n = len(sent.split())
+        if n > 55: score -= 2
+        if n < 8: score -= 2
+        return score, 1
     rules = _RULES.get(ttype) or _RULES["what_is"]
     K, K2 = _kw_regex(kw), (_kw_regex(kw2) if kw2 else None)
 
+    adj = _ADJ_RE.get((kw2 or "").lower(), _re.escape(kw2 or "x")) if ttype in _ADJ else ""
     def build(pat):
+        if "<A>" in pat:
+            return pat.replace("<A>", adj).replace("<K>", K) if adj else None
         if "<K2>" in pat:
             return pat.replace("<K>", K).replace("<K2>", K2) if K2 else None
         return pat.replace("<K>", K)
@@ -347,27 +456,30 @@ def _answer_candidates(paper, kw, ttype, kw2=None, per_paper=2, min_score=MIN_SC
     if not abstract:
         return []
     cands = []
-    for i, s in enumerate(_split_sentences(abstract)):
+    sents = _split_sentences(abstract)
+    for i, s in enumerate(sents):
         n = len(s.split())
         if s.endswith("?") or n < 6 or n > 60:
             continue
         if ttype in _TWO:
             if not (kw2 and _kw_present(s, kw) and _kw_present(s, kw2)):
                 continue
-        elif not _kw_present(s, kw):
+        elif not (_loose_present(s, kw) if ttype == "loose" else _kw_present(s, kw)):
             continue
         score, hits = _score_sentence(s, kw, ttype, i, kw2)
         if hits and score >= min_score:                    # must really match the question type
             cands.append({"text": s, "score": score, "hits": hits, "paper": paper,
+                          "before": sents[i - 1][:320] if i > 0 else "", "after": sents[i + 1][:320] if i + 1 < len(sents) else "",
                           "tboost": 1 if _kw_present(paper.get("title") or "", kw) else 0})
     cands.sort(key=lambda c: c["score"], reverse=True)
     return cands[:per_paper]
 
-_BOOST = {"causes": "causes", "effect": "effects", "how_does": "mechanism", "why_is": "importance"}
+_BOOST = {"causes": "causes", "effect": "effects", "how_does": "mechanism", "why_is": "importance", "benefits": "benefits",
+          "risks": "risks", "examples": "types", "how_to": "strategies"}
 
 def _answer_query(kw, ttype, kw2):
     """The paper search is aimed at the question, not only at the topic."""
-    if ttype in _TWO:
+    if ttype in _TWO or ttype in _ADJ:
         return f"{kw} {kw2}"
     return f"{kw} {_BOOST[ttype]}" if ttype in _BOOST else kw
 
@@ -379,6 +491,11 @@ _EXTRA_QUERIES = {                       # extra wordings: review / overview pap
     "why_is":   ("importance review", "role"),
     "causes":   ("causes review",),
     "effect":   ("effects review",),
+    "benefits": ("benefits review",),
+    "risks":    ("risks review", "adverse effects"),
+    "examples": ("overview", "review"),
+    "how_to":   ("review", "mitigation"),
+    "is_adj":   ("review", "systematic review"),
 }
 
 def _answer_queries(kw, ttype, kw2):
@@ -501,8 +618,9 @@ def answer_finder():
     if not keyword:
         return jsonify({
             "error":   "unsupported_template",
-            "message": "Try: What is [topic], What are [topic], What causes [topic], Effect of [topic], How does [topic] work, "
-                       "How does [A] affect [B], Why is [topic] important, Define [topic], or Difference between [A] and [B]"
+            "message": "I could not find a topic in that. Try: What is [topic], What causes [topic], Effect of [topic], Benefits of [topic], "
+                       "Risks of [topic], Examples of [topic], How to [do something], Is [topic] safe, How does [topic] work, "
+                       "Why is [topic] important, Define [topic], or Difference between [A] and [B]"
         }), 400
     try:
         f = read_filters(request.args.get)
@@ -542,6 +660,9 @@ def answer_finder():
             "keyword":  keyword, "keyword2": kw2, "template": ttype, "query": query,
             "answers":  [c["text"] for c in top],
             "sources":  [_pick(c["paper"]) for c in top],          # same order as answers
+            "contexts": [{"before": c.get("before", ""), "after": c.get("after", "")} for c in top],
+            "understood": _understood(ttype, keyword, kw2),
+            "loose": ttype == "loose",
             "cues":     _CUES.get(ttype, []),
             "best_index": best,
             "best_rank": round(_rank(top[best]), 2) if best is not None else None,
@@ -553,6 +674,29 @@ def answer_finder():
         })
     except Exception:
         return _fail("Answer search")
+
+# how the question was read, and other ways to read the same topic (the page shows these so a wrong reading is one tap away)
+_READ_AS = {"what_is": "What is", "what_are": "What are", "define": "Define", "causes": "What causes", "effect": "Effect of",
+            "how_does": "How does", "why_is": "Why is", "benefits": "Benefits of", "risks": "Risks of", "examples": "Examples of",
+            "how_to": "How to", "is_adj": "Is", "difference": "Difference between", "how_affect": "How does", "loose": "Keywords"}
+_SWITCH = ["what_is", "causes", "effect", "benefits", "risks", "examples", "how_does", "why_is"]
+def _understood(ttype, kw, kw2):
+    if ttype == "loose":
+        text = f"keywords: {kw}"
+    elif ttype == "difference":
+        text = f"difference between {kw} and {kw2}"
+    elif ttype == "how_affect":
+        text = f"how {kw} affects {kw2}"
+    elif ttype == "is_adj":
+        text = f"is {kw} {kw2}?"
+    else:
+        text = f"{_READ_AS.get(ttype, 'What is').lower()} {kw}"
+    alts = []
+    if ttype not in _TWO and ttype not in _ADJ:
+        alts = [{"label": _READ_AS[k], "template": _READ_AS[k], "topic": kw} for k in _SWITCH if k != ttype and k != "how_does" and k != "why_is"]
+        if kw.split()[-1:] and ttype != "loose":
+            alts = alts[:5]
+    return {"template": ttype, "text": text, "topic": kw, "alternatives": alts}
 
 # ── Answers from the FULL TEXT of open-access papers ─────────────────
 # Abstracts are short, so many questions find nothing. For open-access papers that Europe PMC / PubMed Central hold
@@ -602,18 +746,21 @@ def _fulltext_candidates(paper, ft, kw, ttype, kw2=None, per_paper=2):
         if not info:
             continue
         label, bonus = info
-        for s in _split_sentences(text):
+        sents = _split_sentences(text)
+        for si, s in enumerate(sents):
             n = len(s.split())
             if s.endswith("?") or n < 8 or n > 50 or _FT_BAD.search(s):
                 continue
             if ttype in _TWO:
                 if not (kw2 and _kw_present(s, kw) and _kw_present(s, kw2)):
                     continue
-            elif not _kw_present(s, kw):
+            elif not (_loose_present(s, kw) if ttype == "loose" else _kw_present(s, kw)):
                 continue
             score, hits = _score_sentence(s, kw, ttype, 1, kw2)      # idx 1: no 'first sentence of an abstract' bonus
             if hits and score + bonus >= FT_MIN_SCORE:
                 cands.append({"text": s, "score": score + bonus, "hits": hits, "paper": paper,
+                              "before": sents[si - 1][:320] if si > 0 and not _FT_BAD.search(sents[si - 1]) else "",
+                              "after": sents[si + 1][:320] if si + 1 < len(sents) and not _FT_BAD.search(sents[si + 1]) else "",
                               "section": label, "license": ft.get("license") or "",
                               "tboost": 1 if _kw_present(paper.get("title") or "", kw) else 0})
     cands.sort(key=lambda c: c["score"], reverse=True)
@@ -666,6 +813,7 @@ def answer_fulltext():
             "answers": [c["text"] for c in top],
             "sources": [_pick(c["paper"]) for c in top],
             "sections": [c["section"] for c in top],
+            "contexts": [{"before": c.get("before", ""), "after": c.get("after", "")} for c in top],
             "licenses": [c["license"] for c in top],
             "cues": _CUES.get(ttype, []),
             "read": len(reads), "tried": len(papers),

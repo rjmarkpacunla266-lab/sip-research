@@ -159,6 +159,14 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 .fx-empty{text-align:center;padding:30px 14px;color:var(--muted);font-size:.84rem}
 .fx-empty .big{font-size:2.2rem;margin-bottom:6px}
 
+.read-line{font-size:.8rem;color:var(--muted);margin:0 0 10px;line-height:1.7}
+.read-line b{color:var(--accent);font-weight:600}
+.read-line .chip{display:inline-block;margin:2px 4px 2px 0;padding:2px 10px;border-radius:20px;background:var(--surf2);border:1px solid var(--border);color:var(--muted);font-size:.72rem;cursor:pointer}
+.read-line .chip:hover{border-color:var(--accent2);color:var(--accent2)}
+.loose-note{font-size:.78rem;line-height:1.55;color:var(--gold);background:rgba(232,184,75,.08);border:1px solid rgba(232,184,75,.25);border-radius:var(--r);padding:9px 12px;margin:0 0 12px}
+.ans-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.ctx{font-size:.78rem;color:var(--muted);margin-top:10px;line-height:1.6;border-left:2px solid var(--border);padding-left:10px}
+.ctx b{color:var(--text);font-weight:600}
 .answer-card.best{border-color:var(--gold);box-shadow:0 0 0 1px rgba(232,184,75,.6),0 0 24px rgba(232,184,75,.15)}
 /* full-text answers */
 .ft-head{margin-top:22px}
@@ -198,13 +206,18 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
     <button class="tpl-btn" onclick="setTemplate('Why is', this)">Why is</button>
     <button class="tpl-btn" onclick="setTemplate('Define', this)">Define</button>
     <button class="tpl-btn" onclick="setTemplate('Difference between', this)">Difference between</button>
+    <button class="tpl-btn" onclick="setTemplate('Benefits of', this)">Benefits of</button>
+    <button class="tpl-btn" onclick="setTemplate('Risks of', this)">Risks of</button>
+    <button class="tpl-btn" onclick="setTemplate('Examples of', this)">Examples of</button>
+    <button class="tpl-btn" onclick="setTemplate('How to', this)">How to</button>
+    <button class="tpl-btn" onclick="setTemplate('Is', this)">Is … safe?</button>
   </div>
 </div>
 
 <!-- Search input -->
 <div class="search-wrap">
   <div class="prefix" id="prefixEl">What is</div>
-  <input type="text" id="topicInput" placeholder="e.g. photosynthesis, DNA, climate change…" autocomplete="off"/>
+  <input type="text" id="topicInput" placeholder="a topic, or type a whole question…" autocomplete="off"/>
   <button class="btn primary" onclick="doAnswer()">Ask</button>
 </div>
 
@@ -350,6 +363,11 @@ function setTemplate(tpl, btn) {
     'Define':     ['photosynthesis','entropy','osmosis','biodiversity','metabolism','ecosystem'],
     'Effect of':  ['climate change','sleep deprivation','caffeine','social media','deforestation','exercise'],
     'Difference between': ['mitosis and meiosis','DNA and RNA','weather and climate','virus and bacteria','type 1 and type 2 diabetes'],
+    'Benefits of': ['exercise','solar energy','vaccination','meditation','biodiversity','reading'],
+    'Risks of': ['caffeine','social media','antibiotics','nuclear energy','sleep deprivation'],
+    'Examples of': ['antibiotics','renewable energy','greenhouse gases','enzymes','biofuels'],
+    'How to': ['reduce plastic waste','prevent diabetes','improve soil quality','save energy'],
+    'Is': ['caffeine safe','nuclear energy safe','vaccines effective','biofuel sustainable','microplastics harmful'],
   };
   const chips = examples[tpl] || [];
   document.getElementById('examplesWrap').innerHTML =
@@ -374,7 +392,9 @@ async function doAnswer() {
   currentKeyword = topic;
   _ftRun++;                                  // drop any full-text result still on its way
   fLastRun = doAnswer;                       // filters re-run this search when changed
-  const query    = `${currentTemplate} ${topic}`;
+  // a whole question typed in the box is sent as it is; a plain topic gets the chosen template in front
+  const looksFull = /^(what|whats|how|why|when|where|who|which|is|are|does|do|can|could|define|compare|difference|effects?|impacts?|benefits?|risks?|examples?|causes?)\b/i.test(topic) && topic.split(/\s+/).length >= 3;
+  const query    = looksFull ? topic : `${currentTemplate} ${topic}`;
   window._lastQuery = query;
   const results  = document.getElementById('results');
   results.innerHTML = '<div class="spinner"></div>';
@@ -403,10 +423,59 @@ async function doAnswer() {
   }
 }
 
+function readText(data){ const u = data.understood; return (u && u.text) ? u.text : `${currentTemplate} ${data.keyword || ''}`; }
+function readLine(data){
+  const u = data.understood; if (!u) return '';
+  const alts = (u.alternatives || []).map(a => `<span class="chip" data-read="${esc(a.template)}" data-topic="${esc(a.topic)}">${esc(a.label)} ${esc(a.topic)}</span>`).join('');
+  return (data.loose ? `<div class="loose-note">I could not match your question to a known pattern, so these are the closest sentences that contain your words. Read each one carefully, because they may not answer the question directly. Pick a reading below for sharper results.</div>` : '') +
+    `<div class="read-line">I read this as <b>${esc(u.text)}</b>.${alts ? ' Not what you meant? ' + alts : ''}</div>`;
+}
+function actionsHtml(set, i, ctx){
+  const hasCtx = ctx && (ctx.before || ctx.after);
+  return `<div class="ans-actions">
+    <button class="btn xs" data-copy="${set}${i}">📋 Copy</button>
+    <button class="btn xs" data-cite="${set}${i}">❝ Copy with citation</button>
+    <button class="btn xs" data-save="${set}${i}">🔖 Save paper</button>
+    ${hasCtx ? `<button class="btn xs" data-ctx="${set}${i}">▾ Show context</button>` : ''}
+  </div>${hasCtx ? `<div class="ctx hidden" id="ctx-${set}${i}">${ctx.before ? esc(ctx.before) + ' ' : ''}<b>${esc(set === 'a' ? (window._answers || [])[i] : (window._ftAnswers || [])[i])}</b>${ctx.after ? ' ' + esc(ctx.after) : ''}</div>` : ''}`;
+}
+function item(key){
+  const set = key[0], i = parseInt(key.slice(1), 10);
+  return set === 'a' ? {text: (window._answers || [])[i] || '', src: (window._srcs || [])[i] || {}}
+                     : {text: (window._ftAnswers || [])[i] || '', src: (window._ftSrcs || [])[i] || {}};
+}
+function surname(a){ a = String(a || '').trim(); if (a.includes(',')) return a.split(',')[0].trim(); const w = a.split(/\s+/); return w[w.length - 1] || ''; }
+function inText(s){
+  const au = (s.authors || []).filter(Boolean);
+  const who = !au.length ? String(s.title || 'Unknown').split(/\s+/).slice(0, 3).join(' ') : au.length === 1 ? surname(au[0]) :
+    au.length === 2 ? surname(au[0]) + ' & ' + surname(au[1]) : surname(au[0]) + ' et al.';
+  return '(' + who + ', ' + (s.year || 'n.d.') + ')';
+}
+function apaOf(p){
+  if (p.apa_reference) return p.apa_reference;
+  const au = (p.authors || []).slice(0, 3).join(', ') + ((p.authors || []).length > 3 ? ', et al.' : '');
+  return `${au || 'Unknown'} (${p.year || 'n.d.'}). ${p.title || ''}. ${p.journal || ''}${p.doi ? ' ' + p.doi : ''}`;
+}
+function citeText(key){ const it = item(key); return '"' + it.text + '" ' + inText(it.src) + '\n\nReference: ' + apaOf(it.src); }
+async function savePaper(key, btn){
+  const p = item(key).src; if (!p || !p.title) return;
+  try {
+    const r = await fetch('/api/bookmarks', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p)});
+    if (r.ok || r.status === 409) { btn.textContent = '✓ Saved'; toast(r.status === 409 ? '🔖 Already in Saved' : '🔖 Saved to your library'); }
+    else toast('❌ Could not save');
+  } catch (e) { toast('❌ Could not save'); }
+}
+function quickRead(tpl, topic){
+  currentTemplate = tpl; document.getElementById('prefixEl').textContent = tpl;
+  document.querySelectorAll('.tpl-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === tpl || (tpl === 'Is' && b.textContent.startsWith('Is'))));
+  document.getElementById('topicInput').value = topic; doAnswer();
+}
+
 function renderAnswers(data) {
   const kw = data.keyword || '';
   const results = document.getElementById('results');
   window._answers = data.answers || [];
+  window._srcs = data.sources || []; window._ctxs = data.contexts || [];
   window._bestRank = (data.best_rank == null) ? null : data.best_rank;
   const highlight = makeHighlighter(data);
 
@@ -430,7 +499,7 @@ function renderAnswers(data) {
     <div class="answer-card${data.best_index === i ? ' best' : ''}" style="animation-delay:${i * 60}ms">
       <div class="answer-num">Answer ${i + 1} of ${data.answers.length}${data.best_index === i ? ' <span class="best-b">★ Best answer</span>' : ''}</div>
       <div class="answer-text">${highlight(ans)}</div>
-      <button class="btn xs" style="margin-top:10px" data-copy="${i}">📋 Copy</button>
+      ${actionsHtml('a', i, ((data.contexts || [])[i]) || {})}
       ${sourceHtml}
     </div>`;
   }).join('');
@@ -438,8 +507,9 @@ function renderAnswers(data) {
   results.innerHTML = `
     <div class="results-section">
       <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">
-        Answers for: <strong style="color:var(--accent)">${esc(currentTemplate)} ${esc(kw)}${data.keyword2 ? ' and ' + esc(data.keyword2) : ''}</strong>
+        Answers for: <strong style="color:var(--accent)">${esc(readText(data))}</strong>
       </div>
+      ${readLine(data)}
       ${fUsedLine(data)}
       ${cards}
       <div id="ftBox"></div>
@@ -493,7 +563,7 @@ function renderFullText(d, data) {
     return head + note + (d.message ? `<div class="fx-note">${esc(d.message)}</div>` : '');
   }
   const highlight = makeHighlighter(Object.assign({}, data, {cues: d.cues || data.cues}));
-  window._ftAnswers = d.answers;
+  window._ftAnswers = d.answers; window._ftSrcs = d.sources || []; window._ftCtxs = d.contexts || [];
   const ftBest = d.best_rank != null && (window._bestRank == null || d.best_rank > window._bestRank);
   if (ftBest) window._bestRank = d.best_rank;
   const cards = d.answers.map((ans, i) => {
@@ -506,7 +576,7 @@ function renderFullText(d, data) {
     <div class="answer-card ft${isBest ? ' best' : ''}" style="animation-delay:${i * 60}ms">
       <div class="answer-num">Full-text answer ${i + 1} of ${d.answers.length}${isBest ? ' <span class="best-b">★ Best answer</span>' : ''}<span class="ft-b">${esc((d.sections || [])[i] || 'Full text')}</span></div>
       <div class="answer-text">${highlight(ans)}</div>
-      <button class="btn xs" style="margin-top:10px" data-ftcopy="${i}">📋 Copy</button>
+      ${actionsHtml('f', i, ((d.contexts || [])[i]) || {})}
       <div class="source-card" style="margin-top:8px;margin-bottom:0">
         <div class="source-info">
           <div class="source-title" title="${esc(s.title)}">${esc(s.title || 'Untitled')}</div>
@@ -523,10 +593,16 @@ function renderFullText(d, data) {
   return head + note + cards;
 }
 document.getElementById('results').addEventListener('click', e => {
-  const fb = e.target.closest('button[data-ftcopy]');
-  if (fb) { copyText((window._ftAnswers || [])[parseInt(fb.dataset.ftcopy, 10)] || ''); return; }
+  const rd = e.target.closest('[data-read]');
+  if (rd) { quickRead(rd.dataset.read, rd.dataset.topic); return; }
+  const cx = e.target.closest('button[data-ctx]');
+  if (cx) { const box = document.getElementById('ctx-' + cx.dataset.ctx); if (box) { const open = box.classList.toggle('hidden') === false; cx.textContent = open ? '▴ Hide context' : '▾ Show context'; } return; }
+  const ci = e.target.closest('button[data-cite]');
+  if (ci) { copyText(citeText(ci.dataset.cite)); return; }
+  const sv = e.target.closest('button[data-save]');
+  if (sv) { savePaper(sv.dataset.save, sv); return; }
   const b = e.target.closest('button[data-copy]');
-  if (b) copyText((window._answers || [])[parseInt(b.dataset.copy, 10)] || '');
+  if (b) copyText(item(b.dataset.copy).text);
 });
 
 // ── Utilities ──────────────────────────────────
