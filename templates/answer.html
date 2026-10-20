@@ -167,6 +167,13 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 .ans-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .ctx{font-size:.78rem;color:var(--muted);margin-top:10px;line-height:1.6;border-left:2px solid var(--border);padding-left:10px}
 .ctx b{color:var(--text);font-weight:600}
+.more-ctl{background:var(--surf);border:1px dashed rgba(79,141,232,.3);border-radius:var(--r);padding:14px 16px;margin:4px 0 14px;text-align:center}
+.more-ctl p{font-size:.82rem;color:var(--muted);margin:0 0 10px;line-height:1.55}
+.more-ctl .bar{height:6px;border-radius:3px;background:var(--surf3);overflow:hidden;margin:10px 0 8px}
+.more-ctl .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .5s linear}
+.more-ctl .tm{font-family:var(--mono);font-size:.78rem;color:var(--text)}
+.round-head{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:18px 0 8px;display:flex;align-items:center;gap:8px}
+.round-head::after{content:'';flex:1;height:1px;background:var(--border)}
 .answer-card.best{border-color:var(--gold);box-shadow:0 0 0 1px rgba(232,184,75,.6),0 0 24px rgba(232,184,75,.15)}
 /* full-text answers */
 .ft-head{margin-top:22px}
@@ -391,6 +398,7 @@ async function doAnswer() {
 
   currentKeyword = topic;
   _ftRun++;                                  // drop any full-text result still on its way
+  resetRound();
   fLastRun = doAnswer;                       // filters re-run this search when changed
   // a whole question typed in the box is sent as it is; a plain topic gets the chosen template in front
   const looksFull = /^(what|whats|how|why|when|where|who|which|is|are|does|do|can|could|define|compare|difference|effects?|impacts?|benefits?|risks?|examples?|causes?)\b/i.test(topic) && topic.split(/\s+/).length >= 3;
@@ -410,17 +418,124 @@ async function doAnswer() {
     if (!resp.ok) { results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>${esc(data.error || 'Something went wrong. Try again.')}</p></div>`; return; }
 
     if (!data.answers || !data.answers.length) {
+      startRound(data, query);
       results.innerHTML = fNoResultsHtml(`No direct answer found in the abstracts for <strong>${esc(topic)}</strong>.`) +
-        `<div id="ftBox"></div>` +
+        `<div id="ftBox"></div><div id="moreBox"><div id="moreCards"></div><div id="moreCtl">${moreBoxHtml()}</div></div>` +
         `<div style="text-align:center"><a href="${esc(searchLink([topic]))}" class="btn primary">🔍 Search papers instead</a></div>`;
       loadFullText(data, query);
       return;
     }
+    startRound(data, query);
     renderAnswers(data);
     loadFullText(data, query);
   } catch(e) {
     results.innerHTML = `<div class="no-result"><div class="big">⚠️</div><p>Connection error. Try again.</p></div>`;
   }
+}
+
+// ── Keep searching: more rounds of up to a minute each ─────────────────────
+let _round = {}, _roundTimer = null;
+const ROUND_SECONDS = 60, BEST_SCORE = 7;
+function haveKey(text){ return String(text || '').toLowerCase().slice(0, 80); }
+function resetRound(){
+  if (_round.abort) { try { _round.abort.abort(); } catch (e) {} }
+  clearInterval(_roundTimer);
+  _round = {have: new Set(), seen: [], page: 2, read: 0, rounds: 1, running: false, exhausted: false, q: '', ttype: '', moreCount: 0, note: ''};
+  window._moreItems = [];
+}
+function startRound(data, query){
+  _round.q = query; _round.cues = data.cues || []; _round.seen = (data.seen || []).slice(); _round.page = data.next_page || 2;
+  _round.read = data.searched || 0; _round.ttype = data.template || '';
+  (data.answers || []).forEach(a => _round.have.add(haveKey(a)));
+}
+function moreBoxHtml(){
+  const r = _round;
+  if (!r.q) return '';
+  if (r.running) return `<div class="more-ctl"><div class="tm" id="moreTm">Searching deeper… 0:00 / 1:00</div><div class="bar"><i id="moreBar"></i></div>
+      <p style="margin:0 0 10px" id="moreLive">${r.read} papers read so far. New answers appear below when this round ends.</p>
+      <button class="btn sm" onclick="stopMore()">■ Stop</button></div>`;
+  if (r.exhausted) return `<div class="more-ctl"><p>${esc(r.note || 'Sturch has run out of new papers to read for this question.')}</p>
+      <a href="${esc(searchLink([currentKeyword]))}" class="btn sm">🔍 Search papers instead</a></div>`;
+  return `<div class="more-ctl"><p>${r.note ? esc(r.note) + ' ' : ''}Not satisfied with these answers? Sturch can keep reading for up to <b>1 more minute</b>, going past the papers it has already read.<br>${r.read} papers read so far.</p>
+      <button class="btn primary sm" onclick="searchMore()">🔎 Continue searching (1 min)</button></div>`;
+}
+function refreshMore(){
+  const box = document.getElementById('moreBox'); if (!box) return;
+  let cards = document.getElementById('moreCards'); const keep = cards ? cards.innerHTML : '';
+  box.innerHTML = `<div id="moreCards">${keep}</div><div id="moreCtl">${moreBoxHtml()}</div>`;
+}
+function tickMore(){
+  const r = _round; if (!r.running) return;
+  const sec = Math.min(ROUND_SECONDS + 30, Math.floor((Date.now() - r.t0) / 1000));
+  const tm = document.getElementById('moreTm'), bar = document.getElementById('moreBar');
+  const fmt = n => Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0');
+  if (tm) tm.textContent = sec <= ROUND_SECONDS ? `Searching deeper… ${fmt(sec)} / 1:00` : 'Wrapping up the last papers…';
+  if (bar) bar.style.width = Math.min(100, sec / ROUND_SECONDS * 100) + '%';
+}
+function stopMore(){ if (_round.abort) _round.abort.abort(); }
+async function searchMore(){
+  const r = _round; if (r.running || !r.q) return;
+  r.running = true; r.t0 = Date.now(); r.abort = new AbortController(); r.note = '';
+  const myRun = _ftRun;
+  refreshMoreCtl(); clearInterval(_roundTimer); _roundTimer = setInterval(tickMore, 500);
+  const guard = setTimeout(() => r.abort.abort(), 110000);
+  try {
+    const resp = await fetch('/api/answer/more?' + fQS().replace(/^&/, ''), {method: 'POST', headers: {'Content-Type': 'application/json'}, signal: r.abort.signal,
+      body: JSON.stringify({q: r.q, page: r.page, seen: r.seen.slice(-1500), have: [...r.have].slice(-300)})});
+    const d = await resp.json().catch(() => ({}));
+    if (myRun !== _ftRun) return;                                  // a new question replaced this one
+    if (!resp.ok) { r.note = d.error && d.error !== 'unsupported_template' ? d.error : 'Something went wrong. You can try again.'; }
+    else {
+      r.rounds++; r.read += d.read || 0; r.page = d.next_page || r.page + 1; r.exhausted = !!d.exhausted;
+      (d.seen || []).forEach(k => r.seen.push(k));
+      appendRound(d);
+      r.note = (d.answers && d.answers.length) ? '' : `Round ${r.rounds} read ${d.read || 0} more papers but found no new clear answers.`;
+      if (r.exhausted && d.answers && d.answers.length) r.note = 'That was the last of the new papers Sturch could find for this question.';
+    }
+  } catch (e) {
+    if (myRun !== _ftRun) return;
+    r.note = e && e.name === 'AbortError' ? 'Stopped. Papers read in that round were not added.' : 'Connection error. You can try again.';
+  } finally {
+    clearTimeout(guard); clearInterval(_roundTimer); r.running = false; r.abort = null;
+    if (myRun === _ftRun) refreshMoreCtl();
+  }
+}
+function refreshMoreCtl(){ const c = document.getElementById('moreCtl'); if (c) c.innerHTML = moreBoxHtml(); }
+function appendRound(d){
+  const cards = document.getElementById('moreCards'); if (!cards) return;
+  const answers = d.answers || [];
+  if (!answers.length) return;
+  const base = (window._moreItems || []).length;
+  const highlight = makeHighlighter({keyword: currentKeyword, keyword2: '', cues: _round.cues || []});
+  const rank0 = window._bestRank;
+  let bestI = -1;
+  if (!(document.getElementById('fSort') && document.getElementById('fSort').value !== 'match') && _round.ttype !== 'difference') {
+    answers.forEach((a, i) => { if (a.score >= BEST_SCORE && (rank0 == null || a.rank > rank0) && (bestI < 0 || a.rank > answers[bestI].rank)) bestI = i; });
+  }
+  answers.forEach(a => { window._moreItems.push(a); _round.have.add(haveKey(a.text)); });
+  let html = `<div class="round-head">Round ${_round.rounds} · ${d.read || 0} more papers read${d.ft_read ? ' · full text of ' + d.ft_read : ''}</div>`;
+  html += answers.map((a, j) => {
+    const i = base + j, s = a.source || {};
+    const cites = s.citations || 0, cColor = cites > 1000 ? 'var(--gold)' : cites > 100 ? 'var(--accent)' : 'var(--muted)';
+    const doi = safeUrl(s.doi), oa = safeUrl(s.oa_url), lic = safeUrl(a.license);
+    const isBest = j === bestI;
+    return `<div class="answer-card${a.from === 'full text' ? ' ft' : ''}${isBest ? ' best' : ''}" style="animation-delay:${j * 60}ms">
+      <div class="answer-num">Round ${_round.rounds} answer ${j + 1}${isBest ? ' <span class="best-b">★ Best answer</span>' : ''}<span class="ft-b">${a.from === 'full text' ? esc(a.section || 'Full text') : 'Abstract'}</span></div>
+      <div class="answer-text">${highlight(a.text)}</div>
+      ${actionsHtml('m', i, a.context || {})}
+      <div class="source-card" style="margin-top:8px;margin-bottom:0">
+        <div class="source-info"><div class="source-title" title="${esc(s.title)}">${esc(s.title || 'Untitled')}</div>
+          <div class="source-meta">${tagRow(s)} ${esc(s.journal || '—')} · ${esc(s.year || '?')} · <span style="color:${cColor}">★ ${cites.toLocaleString()}</span></div></div>
+        <div class="source-btns">${doi ? `<a href="${esc(doi)}" target="_blank" rel="noopener noreferrer" class="btn xs">↗ View Source</a>` : ''}${oa ? `<a href="${esc(oa)}" target="_blank" rel="noopener noreferrer" class="btn xs">Read</a>` : ''}</div>
+      </div>
+      ${lic ? `<div class="ft-lic">Open-access license: <a href="${esc(lic)}" target="_blank" rel="noopener noreferrer">${esc(lic.replace(/^https?:\/\/(www\.)?/, ''))}</a></div>` : ''}
+    </div>`;
+  }).join('');
+  if (bestI >= 0) {                                               // a deeper answer beat the best so far: move the gold outline
+    window._bestRank = answers[bestI].rank;
+    document.querySelectorAll('#results .answer-card.best').forEach(c => { c.classList.remove('best'); const b = c.querySelector('.best-b'); if (b) b.remove(); });
+  }
+  cards.insertAdjacentHTML('beforeend', html);
 }
 
 function readText(data){ const u = data.understood; return (u && u.text) ? u.text : `${currentTemplate} ${data.keyword || ''}`; }
@@ -437,10 +552,11 @@ function actionsHtml(set, i, ctx){
     <button class="btn xs" data-cite="${set}${i}">❝ Copy with citation</button>
     <button class="btn xs" data-save="${set}${i}">🔖 Save paper</button>
     ${hasCtx ? `<button class="btn xs" data-ctx="${set}${i}">▾ Show context</button>` : ''}
-  </div>${hasCtx ? `<div class="ctx hidden" id="ctx-${set}${i}">${ctx.before ? esc(ctx.before) + ' ' : ''}<b>${esc(set === 'a' ? (window._answers || [])[i] : (window._ftAnswers || [])[i])}</b>${ctx.after ? ' ' + esc(ctx.after) : ''}</div>` : ''}`;
+  </div>${hasCtx ? `<div class="ctx hidden" id="ctx-${set}${i}">${ctx.before ? esc(ctx.before) + ' ' : ''}<b>${esc(item(set + i).text)}</b>${ctx.after ? ' ' + esc(ctx.after) : ''}</div>` : ''}`;
 }
 function item(key){
   const set = key[0], i = parseInt(key.slice(1), 10);
+  if (set === 'm') { const m = (window._moreItems || [])[i] || {}; return {text: m.text || '', src: m.source || {}}; }
   return set === 'a' ? {text: (window._answers || [])[i] || '', src: (window._srcs || [])[i] || {}}
                      : {text: (window._ftAnswers || [])[i] || '', src: (window._ftSrcs || [])[i] || {}};
 }
@@ -513,6 +629,7 @@ function renderAnswers(data) {
       ${fUsedLine(data)}
       ${cards}
       <div id="ftBox"></div>
+      <div id="moreBox"><div id="moreCards"></div><div id="moreCtl">${moreBoxHtml()}</div></div>
       <div class="search-cta">
         <p>Want more? <strong>Search full papers on "${esc(kw)}"</strong></p>
         <a href="${esc(searchLink([kw]))}" class="btn primary sm">🔍 Search Papers</a>
@@ -563,6 +680,7 @@ function renderFullText(d, data) {
     return head + note + (d.message ? `<div class="fx-note">${esc(d.message)}</div>` : '');
   }
   const highlight = makeHighlighter(Object.assign({}, data, {cues: d.cues || data.cues}));
+  d.answers.forEach(a => _round.have.add(haveKey(a)));
   window._ftAnswers = d.answers; window._ftSrcs = d.sources || []; window._ftCtxs = d.contexts || [];
   const ftBest = d.best_rank != null && (window._bestRank == null || d.best_rank > window._bestRank);
   if (ftBest) window._bestRank = d.best_rank;

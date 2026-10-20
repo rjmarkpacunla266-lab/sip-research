@@ -667,6 +667,8 @@ def answer_finder():
             "best_index": best,
             "best_rank": round(_rank(top[best]), 2) if best is not None else None,
             "searched": searched,
+            "seen": [k for k in (_paper_key(p) for p in all_papers) if k][:800],     # papers already read: "keep searching" skips them
+            "next_page": 2, "sort": f["sort"],
             "source_stats": _source_stats(all_papers, cands),
             "ft_papers": [_pick(p) for p in _ft_pool(all_papers)],
             "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
@@ -823,6 +825,102 @@ def answer_fulltext():
         })
     except Exception:
         return _fail("Full-text answer search")
+
+# ── "Keep searching": another round of up to a minute, going deeper than the first look ──────────────
+# The first search reads page 1 of each source. Each extra round reads the NEXT pages (new papers only: the page sends back the
+# papers it has already read), takes sentences from their abstracts, and reads the full text of the new open-access ones.
+# It stops at the time limit, when it already has plenty of strong answers, or when there is nothing new left to read.
+MORE_BUDGET = 55.0      # seconds: no new page of papers is started after this (a started page can finish a few seconds later)
+MORE_NEED_TIME = 14.0   # a new page needs about this long (search + full text), so none is started with less time left
+MORE_STRONG = 5         # this many strong answers in one round is enough: stop early instead of using the whole minute
+MORE_MAX_PAGE = 30
+
+def _sort_cands(cands, sort):
+    if sort == "cited":
+        cands.sort(key=lambda c: (c["paper"].get("citations") or 0, c["score"]), reverse=True)
+    elif sort == "recent":
+        cands.sort(key=lambda c: (sort_date(c["paper"]), c["score"]), reverse=True)
+    else:
+        cands.sort(key=_rank, reverse=True)
+
+@tools_bp.route("/api/answer/more", methods=["POST"])
+@login_required
+def answer_more():
+    """Body (JSON): q (the question), page (the next page to read, starts at 2), seen (papers already read), have (answers already shown).
+    Query string: the shared filters. Returns the new answers plus where the next round should start."""
+    data = request.get_json(silent=True) or {}
+    query = str(data.get("q") or "").strip()[:300]
+    keyword, ttype, kw2 = _extract_keyword(query)
+    if not keyword:
+        return jsonify({"error": "unsupported_template"}), 400
+    page = max(2, min(to_int(data.get("page")) or 2, MORE_MAX_PAGE))
+    seen = {str(x).lower()[:200] for x in (data.get("seen") or [])[:1500] if isinstance(x, str)}
+    seen_text = {str(x)[:80] for x in (data.get("have") or [])[:300] if isinstance(x, str)}
+    try:
+        f = read_filters(request.args.get)
+        if request.args.get("sort") not in ("match", "cited", "recent"):
+            f["sort"] = "match"
+        pool_f = dict(f, sort="recent" if f["sort"] == "recent" else "cited")
+        queries = _answer_queries(keyword, ttype, kw2)
+        started = time.time()
+        deadline = started + MORE_BUDGET
+        cands, new_keys = [], []
+        read = ft_read = ft_tried = pages_done = empty = 0
+        exhausted = False
+        p = page
+        while p <= MORE_MAX_PAGE:
+            with ThreadPoolExecutor(max_workers=len(queries)) as ex:
+                batches = list(ex.map(lambda qq: search_papers(qq, p, pool_f, per_source=ANSWER_PER_SOURCE)[0], queries))
+            fresh = [x for x in _merge_keep_abstract(batches) if _paper_key(x) and _paper_key(x).lower() not in seen]
+            p += 1
+            pages_done += 1
+            if not fresh:
+                empty += 1
+                if empty >= 2:                                   # two pages in a row with nothing new: the sources have run dry
+                    exhausted = True
+                    break
+                continue
+            empty = 0
+            for x in fresh:
+                k = _paper_key(x)
+                seen.add(k.lower())
+                new_keys.append(k)
+            _pubmed_abstracts(fresh)
+            read += len(fresh)
+            n0 = len(cands)
+            _collect(fresh, keyword, ttype, kw2, cands, seen_text, MIN_SCORE)
+            for c in cands[n0:]:
+                c["from"] = "abstract"
+            left = deadline - time.time()
+            if left > 6:                                         # full text of the new open-access papers, as far as time allows
+                pool = _ft_pool(fresh)
+                ft_tried += len(pool)
+                for paper, ft in topicfinder.fetch_fulltexts(pool, budget=min(9.0, left - 2), max_papers=FT_MAX_PAPERS):
+                    ft_read += 1
+                    for c in _fulltext_candidates(paper, ft, keyword, ttype, kw2):
+                        key = c["text"].lower()[:80]
+                        if key not in seen_text:
+                            seen_text.add(key)
+                            c["from"] = "full text"
+                            cands.append(c)
+            if sum(1 for c in cands if c["score"] >= BEST_SCORE) >= MORE_STRONG:
+                break                                            # plenty of strong answers: no need to use the whole minute
+            if deadline - time.time() < MORE_NEED_TIME:
+                break
+        _sort_cands(cands, f["sort"])
+        top = _spread(cands, 6)
+        return jsonify({
+            "answers": [{"text": c["text"], "source": _pick(c["paper"]),
+                         "context": {"before": c.get("before", ""), "after": c.get("after", "")},
+                         "from": c.get("from", "abstract"), "section": c.get("section", ""), "license": c.get("license", ""),
+                         "score": c["score"], "rank": round(_rank(c), 2)} for c in top],
+            "read": read, "ft_read": ft_read, "ft_tried": ft_tried, "pages": pages_done,
+            "next_page": p, "exhausted": exhausted or p > MORE_MAX_PAGE,
+            "seen": new_keys, "seconds": round(time.time() - started, 1),
+            "message": "" if top else "No new clear answers in these papers.",
+        })
+    except Exception:
+        return _fail("Deeper answer search")
 
 @tools_bp.route("/answer")
 @login_required

@@ -9,6 +9,13 @@ pages_bp = Blueprint("pages", __name__)
 # Add a new update at the TOP of this list. The newest one is shown on the landing page strip and on /news.
 # Fields: date (YYYY-MM-DD), tag, title, summary (optional), points (list), link / link_text (optional)
 NEWS = [
+    {"date": "2026-10-20", "tag": "Answer Finder", "title": "Answer Finder: keep searching for more answers",
+     "summary": "Not happy with the answers? Let Sturch read deeper.",
+     "points": ["A new Continue searching button reads for up to 1 more minute, going past the papers already read.",
+                "It looks at the next pages of results and reads the full text of new open-access papers.",
+                "New answers appear below the old ones, grouped by round, and the best answer badge moves if a better one is found.",
+                "You can press it again and again, or stop a round at any time."],
+     "link": "/answer", "link_text": "Open Answer Finder"},
     {"date": "2026-10-19", "tag": "New", "title": "Paper counter: how many papers can Sturch search?",
      "summary": "A live count from each database, shown on the home page.",
      "points": ["Total papers per database: OpenAlex, Crossref, PubMed, Europe PMC and arXiv.",
