@@ -9,6 +9,14 @@ pages_bp = Blueprint("pages", __name__)
 # Add a new update at the TOP of this list. The newest one is shown on the landing page strip and on /news.
 # Fields: date (YYYY-MM-DD), tag, title, summary (optional), points (list), link / link_text (optional)
 NEWS = [
+    {"date": "2026-10-20", "tag": "Guide", "title": "New Guide: how to use every Sturch tool",
+     "summary": "A step-by-step tutorial for the whole site, in one page.",
+     "points": ["Search Papers: Simple mode (like Google Scholar) and Advanced mode, filters, tags and result buttons.",
+                "The paper reader: find words inside a paper and copy citations in APA, MLA, Chicago or Harvard.",
+                "Answer Finder: question types, the \"I read this as\" line, quotes with context, and Continue searching.",
+                "Source Tracer (Quick Trace and full trace) and Topic Finder (topic size, narrowing trail, papers per year, methods and gap types).",
+                "Your library: Saved papers, Collections, History and Export, plus good research habits and a short FAQ."],
+     "link": "/guide", "link_text": "Open the Guide"},
     {"date": "2026-10-20", "tag": "Answer Finder", "title": "Answer Finder: keep searching for more answers",
      "summary": "Not happy with the answers? Let Sturch read deeper.",
      "points": ["A new Continue searching button reads for up to 1 more minute, going past the papers already read.",
@@ -106,6 +114,10 @@ def paper_count():
     resp = jsonify(data)
     resp.headers["Cache-Control"] = "public, max-age=600"
     return resp
+
+@pages_bp.route("/guide")
+def guide():
+    return render_template("guide.html")
 
 @pages_bp.route("/news")
 def news():
