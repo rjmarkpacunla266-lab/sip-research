@@ -12,7 +12,7 @@
   <meta name="keywords"     content="search research papers, academic paper search, find scientific articles, arxiv papers, pubmed search, openalex, crossref, europe pmc"/>
   <meta name="author"       content="Sturch"/>
   <meta name="robots"       content="noindex, nofollow"/>
-  <meta name="theme-color"  content="#0b0d12"/>
+  <meta name="theme-color"  content="#2f5bea"/>
   <link rel="canonical"     href="{{ site_url }}/search"/>
 
   <!-- Open Graph — social sharing preview -->
@@ -34,22 +34,29 @@
   <meta name="twitter:image"       content="{{ site_url }}/static/og-image.png"/>
 
   <!-- ═══════════════════════════════════════════════ -->
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script>
+/* apply the saved theme before first paint (same key as the home page); first visit follows the device */
+(function(){try{var t=localStorage.getItem('sturch_theme');
+ if(t!=='dark'&&t!=='light')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+ document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();
+</script>
 <style>
-:root{
-  --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
-  --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
-  --gold:#e8b84b;--green:#3ecf8e;--red:#f06a6a;--orange:#f0914b;
-  --text:#d8e0f8;--muted:#5a6385;
-  --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;--r:10px;
+:root,[data-theme="light"]{
+  --bg:#f5f8ff;--hero:#e9f0ff;--surf:#ffffff;--surf2:#f1f5fd;--surf3:#e4ebfb;
+  --border:#dfe6f5;--accent:#2f5bea;--accent-h:#2449c4;--accent-soft:#e6edff;--accent2:#6b4de0;
+  --gold:#a86a00;--green:#12805c;--green-bg:#dcf5ea;--red:#c93a3a;--orange:#b8560f;
+  --text:#14203d;--muted:#5d6b8c;--shadow:0 1px 2px rgba(25,45,100,.06),0 6px 18px rgba(25,45,100,.06);
+  --mono:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--serif:var(--mono);--sans:var(--mono);--r:12px;
 }
-[data-theme="light"]{
-  --bg:#f4f6fb;--surf:#ffffff;--surf2:#eef1f8;--surf3:#e2e7f4;
-  --border:rgba(80,100,180,.15);--text:#1a2040;--muted:#6b7599;
+[data-theme="dark"]{
+  --bg:#0a1020;--hero:#0d1630;--surf:#111a30;--surf2:#17223d;--surf3:#1f2c4d;
+  --border:#25314f;--accent:#4d7bff;--accent-h:#6a90ff;--accent-soft:#1a2850;--accent2:#9d86ff;
+  --gold:#f0c35a;--green:#4fd6a0;--green-bg:#123a2d;--red:#f27a7a;--orange:#f0914b;
+  --text:#e8eeff;--muted:#9aa8c9;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.28);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.65}
-#app{max-width:1100px;margin:0 auto;padding:0 18px 80px}
+#app{max-width:1180px;margin:0 auto;padding:0 16px 40px}
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
 .hidden{display:none!important}
@@ -310,6 +317,179 @@ body.adv .mode-sw{color:var(--accent);border-color:rgba(79,141,232,.35)}
 .s-link.gold{color:var(--gold);background:none;border:0}
 body.simple .toolbar{margin-top:16px}
 @media(max-width:520px){.sbar{gap:10px}}
+
+/* ═════════ Sturch redesign (matches the new home page) ═════════ */
+body{font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+a:hover{text-decoration:none}
+.btn{border-radius:10px;min-height:40px;padding:0 16px;font-weight:600}
+.btn.sm{min-height:40px;padding:0 13px}
+.btn.xs{min-height:34px}
+.btn.primary{background:var(--accent)}
+.btn.primary:hover{background:var(--accent-h)}
+.btn.gold{color:var(--gold)}
+.sr{position:absolute;left:-9999px}
+
+/* header */
+header.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:8px;height:60px;margin:0 -16px;padding:0 16px;background:color-mix(in srgb,var(--surf) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.3rem;letter-spacing:-.01em;color:var(--text)}
+.sp{flex:1}
+.seg{display:inline-flex;background:var(--surf2);border:1px solid var(--border);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;padding:0 13px;min-height:32px;border-radius:999px;font:600 .82rem var(--sans);color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+.icon-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);background:var(--surf);display:grid;place-items:center;font-size:1.02rem;cursor:pointer;color:var(--text)}
+.icon-btn:hover{border-color:var(--accent)}
+.me{position:relative}
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#3e92fc,#9357fc);color:#fff;font:700 1rem var(--sans);display:grid;place-items:center;border:0;cursor:pointer}
+.menu{position:absolute;right:0;top:46px;min-width:210px;background:var(--surf);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:6px;display:none;z-index:40}
+.menu.open{display:block}
+.menu a{display:flex;gap:9px;align-items:center;padding:0 12px;min-height:44px;border-radius:9px;font-size:.92rem;color:var(--text)}
+.menu a:hover{background:var(--surf2)}
+.menu hr{border:0;border-top:1px solid var(--border);margin:4px 0}
+.menu-who{padding:8px 12px;font-size:.78rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px}
+.pagehead{display:flex;align-items:center;gap:10px;margin:16px 0 4px}
+.pagehead h1{font-size:1.3rem;font-weight:800;letter-spacing:-.01em}
+.back{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;color:var(--text);font-size:1.2rem}
+.back:hover{background:var(--surf2)}
+
+/* search box */
+.search-section{margin:12px 0 6px}
+.search-wrap{display:flex;align-items:center;gap:8px;background:var(--surf);border:1.5px solid var(--border);border-radius:999px;padding:5px 5px 5px 46px;box-shadow:var(--shadow)}
+.search-wrap:focus-within{border-color:var(--accent);box-shadow:var(--shadow)}
+.search-wrap .si{left:17px}
+.search-wrap input{border:0;background:none;border-radius:0;padding:0;height:44px;font-size:1rem;box-shadow:none!important;color:var(--text)}
+.search-wrap input:focus{border:0;box-shadow:none}
+.sbtn{flex:none;height:46px;min-width:46px;border-radius:999px;border:0;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:6px;font:600 .9rem var(--sans);cursor:pointer;padding:0}
+.sbtn:hover{background:var(--accent-h)}
+.sbtn.busy{opacity:.6}
+body.simple .sbtn .s-lbl{display:none}
+body.adv .sbtn{padding:0 20px}
+body.adv .sbtn .s-ic{display:none}
+.hint{margin:8px 4px 0;font-size:.78rem}
+.tags-wrap{margin:10px 0 0}
+.tag-chip{background:var(--surf);border:1px solid var(--border);color:var(--text);padding:6px 6px 6px 14px;font-size:.84rem;font-weight:500;min-height:36px}
+.tag-chip .tag-x{width:26px;height:26px;display:grid;place-items:center;border-radius:50%;opacity:.7;font-size:1rem}
+.tag-chip .tag-x:hover{background:var(--surf2);opacity:1}
+.tour{display:flex;align-items:flex-start;gap:9px;margin:12px 0 0;max-width:340px;background:var(--accent-soft);border:1px solid var(--border);border-radius:12px;padding:10px 12px;font-size:.84rem;position:relative}
+.tour[hidden]{display:none}
+.tour .s-link{font-size:.84rem;font-weight:600;min-height:32px}
+.tour-x{position:absolute;top:4px;right:4px;width:32px;height:32px;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:50%}
+.src-block{margin-top:14px}
+.fx-label{font-size:.7rem;font-weight:700;letter-spacing:.08em}
+.src-row{margin-top:6px;gap:8px}
+.src-chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;font-size:.86rem;font-weight:500;background:var(--surf);color:var(--muted);border:1px solid var(--border)}
+.src-chip::before{content:'';width:26px;height:15px;border-radius:8px;background:var(--surf3);box-shadow:inset 0 0 0 1px var(--border);flex:none;background-image:radial-gradient(circle at 7px 50%,var(--muted) 5px,transparent 5.5px)}
+.src-chip.active{background:var(--surf);color:var(--text);border-color:var(--accent)}
+.src-chip.active::before{background:var(--accent);background-image:radial-gradient(circle at 19px 50%,#fff 5px,transparent 5.5px)}
+
+/* Simple filters row */
+.sbar{gap:10px;margin-top:14px}
+.sbar label{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;color:var(--muted)}
+.sbar select{min-height:44px;border-radius:10px;background:var(--surf);padding:0 30px 0 12px;color:var(--text);font-size:.88rem;font-weight:500}
+.sbar .s-chk{gap:10px;color:var(--text);min-height:44px;cursor:pointer}
+.sbar .s-chk input{appearance:none;-webkit-appearance:none;width:42px;height:24px;border-radius:12px;background:var(--surf3);border:1px solid var(--border);position:relative;cursor:pointer;flex:none;transition:background .2s}
+.sbar .s-chk input::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
+.sbar .s-chk input:checked{background:var(--accent);border-color:var(--accent)}
+.sbar .s-chk input:checked::after{transform:translateX(18px);background:#fff}
+.simple-more{margin:10px 2px 0;font-size:.82rem}
+.simple-more a{color:var(--accent);font-weight:600}
+.suggest-chip{background:var(--surf);min-height:36px;display:inline-flex;align-items:center;padding:0 14px}
+.suggest-label{line-height:36px}
+
+/* layout: sidebar in Advanced on wide screens */
+.layout{display:block}
+.side{margin-top:14px}
+.fx{margin-top:0;border-radius:14px;box-shadow:var(--shadow)}
+.fx-head{min-height:48px}
+.fx-grid{grid-template-columns:1fr 1fr;gap:12px}
+.fx-field.wide{grid-column:1/-1}
+.fx-field label{font-size:.72rem;font-weight:600;letter-spacing:.04em;text-transform:none;color:var(--muted)}
+.fx-field .filter-input{min-height:44px;border-radius:10px;font-size:.92rem;font-family:var(--sans);background-color:var(--surf);color:var(--text)}
+.fx-oa{border-radius:12px;min-height:52px}
+.fx-oa.active{border-color:var(--green)}
+.fx-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}
+.fx-reset{min-height:44px;border:0;background:none;color:var(--accent);font-weight:600}
+.sbtn-wide{flex:1;min-height:46px;border:0;border-radius:10px;background:var(--accent);color:#fff;font:700 .95rem var(--sans);cursor:pointer}
+.sbtn-wide:hover{background:var(--accent-h)}
+@media(min-width:900px){
+  body.adv .layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:22px;align-items:start}
+  body.adv .side{position:sticky;top:76px;margin-top:6px}
+  body.adv .fx-head{cursor:default}
+  body.adv .fx-caret,body.adv .fx-sum{display:none}
+  body.adv .fx-panel{display:block}
+  .fx-grid{grid-template-columns:1fr 1fr}
+  .search-section{max-width:none}
+}
+@media(max-width:899px){.fx-panel{padding-bottom:14px}}
+
+/* stats + toolbar */
+.stats-bar{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin:16px 0 4px;padding:0;background:none;border:0;font-size:.9rem;color:var(--muted)}
+.stats-bar strong{color:var(--text)}
+.stats-bar .dot{opacity:.5}
+.toolbar{margin:14px 0 10px;gap:8px}
+.toolbar .count{font-size:.88rem}
+.toolbar .s-link{font-size:.84rem;font-weight:600;min-height:40px;display:inline-flex;align-items:center}
+body.simple .toolbar{margin-top:16px}
+.cite-counter{border-radius:999px;font-family:var(--sans)}
+
+/* result cards */
+#results{gap:12px}
+.card.pc{display:flex;gap:14px;padding:16px;border-radius:16px;box-shadow:var(--shadow);overflow:visible}
+.card.pc:hover{border-color:var(--accent)}
+.pc-ic{flex:none;width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.pc-main{flex:1;min-width:0}
+.pc-top{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.pc-title{flex:1;min-width:0;font-size:1.02rem;font-weight:700;line-height:1.35;color:var(--accent);overflow-wrap:anywhere}
+.pc-title:hover{text-decoration:underline}
+.pc-badges{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.oa-b{font-size:.74rem;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--green-bg);border:0;color:var(--green);white-space:nowrap}
+.pw-b{font-size:.74rem;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--surf2);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+.src-b{font-size:.72rem;font-weight:600;padding:2px 9px}
+.pc-meta{margin-top:4px;font-size:.84rem;color:var(--muted)}
+.pc-meta .journal{font-style:normal}
+.pc-snip{margin-top:8px;font-size:.9rem;line-height:1.55;color:var(--text);opacity:.9;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pc-cites{margin-top:8px;font-size:.82rem;color:var(--muted)}
+.pc-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.act{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 15px;border-radius:10px;border:1px solid var(--border);background:var(--surf);color:var(--text);font:600 .84rem var(--sans);cursor:pointer;white-space:nowrap}
+.act:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+.act.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.act.primary:hover{background:var(--accent-h);color:#fff}
+.act.gold{color:var(--gold);border-color:var(--gold)}
+.act.ghost{border-color:transparent;background:none;color:var(--muted)}
+.card-body{padding:0}
+.abstract-block{background:var(--surf2);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;margin-top:12px;font-size:.88rem}
+.card-foot{padding:10px 0 0;border:0;flex-direction:row}
+.chip{background:var(--accent-soft);border:0;color:var(--accent);padding:3px 10px;font-size:.74rem}
+.load-more-bar{border:0;background:none;gap:10px;flex-wrap:wrap}
+.state{padding:48px 16px}
+.state h3{font-family:var(--sans)}
+.notice{border-radius:12px}
+
+.foot{margin:30px -16px 0;border-top:1px solid var(--border);padding:12px 16px 30px;font-size:.82rem;color:var(--muted);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 18px}
+.foot nav{display:flex;flex-wrap:wrap}
+.foot nav a{color:var(--muted);min-height:44px;display:inline-flex;align-items:center;padding:0 10px 0 0;margin-right:8px}
+.foot nav a:hover{color:var(--accent)}
+#toast{background:var(--surf);color:var(--text);box-shadow:var(--shadow)}
+
+@media(max-width:600px){
+  .pc-ic{display:none}
+  .card.pc{padding:14px}
+  .pc-top{flex-direction:column;gap:6px}
+  .pc-badges{flex-direction:row;align-items:center}
+  .card-body,.card-foot{padding-left:0}
+  .pc-actions .act{flex:1 1 auto;justify-content:center;padding:0 10px}
+}
+@media(max-width:480px){
+  header.top{gap:6px}
+  .brand{font-size:1.15rem;gap:6px}
+  .seg button{padding:0 10px;font-size:.78rem}
+  .icon-btn{width:38px;height:38px}
+  body.adv .sbtn{padding:0 14px;font-size:.84rem}
+  .search-wrap{padding-left:42px}
+  .search-wrap .si{left:14px}
+}
+@media(max-width:640px){.stats-bar{display:flex!important;grid-template-columns:none}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body class="simple">
@@ -317,46 +497,77 @@ body.simple .toolbar{margin-top:16px}
 <div id="app">
 
 <!-- Header -->
-<header>
-  <a href="/" class="logo" style="text-decoration:none"><span>Sturch</span><span class="beta">BETA</span></a>
-  <div class="header-right">
-    <label class="mode-sw" title="Show every filter, source and tag"><span class="t">Advanced mode</span><input type="checkbox" id="modeSwitch" onchange="setMode(this.checked)" aria-label="Advanced mode"/><span class="sw"></span></label>
-    <span class="user-pill adv-only" id="userEmail">…</span>
-    <button class="btn sm" id="themeBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
-    <a href="/history" class="btn sm" title="Search history">🕐</a>
-    <a href="/saved" class="btn sm" title="Saved papers">🔖</a>
-    <a href="/collections" class="btn sm" title="Collections">📚</a>
-    <button class="btn sm adv-only" onclick="showExportMenu()">↓ Export</button>
-    <a href="/donate" class="btn sm" style="background:linear-gradient(135deg,rgba(79,141,232,.15),rgba(157,110,245,.15));border-color:rgba(157,110,245,.3);color:#9d6ef5">💙 Donate</a>
-    <a href="/logout" class="btn sm danger">Logout</a>
+<header class="top">
+  <a href="/" class="brand" aria-label="Sturch home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 342" width="30" height="27" role="img" aria-label="Sturch"><defs><linearGradient id="hg" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="338"><stop offset="0" stop-color="#3e92fc"/><stop offset="1" stop-color="#9357fc"/></linearGradient></defs><path fill="url(#hg)" fill-rule="evenodd" d="M29.48 61.71L29.48 8.32C29.48 5.6 34.93 4.71 36.72 4.56C45.18 3.88 53.73 3.82 62.19 4.54C95.77 7.36 129.77 16.99 158.68 34.65C148.44 47.42 138.58 51.55 129.94 68.82C115.88 96.9 129.21 132.49 157.8 145.67L204.03 166.98C211.02 170.2 217.74 176 222.88 181.65C227.19 186.39 230.6 191.62 233.15 197.5C243.31 220.85 233.98 245.25 217.53 262.89C211.61 269.24 204.61 274.46 198.98 281.1C195.16 285.61 192.9 290.84 189.65 295.61C183.87 288.91 178.45 282.05 171.76 276.18C145.47 253.11 108.67 243.37 74.17 244.78C59.79 245.36 42.79 246.92 30.15 254.41L84.48 263.55C113.81 268.49 153.59 281.05 175.97 301.08C181.53 306.06 185.11 312.39 190.08 317.74C194.28 311.18 198.75 305.24 204.67 300.11C227.72 280.16 268.88 266.94 298.79 262.39L348.54 254.83C348.92 254.77 349.3 254.71 349.68 254.65C346.44 251.84 341.75 250.64 337.64 249.4C317.76 243.34 296.54 243.24 276.5 248.6C269.52 250.46 263.12 254.6 256.32 256.35C260.27 246.34 264.74 237.01 266.72 226.29C273.42 189.99 255.38 153.27 222.01 136.85L175.86 114.14C170.48 111.49 165.25 106.34 161.95 101.41C149.94 83.46 159.19 66.9 174.25 54.84C206.47 29 258.3 12.17 298.83 6.4C311.87 4.54 325.05 3.65 338.21 4.28C340.73 4.4 350.3 4.45 350.3 8.5L350.3 61.83C357.39 61.1 368.72 56.67 373.99 63.08C374.26 63.41 375.45 64.88 375.45 65.22L375.4 122.15L375.4 273.12C375.4 276.41 370.96 281.24 367.71 281.59L309.11 287.88C281.07 290.89 250.9 298.62 225.92 311.82C213.91 318.16 198.4 336.89 190.1 337.04C180.24 337.21 173.05 325.68 166.21 320.08C161.84 316.49 156.92 313.54 151.89 310.98C125.04 297.33 93.34 290.34 63.51 287.14L11.88 281.59C8.95 281.27 4.43 276.45 4.43 273.47L4.43 65.55C4.43 56.25 24.53 61.54 29.18 61.71Z"/></svg><span>Sturch</span></a>
+  <div class="sp"></div>
+  <div class="seg" role="group" aria-label="Search mode">
+    <button type="button" id="mSimple" onclick="setMode(false)">Simple</button>
+    <button type="button" id="mAdv" onclick="setMode(true)">Advanced</button>
+  </div>
+  <input type="checkbox" id="modeSwitch" hidden onchange="setMode(this.checked)" aria-label="Advanced mode"/>
+  <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Switch light or dark" aria-label="Switch light or dark theme">🌙</button>
+  <div class="me">
+    <button class="avatar" id="meBtn" type="button" aria-label="Account menu" aria-haspopup="true" aria-expanded="false" onclick="toggleMeMenu(event)">S</button>
+    <div class="menu" id="meMenu" role="menu">
+      <div class="menu-who" id="userEmail">…</div>
+      <a href="/saved" role="menuitem">🔖 Saved papers</a>
+      <a href="/collections" role="menuitem">📚 Collections</a>
+      <a href="/history" role="menuitem">🕐 History</a>
+      <a href="#" class="adv-only" role="menuitem" onclick="showExportMenu();return false">↓ Export</a>
+      <a href="/guide" role="menuitem">📖 Guide</a>
+      <a href="/donate" role="menuitem">💙 Donate</a>
+      <hr/>
+      <a href="/logout" role="menuitem">↩ Log out</a>
+    </div>
   </div>
 </header>
+
+<div class="pagehead"><a href="/" class="back" aria-label="Back to home">←</a><h1>Search Papers</h1></div>
 
 <!-- Notice -->
 <div class="notice adv-only" id="noticeBanner">
   <span>⚠️</span>
-  <div><strong>Reference Notice:</strong> Results from OpenAlex, arXiv, PubMed, Crossref &amp; Europe PMC. References are <strong>auto-generated</strong> — always verify before academic submission.</div>
-  <button class="notice-x" onclick="this.closest('.notice').remove()">✕</button>
+  <div><strong>Reference Notice:</strong> Results from OpenAlex, arXiv, PubMed, Crossref &amp; Europe PMC. References are <strong>auto-generated</strong>, so always verify them before you submit.</div>
+  <button class="notice-x" onclick="this.closest('.notice').remove()" aria-label="Close notice">✕</button>
 </div>
 
 <!-- Search -->
 <div class="search-section">
-  <div class="tags-wrap adv-only" id="tagsWrap"></div>
   <div class="search-wrap">
-    <svg class="si" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="text" id="searchInput" placeholder="Search papers" autocomplete="off"/>
-    <button class="btn primary" id="searchBtn" onclick="doSearch()">Search</button>
+    <svg class="si" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input type="text" id="searchInput" placeholder="Search papers" autocomplete="off" aria-label="Search papers"/>
+    <button class="sbtn" id="searchBtn" onclick="mainBtn()" aria-label="Search">
+      <svg class="s-ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <span class="s-lbl">Add keyword</span>
+    </button>
   </div>
-  <div class="hint adv-only">Enter adds a keyword as a tag · add several for a sharper search</div>
-  <div class="simple-only simple-note">Type what you are looking for and press Enter. Citations are auto-generated, so check them before you submit.</div>
+  <div class="tags-wrap adv-only" id="tagsWrap"></div>
+  <div class="hint adv-only">Each keyword is combined (AND). Press Enter to add one, then press Search.</div>
+  <div class="tour adv-only" id="tourBubble" hidden>
+    <span aria-hidden="true">💡</span>
+    <div><b>New to Advanced mode?</b><br/><button type="button" class="s-link" onclick="openTour()">Take a quick tour</button></div>
+    <button type="button" class="tour-x" onclick="dismissTutorial()" aria-label="Close">✕</button>
+  </div>
+
+  <!-- Sources (Advanced) -->
+  <div class="fx-group adv-only src-block">
+    <span class="fx-label">Sources</span>
+    <div class="src-row" id="srcRow">
+      <span class="src-chip active" data-src="openalex"  onclick="toggleSource(this)" role="button" tabindex="0">OpenAlex</span>
+      <span class="src-chip active" data-src="crossref"  onclick="toggleSource(this)" role="button" tabindex="0">Crossref</span>
+      <span class="src-chip active" data-src="pubmed"    onclick="toggleSource(this)" role="button" tabindex="0">PubMed</span>
+      <span class="src-chip active" data-src="europepmc" onclick="toggleSource(this)" role="button" tabindex="0">Europe PMC</span>
+      <span class="src-chip active" data-src="arxiv"     onclick="toggleSource(this)" role="button" tabindex="0">arXiv</span>
+    </div>
+  </div>
 
   <!-- Simple filters -->
   <div class="sbar simple-only" id="simpleBar">
     <label>Date <select id="sSince" onchange="simpleChanged()"></select></label>
     <label>Sort <select id="sSort" onchange="simpleChanged()"><option value="cited">Most cited</option><option value="recent">Most recent</option></select></label>
-    <label class="s-chk"><input type="checkbox" id="sOA" onchange="simpleChanged()"/> Free to read only</label>
+    <label class="s-chk"><input type="checkbox" id="sOA" onchange="simpleChanged()"/> <span>Free to read only</span></label>
   </div>
-  <div class="simple-more simple-only">Need more control? <a onclick="document.getElementById('modeSwitch').click()">Switch on Advanced mode</a></div>
+  <div class="simple-more simple-only">Need more control? <a href="#" onclick="document.getElementById('modeSwitch').click();return false">Switch to Advanced mode</a></div>
 
   <!-- Quick topic suggestions -->
   <div class="suggest-wrap" id="suggestWrap">
@@ -370,84 +581,85 @@ body.simple .toolbar{margin-top:16px}
     <span class="suggest-chip" onclick="quickSearch('water pollution')">water pollution</span>
     <span class="suggest-chip" onclick="quickSearch('machine learning')">machine learning</span>
   </div>
+</div>
 
-  <!-- Filters -->
-  <div class="fx adv-only" id="fx">
-    <button type="button" class="fx-head" id="fxHead" onclick="toggleFilters()" aria-expanded="false" aria-controls="fxPanel">
-      <span>⚙ Filters</span>
-      <span class="fx-count" id="fxCount" data-n="0">0</span>
-      <span class="fx-sum" id="fxSum">All years · All sources</span>
-      <span class="fx-caret">▾</span>
-    </button>
-    <div class="fx-panel" id="fxPanel">
-      <div class="fx-grid">
-        <div class="fx-field"><label for="yearFrom">From year</label>
-          <input type="number" id="yearFrom" class="filter-input" placeholder="Any" min="1800" max="2026" inputmode="numeric" onchange="onSortChange()"/></div>
-        <div class="fx-field"><label for="yearTo">To year</label>
-          <input type="number" id="yearTo" class="filter-input" placeholder="Any" min="1800" max="2026" inputmode="numeric" onchange="onSortChange()"/></div>
-        <div class="fx-field"><label for="sortBy">Sort by</label>
-          <select id="sortBy" class="filter-input" onchange="onSortChange()">
-            <option value="cited">Most cited</option>
-            <option value="recent">Most recent</option>
-          </select></div>
-        <div class="fx-field"><label for="fieldBy">Word in</label>
-          <select id="fieldBy" class="filter-input" onchange="onSortChange()">
-            <option value="both">Title or abstract</option>
-            <option value="title">Title only</option>
-            <option value="abstract">Abstract only</option>
-          </select></div>
-      </div>
-
-      <div class="fx-oa" id="oaToggle" onclick="toggleOA()" role="switch" aria-checked="false" tabindex="0" title="Open Access only">
-        <span>🔓 Open access only<small>Papers you can read in full, free</small></span><span class="sw"></span>
-      </div>
-
-      <div class="fx-group">
-        <span class="fx-label">Sources</span>
-        <div class="src-row" id="srcRow">
-          <span class="src-chip active" data-src="openalex"  onclick="toggleSource(this)">OpenAlex</span>
-          <span class="src-chip active" data-src="arxiv"     onclick="toggleSource(this)">arXiv</span>
-          <span class="src-chip active" data-src="pubmed"    onclick="toggleSource(this)">PubMed</span>
-          <span class="src-chip active" data-src="crossref"  onclick="toggleSource(this)">Crossref</span>
-          <span class="src-chip active" data-src="europepmc" onclick="toggleSource(this)">Europe PMC</span>
+<div class="layout">
+  <!-- Filters (Advanced): sidebar on wide screens, collapsible panel on phones -->
+  <aside class="side adv-only">
+    <div class="fx" id="fx">
+      <button type="button" class="fx-head" id="fxHead" onclick="toggleFilters()" aria-expanded="false" aria-controls="fxPanel">
+        <span>⚙ Filters</span>
+        <span class="fx-count" id="fxCount" data-n="0">0</span>
+        <span class="fx-sum" id="fxSum">All years · All sources</span>
+        <span class="fx-caret">▾</span>
+      </button>
+      <div class="fx-panel" id="fxPanel">
+        <div class="fx-grid">
+          <div class="fx-field wide"><label for="fieldBy">Search in</label>
+            <select id="fieldBy" class="filter-input" onchange="onSortChange()">
+              <option value="both">Title or abstract</option>
+              <option value="title">Title only</option>
+              <option value="abstract">Abstract only</option>
+            </select></div>
+          <div class="fx-field"><label for="yearFrom">From year</label>
+            <input type="number" id="yearFrom" class="filter-input" placeholder="Any" min="1800" max="2026" inputmode="numeric" onchange="onSortChange()"/></div>
+          <div class="fx-field"><label for="yearTo">To year</label>
+            <input type="number" id="yearTo" class="filter-input" placeholder="Any" min="1800" max="2026" inputmode="numeric" onchange="onSortChange()"/></div>
+          <div class="fx-field wide"><label for="sortBy">Sort by</label>
+            <select id="sortBy" class="filter-input" onchange="onSortChange()">
+              <option value="cited">Most cited</option>
+              <option value="recent">Most recent</option>
+            </select></div>
+        </div>
+        <div class="fx-oa" id="oaToggle" onclick="toggleOA()" role="switch" aria-checked="false" tabindex="0" title="Open Access only">
+          <span>🔓 Open access only<small>Papers you can read in full, free</small></span><span class="sw"></span>
+        </div>
+        <div class="fx-foot">
+          <button type="button" class="fx-reset" onclick="resetFilters()">↺ Reset filters</button>
+          <button type="button" class="sbtn-wide" onclick="runAdv()">Search</button>
         </div>
       </div>
+    </div>
+  </aside>
 
-      <div class="fx-foot"><button type="button" class="fx-reset" onclick="resetFilters()">↺ Reset filters</button></div>
+  <div class="main">
+    <!-- Stats line -->
+    <div class="stats-bar adv-only hidden" id="statsBar">
+      <span><strong id="s_total">—</strong> results</span><span class="dot">·</span>
+      <span>showing <strong id="s_shown">—</strong></span><span class="dot">·</span>
+      <span>from <strong id="s_sources">5</strong> sources</span>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar hidden" id="toolbar">
+      <span class="count" id="toolbarCount"></span>
+      <span class="cite-counter adv-only" id="citeCounter">📋 0 copied</span>
+      <button class="btn sm adv-only" onclick="expandAll()">Expand all</button>
+      <button class="btn sm adv-only" onclick="collapseAll()">Collapse all</button>
+      <button class="btn sm adv-only" onclick="copyAllAPA()">📋 Copy all APA</button>
+    </div>
+
+    <!-- Results -->
+    <div id="results">
+      <div class="state">
+        <div class="big">🔬</div>
+        <h3>Search for research papers</h3>
+        <p style="margin-top:6px;font-size:.88rem">Type your topic above and press Search</p>
+      </div>
+    </div>
+
+    <!-- Load More -->
+    <div class="load-more-bar hidden" id="loadMoreBar">
+      <button class="btn primary" id="showMoreBtn" onclick="showNextTen()">Show next 10</button>
+      <button class="btn" id="loadMoreBtn" onclick="loadMorePapers()" style="display:none">Load more papers</button>
     </div>
   </div>
 </div>
 
-<!-- Stats bar -->
-<div class="stats-bar adv-only hidden" id="statsBar">
-  <div class="stat"><div><div class="val" id="s_total">—</div><div class="lbl">Total found</div></div></div>
-  <div class="stat"><div><div class="val" id="s_shown">—</div><div class="lbl">Showing</div></div></div>
-  <div class="stat"><div><div class="val" id="s_sources">5</div><div class="lbl">Sources</div></div></div>
-</div>
-
-<!-- Toolbar -->
-<div class="toolbar hidden" id="toolbar">
-  <span class="count" id="toolbarCount"></span>
-  <span class="cite-counter adv-only" id="citeCounter">📋 0 copied</span>
-  <button class="btn sm adv-only" onclick="expandAll()">Expand All</button>
-  <button class="btn sm adv-only" onclick="collapseAll()">Collapse All</button>
-  <button class="btn sm adv-only" onclick="copyAllAPA()">📋 Copy All APA</button>
-</div>
-
-<!-- Results -->
-<div id="results">
-  <div class="state">
-    <div class="big">🔬</div>
-    <h3>Search for research papers</h3>
-    <p style="margin-top:6px;font-size:.83rem">Type your topic above and press Search</p>
-  </div>
-</div>
-
-<!-- Load More -->
-<div class="load-more-bar hidden" id="loadMoreBar">
-  <button class="btn sm primary" id="showMoreBtn" onclick="showNextTen()">Show next 10</button>
-  <button class="btn sm" id="loadMoreBtn" onclick="loadMorePapers()" style="display:none">Load more papers</button>
-</div>
+<footer class="foot">
+  <nav aria-label="Footer"><a href="/donate">Support Sturch</a><a href="/guide">Guide</a><a href="/#faq">FAQ</a><a href="/#disclaimer">Disclaimer</a></nav>
+  <span>© <span id="yr">2026</span> Sturch. All rights reserved.</span>
+</footer>
 
 </div><!-- /#app -->
 
@@ -470,7 +682,7 @@ body.simple .toolbar{margin-top:16px}
       <div class="icon">💎</div>
       <div class="txt">
         <strong>Sturch is completely free</strong>
-        <span>Search 250M+ papers across 5 databases. Load more anytime. All free.</span>
+        <span>Search millions of papers across 5 databases. Load more anytime. All free.</span>
       </div>
     </div>
     <div class="t-step">
@@ -501,8 +713,8 @@ body.simple .toolbar{margin-top:16px}
         <span>APA/MLA are auto-generated and may have missing volume/page info. Double-check before submitting.</span>
       </div>
     </div>
-    <button class="btn primary" style="width:100%;justify-content:center;margin-top:10px;padding:11px" onclick="dismissTutorial()">Got it — Start Searching!</button>
-    <p style="text-align:center;font-size:.72rem;color:var(--muted);margin-top:8px">Tap 🕐 for history · 🔖 for saved · 📚 for collections</p>
+    <button class="btn primary" style="width:100%;justify-content:center;margin-top:10px;padding:11px" onclick="dismissTutorial()">Got it, start searching</button>
+    <p style="text-align:center;font-size:.72rem;color:var(--muted);margin-top:8px">Open the account menu (top right) for history, saved papers and collections</p>
   </div>
 </div>
 
@@ -573,22 +785,44 @@ const DISPLAY_PER_PAGE = 10; // show 10 at a time
 // ── Theme Toggle ───────────────────────────────
 function toggleTheme() {
   const html = document.documentElement;
-  const isDark = html.getAttribute('data-theme') !== 'light';
+  const isDark = html.getAttribute('data-theme') === 'dark';
   html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-  document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
-  localStorage.setItem('sturch_theme', isDark ? 'light' : 'dark');
+  paintTheme();
+  try { localStorage.setItem('sturch_theme', isDark ? 'light' : 'dark'); } catch (e) {}
 }
-// Load saved theme
-(function() {
-  const saved = localStorage.getItem('sturch_theme');
-  if (saved === 'light') {
-    document.documentElement.setAttribute('data-theme', 'light');
-    document.addEventListener('DOMContentLoaded', () => {
-      const btn = document.getElementById('themeBtn');
-      if (btn) btn.textContent = '☀️';
-    });
-  }
-})();
+function paintTheme() {
+  const b = document.getElementById('themeBtn');
+  if (b) b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+}
+document.addEventListener('DOMContentLoaded', paintTheme);
+function toggleMeMenu(e) {
+  if (e) e.stopPropagation();
+  const m = document.getElementById('meMenu'), btn = document.getElementById('meBtn');
+  const o = m.classList.toggle('open'); btn.setAttribute('aria-expanded', String(o));
+}
+document.addEventListener('click', () => { const m = document.getElementById('meMenu'); if (m) { m.classList.remove('open'); document.getElementById('meBtn').setAttribute('aria-expanded', 'false'); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { const m = document.getElementById('meMenu'); if (m) m.classList.remove('open'); } });
+try { document.getElementById('yr').textContent = new Date().getFullYear(); } catch (e) {}
+
+// The big round button: Simple = search; Advanced = add the typed keyword (or search if the box is empty)
+function mainBtn() {
+  if (isSimple()) { doSearch(); return; }
+  const v = document.getElementById('searchInput').value.trim();
+  if (v) addTag(v); else doSearch();
+}
+// Advanced: the round button says "Add keyword" while there is text in the box, and "Search" once keywords are ready
+function syncMainBtn() {
+  const l = document.querySelector('#searchBtn .s-lbl'); if (!l) return;
+  const has = document.getElementById('searchInput').value.trim().length > 0;
+  l.textContent = (!has && searchTags.length) ? 'Search' : 'Add keyword';
+}
+document.getElementById('searchInput').addEventListener('input', syncMainBtn);
+// The Search button inside the Advanced filter panel: add any typed keyword, then search
+function runAdv() {
+  const v = document.getElementById('searchInput').value.trim();
+  if (v) addTag(v);
+  doSearch();
+}
 
 // ── Simple / Advanced mode ─────────────────────
 // Simple (default): one search box and three filters. Advanced: the full page (tags, sources, field, every filter).
@@ -627,13 +861,18 @@ function setMode(adv, init) {
   document.body.classList.toggle('adv', !!adv);
   document.body.classList.toggle('simple', !adv);
   document.getElementById('modeSwitch').checked = !!adv;
+  setTimeout(syncMainBtn, 0);
+  document.getElementById('mSimple').classList.toggle('on', !adv);
+  document.getElementById('mAdv').classList.toggle('on', !!adv);
+  document.getElementById('mSimple').setAttribute('aria-pressed', String(!adv));
+  document.getElementById('mAdv').setAttribute('aria-pressed', String(!!adv));
   try { localStorage.setItem('sturch_mode', adv ? 'adv' : 'simple'); } catch (e) {}
   let cleared = false;
   if (adv) {
     const v = input.value.trim();
     if (v && v.toLowerCase() !== searchTags.join(' ')) addTag(v); else input.value = '';
     renderTags();
-    input.placeholder = 'Type a keyword, press Enter';
+    input.placeholder = 'Search papers or topics…';
     if (!init) checkTutorial();
   } else {
     // Simple mode has no sources / end year / field options, so they go back to their defaults
@@ -673,19 +912,20 @@ window.addEventListener('load', () => {
   if (!applyRerunFromURL()) restoreLastSearch();
   fxSummary();
   syncSimpleFromFilters();
-  if (window.innerWidth >= 760) toggleFilters(true);   // roomy screens: show the panel open
+  if (window.innerWidth >= 900) toggleFilters(true);   // roomy screens: the filters sit open in the sidebar
   if (!isSimple()) checkTutorial();                     // the guide explains tags and sources: only shown in Advanced mode
 });
 
 // ── Tutorial ──────────────────────────────────
-function checkTutorial() {
-  if (!localStorage.getItem('sturch_tutorial_v2')) {
-    document.getElementById('tutorialOverlay').classList.remove('hidden');
-  }
+function checkTutorial() {                           // a small bubble, not a pop-up that blocks the page
+  let seen = false; try { seen = !!localStorage.getItem('sturch_tutorial_v2'); } catch (e) {}
+  document.getElementById('tourBubble').hidden = seen;
 }
+function openTour() { document.getElementById('tutorialOverlay').classList.remove('hidden'); }
 function dismissTutorial() {
-  localStorage.setItem('sturch_tutorial_v2', '1');
+  try { localStorage.setItem('sturch_tutorial_v2', '1'); } catch (e) {}
   document.getElementById('tutorialOverlay').classList.add('hidden');
+  document.getElementById('tourBubble').hidden = true;
 }
 
 // ── OA Toggle ─────────────────────────────────
@@ -804,9 +1044,11 @@ function addTag(val) {
   searchTags.push(val);
   renderTags();
   document.getElementById('searchInput').value = '';
+  syncMainBtn();
 }
 function removeTag(idx) { searchTags.splice(idx, 1); renderTags(); }
 function renderTags() {
+  setTimeout(syncMainBtn, 0);
   if (isSimple() && searchTags.length) document.getElementById('searchInput').value = searchTags.join(' ');   // the box shows the search
   document.getElementById('tagsWrap').innerHTML = searchTags.map((t, i) =>
     `<span class="tag-chip">${esc(t)}<span class="tag-x" onclick="removeTag(${i})">×</span></span>`
@@ -830,6 +1072,7 @@ async function loadUserInfo() {
     if (!resp.ok) { window.location.href = '/login'; return; }
     const user = await resp.json();
     document.getElementById('userEmail').textContent = user.email;
+    document.getElementById('meBtn').textContent = (user.email || 'S').trim().charAt(0).toUpperCase();
   } catch(e) {}
 }
 
@@ -861,7 +1104,7 @@ async function doSearch(page = 1) {
 
   // Disable search button
   const searchBtn = document.getElementById('searchBtn');
-  if (searchBtn) { searchBtn.disabled = true; searchBtn.textContent = 'Searching…'; }
+  if (searchBtn) { searchBtn.disabled = true; searchBtn.classList.add('busy'); }
 
   showLoading();
 
@@ -898,7 +1141,7 @@ async function doSearch(page = 1) {
   } catch(e) { showError('Connection error. Check your internet and try again.'); }
   finally {
     // Re-enable search button
-    if (searchBtn) { searchBtn.disabled = false; searchBtn.textContent = 'Search'; }
+    if (searchBtn) { searchBtn.disabled = false; searchBtn.classList.remove('busy'); }
   }
 }
 
@@ -1014,82 +1257,57 @@ function showNextTen() {
 }
 
 // ── Build Card HTML ────────────────────────────
-function buildSimpleCard(item, i) {
+const DOC_IC = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>';
+function oaBadgeHtml(item) {
+  return item.is_oa ? '<span class="oa-b">Open access</span>' : '<span class="pw-b">Not open access</span>';
+}
+function paperCard(item, i, adv) {
   const n = i + 1, cites = item.citations || 0;
   const au = item.authors || [];
-  const authors = au.slice(0, 3).join(', ') + (au.length > 3 ? ' …' : '');
+  const authors = au.slice(0, adv ? 2 : 3).join(', ') + (au.length > (adv ? 2 : 3) ? (adv ? ' et al.' : ' …') : '');
   const ab = String(item.abstract || '').trim();
-  const snip = ab.length > 280 ? ab.slice(0, 280).replace(/\s+\S*$/, '') + '…' : ab;
+  const snip = ab.length > 260 ? ab.slice(0, 260).replace(/\s+\S*$/, '') + '…' : ab;
   const isBookmark = !!bookmarkMap[getPaperId(item)];
-  return `<div class="card s-card" id="card-${n}">
-    <div class="s-title"><a href="#" onclick="openPaperPage(${i},event);return false">${esc(stripTags(item.title || 'Untitled'))}</a></div>
-    <div class="s-meta">${esc(authors)}${authors ? ' – ' : ''}${item.journal ? '<span class="journal">' + esc(item.journal) + '</span>, ' : ''}${item.year || '?'}</div>
-    ${snip ? `<div class="s-snip">${esc(snip)}</div>` : ''}
-    <div class="s-foot">
-      ${cites ? `<span>Cited by ${cites.toLocaleString()}</span>` : ''}
-      ${item.is_oa ? '<span class="s-free">Free to read</span>' : ''}
-      <button class="s-link" onclick="showCitationPicker(${i},${n},event)">Cite</button>
-      <button class="s-link ${isBookmark ? 'gold' : ''}" id="bk-${n}" onclick="toggleBookmark(${i},${n},event)">${isBookmark ? '🔖 Saved' : '🔖 Save'}</button>
-      <button class="s-link" onclick="openPaperPage(${i},event)">Read</button>
-      ${item.oa_url ? `<a class="s-link" href="${esc(item.oa_url)}" target="_blank" rel="noopener noreferrer">Full text</a>` : ''}
-      ${item.doi ? `<a class="s-link" href="${esc(item.doi)}" target="_blank" rel="noopener noreferrer">DOI</a>` : ''}
+  const meta = [authors, item.journal ? `<span class="journal">${esc(item.journal)}</span>` : '', item.year || '?'].filter(Boolean).join(' · ');
+  const concepts = (item.concepts || []).slice(0, 4).map(c => `<span class="chip">${esc(c)}</span>`).join('');
+  return `<div class="card pc${adv ? ' adv-card' : ''}" id="card-${n}" data-open="false">
+    <div class="pc-ic" aria-hidden="true">${DOC_IC}</div>
+    <div class="pc-main">
+      <div class="pc-top">
+        <a class="pc-title" href="#" onclick="openPaperPage(${i},event);return false">${esc(stripTags(item.title || 'Untitled'))}</a>
+        <span class="pc-badges">${oaBadgeHtml(item)}${adv ? sourceBadge(item.data_source) : ''}</span>
+      </div>
+      <div class="pc-meta">${meta}</div>
+      ${snip ? `<div class="pc-snip">${esc(snip)}</div>` : ''}
+      ${cites ? `<div class="pc-cites">↗ ${cites.toLocaleString()} citations</div>` : ''}
+      <div class="pc-actions">
+        <button class="act primary" onclick="openPaperPage(${i},event)">📄 Read</button>
+        <button class="act ${isBookmark ? 'gold' : ''}" id="bk-${n}" onclick="toggleBookmark(${i},${n},event)">${isBookmark ? '🔖 Saved' : '🔖 Save'}</button>
+        <button class="act" onclick="showCitationPicker(${i},${n},event)">❝ Cite</button>
+        ${item.oa_url ? `<a class="act" href="${esc(item.oa_url)}" target="_blank" rel="noopener noreferrer">Full text</a>` : ''}
+        ${item.doi ? `<a class="act" href="${esc(item.doi)}" target="_blank" rel="noopener noreferrer">DOI</a>` : ''}
+        ${adv ? `<button class="act" onclick="openAddToCollection(${i},event)" title="Add to a collection">📚 Collect</button>
+        <button class="act" onclick="shareFromCard(${i},event)">🔗 Share</button>
+        <button class="act ghost" onclick="toggleCard(${n})" aria-label="Show details">Details ▾</button>` : ''}
+      </div>
+      ${adv ? `<div class="card-body hidden">
+        ${ab ? `<div class="abstract-block">${esc(ab)}</div>` : ''}
+        ${concepts ? `<div class="chips" style="margin-top:7px">${concepts}</div>` : ''}
+      </div>
+      <div class="card-foot hidden">
+        <span class="ref-warn">${item.apa_missing && item.apa_missing.length ? '⚠️ Missing: ' + item.apa_missing.join(', ') : '⚠️ Auto-generated reference'}</span>
+        <span class="apa-text" title="${esc(item.apa_reference || '')}">${esc(item.apa_reference || '')}</span>
+      </div>` : ''}
     </div>
   </div>`;
 }
+function buildSimpleCard(item, i) { return paperCard(item, i, false); }
 function countHtml(fetched, shown, sources) {
   return isSimple()
     ? `About <strong>${(totalResults || fetched).toLocaleString()}</strong> results · showing ${shown}`
     : (shown >= fetched ? `<strong>${fetched}</strong> fetched · showing ${shown}` : `<strong>${fetched}</strong> fetched · showing first ${shown} · ${(sources || ['OpenAlex']).join(', ')}`);
 }
-function buildCard(item, i) {
-  if (isSimple()) return buildSimpleCard(item, i);
-  const n       = i + 1;
-  const cites   = item.citations || 0;
-  const cColor  = cites>1000?'var(--gold)':cites>100?'var(--accent)':'var(--muted)';
-  const authors = (item.authors||[]).slice(0,2).join(', ') + ((item.authors||[]).length>2?' et al.':'');
-  const oaBadge = item.is_oa ? `<span class="oa-b">OA</span>` : '';
-  const concepts = (item.concepts||[]).slice(0,4).map(c=>`<span class="chip">${esc(c)}</span>`).join('');
-  const abstract = item.abstract
-    ? `<details style="margin-top:7px"><summary style="font-size:.75rem;color:var(--muted);cursor:pointer">Show abstract</summary><div class="abstract-block" style="margin-top:5px">${esc(item.abstract)}</div></details>` : '';
-  const paperId    = getPaperId(item);
-  const isBookmark = !!bookmarkMap[paperId];
-  return `<div class="card" id="card-${n}" data-open="false">
-    <div class="card-head" onclick="toggleCard(${n})">
-      <span class="card-num">${n}</span>
-      <div class="card-info">
-        <div class="card-title">${esc(stripTags(item.title||'Untitled'))}</div>
-        <div class="card-meta">
-          <span>${esc(authors)}</span>
-          <span style="opacity:.4">·</span>
-          <span class="journal">${esc(item.journal||'')}</span>
-          <span style="opacity:.4">·</span>
-          <span style="font-family:var(--mono);font-size:.7rem">${item.year||'?'}</span>
-          <span class="cite-b" style="color:${cColor};border:1px solid ${cColor}40;background:${cColor}10">★ ${cites.toLocaleString()}</span>
-          ${oaBadge}
-          ${sourceBadge(item.data_source)}
-        </div>
-      </div>
-      <svg class="chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-    </div>
-    <div class="card-body hidden">
-      ${abstract}
-      ${concepts?`<div class="chips" style="margin-top:7px">${concepts}</div>`:''}
-    </div>
-    <div class="card-foot hidden">
-      <span class="ref-warn">${item.apa_missing&&item.apa_missing.length?'⚠️ Missing: '+item.apa_missing.join(', '):'⚠️ Auto-ref'}</span>
-      <span class="apa-text" title="${esc(item.apa_reference||'')}">${esc(item.apa_reference||'')}</span>
-      <div class="foot-btns">
-        <button class="btn xs" onclick="showCitationPicker(${i},${n},event)">📋 Cite</button>
-        ${item.doi?`<a href="${esc(item.doi)}" target="_blank" class="btn xs">DOI</a>`:''}
-        ${item.oa_url?`<a href="${esc(item.oa_url)}" target="_blank" class="btn xs">Full Text</a>`:''}
-        <button class="btn xs" onclick="openPaperPage(${i},event)">📄 Read</button>
-        <button class="btn xs ${isBookmark?'gold':''}" id="bk-${n}" onclick="toggleBookmark(${i},${n},event)">${isBookmark?'🔖 Saved':'🔖 Save'}</button>
-        <button class="btn xs" onclick="openAddToCollection(${i},event)">📚+</button>
-        <button class="btn xs" onclick="shareFromCard(${i},event)">🔗 Share</button>
-      </div>
-    </div>
-  </div>`;
-}
+function buildCard(item, i) { return paperCard(item, i, !isSimple()); }
 
 // ── Source Badge ───────────────────────────────
 function sourceBadge(ds) {
@@ -1112,7 +1330,7 @@ function openPaperPage(idx, e) {
 }
 
 // ── Card Toggle ────────────────────────────────
-function toggleCard(n) {
+function toggleCard(n) {   // Advanced cards only: show / hide the full abstract and reference
   const card = document.getElementById('card-'+n);
   if (!card) return;
   const open = card.getAttribute('data-open') === 'true';
