@@ -96,9 +96,9 @@ def _news():
 
 @pages_bp.route("/")
 def home():
-    if "user_id" in session:
-        return render_template("home.html")
     news = _news()
+    if "user_id" in session:
+        return render_template("home.html", latest=news[0] if news else None)
     return render_template("landing.html", latest=news[0] if news else None)
 
 @pages_bp.route("/api/paper-count")

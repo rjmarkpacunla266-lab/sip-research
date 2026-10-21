@@ -1,284 +1,316 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="google-site-verification" content="oZpY9svmka-mPNF1Bp2Wr7GkmhslZ315Jik_dEEYQL0" />
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <!-- ═══════════════════════════════════════════════════
-       SEO — searchability & visibility
-  ═══════════════════════════════════════════════════ -->
-  <title>Dashboard — Sturch Research Tools</title>
-  <meta name="description"  content="Your Sturch research dashboard. Search papers, find answers, trace sources, generate topics and manage your research library."/>
-  <meta name="keywords"     content="research dashboard, academic tools, paper search, source tracer, answer finder, topic generator"/>
-  <meta name="author"       content="Sturch"/>
-  <meta name="robots"       content="noindex, nofollow"/>
-  <meta name="theme-color"  content="#0b0d12"/>
-  <link rel="canonical"     href="{{ site_url }}/"/>
-
-  <!-- Open Graph — social sharing preview -->
-  <meta property="og:type"        content="website"/>
-  <meta property="og:site_name"   content="Sturch"/>
-  <meta property="og:title"       content="Dashboard — Sturch Research Tools"/>
-  <meta property="og:description" content="Your Sturch research dashboard. Search papers, find answers, trace sources, generate topics and manage your research library."/>
-  <meta property="og:url"         content="{{ site_url }}/"/>
-  <meta property="og:image"       content="{{ site_url }}/static/og-image.png"/>
-  <meta property="og:image:width"  content="1200"/>
-  <meta property="og:image:height" content="630"/>
-  <meta property="og:locale"      content="en_US"/>
-
-  <!-- Twitter Card -->
-  <meta name="twitter:card"        content="summary_large_image"/>
-  <meta name="twitter:site"        content="@sturch_app"/>
-  <meta name="twitter:title"       content="Dashboard — Sturch Research Tools"/>
-  <meta name="twitter:description" content="Your Sturch research dashboard. Search papers, find answers, trace sources, generate topics and manage your research library."/>
-  <meta name="twitter:image"       content="{{ site_url }}/static/og-image.png"/>
-
-  <!-- ═══════════════════════════════════════════════ -->
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Sturch: Home</title>
+<meta name="theme-color" content="#2f5bea"/>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml"/>
+<script>
+/* apply the saved theme before first paint (same key as every other Sturch page) */
+(function(){try{var t=localStorage.getItem('sturch_theme');
+ if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);
+ else if(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.setAttribute('data-theme','dark');
+ else document.documentElement.setAttribute('data-theme','light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();
+</script>
 <style>
-:root{
-  --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
-  --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
-  --gold:#e8b84b;--green:#3ecf8e;--red:#f06a6a;--orange:#f0914b;
-  --text:#d8e0f8;--muted:#5a6385;
-  --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;
+:root,[data-theme="light"]{
+  --bg:#f5f8ff;--hero:#e9f0ff;--surf:#ffffff;--surf2:#f1f5fd;--border:#dfe6f5;
+  --text:#14203d;--muted:#5d6b8c;--accent:#2f5bea;--accent-h:#2449c4;--accent-soft:#e6edff;
+  --green:#12805c;--green-bg:#dcf5ea;--shadow:0 1px 2px rgba(25,45,100,.06),0 6px 18px rgba(25,45,100,.06);
 }
-[data-theme="light"]{
-  --bg:#f4f6fb;--surf:#ffffff;--surf2:#eef1f8;--surf3:#e2e7f4;
-  --border:rgba(80,100,180,.15);--text:#1a2040;--muted:#6b7599;
+[data-theme="dark"]{
+  --bg:#0a1020;--hero:#0d1630;--surf:#111a30;--surf2:#17223d;--border:#25314f;
+  --text:#e8eeff;--muted:#9aa8c9;--accent:#4d7bff;--accent-h:#6a90ff;--accent-soft:#1a2850;
+  --green:#4fd6a0;--green-bg:#123a2d;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.28);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.65}
-a{color:var(--accent);text-decoration:none}
-.hidden{display:none!important}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5;-webkit-text-size-adjust:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
 
-/* ── App shell ── */
-#app{max-width:900px;margin:0 auto;padding:0 18px 60px}
+/* header */
+header{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--surf) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.bar{display:flex;align-items:center;gap:10px;height:60px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:1.35rem;letter-spacing:-.01em}
+.sp{flex:1}
+.seg{display:inline-flex;background:var(--surf2);border:1px solid var(--border);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;padding:6px 13px;border-radius:999px;font-size:.82rem;font-weight:600;color:var(--muted);min-height:32px}
+.seg button.on{background:var(--accent);color:#fff}
+.icon-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:var(--surf);display:grid;place-items:center;font-size:1.05rem}
+.icon-btn:hover{border-color:var(--accent)}
+.me{position:relative}
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#3e92fc,#9357fc);color:#fff;font-weight:700;display:grid;place-items:center;border:0}
+.menu{position:absolute;right:0;top:48px;min-width:190px;background:var(--surf);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:6px;display:none}
+.menu.open{display:block}
+.menu a{display:flex;gap:9px;align-items:center;padding:11px 12px;border-radius:9px;font-size:.92rem;min-height:44px}
+.menu a:hover{background:var(--surf2)}
+.menu hr{border:0;border-top:1px solid var(--border);margin:4px 0}
 
-/* ── Header ── */
-header{display:flex;align-items:center;justify-content:space-between;padding:18px 0 14px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
-.logo{font-family:var(--serif);font-size:1.4rem;display:flex;align-items:center;gap:6px}
-.logo span{color:var(--accent)}
-.beta{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;font-family:var(--mono)}
-.header-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-.user-pill{font-size:.75rem;color:var(--muted);background:var(--surf2);border:1px solid var(--border);border-radius:20px;padding:4px 11px}
-.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:10px;font-family:var(--sans);font-size:.82rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .2s;white-space:nowrap;text-decoration:none}
-.btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
-.btn.donate{background:linear-gradient(135deg,rgba(79,141,232,.15),rgba(157,110,245,.15));border-color:rgba(157,110,245,.3);color:var(--accent2)}
-.btn.danger{background:rgba(240,106,106,.08);border-color:rgba(240,106,106,.18);color:var(--red)}
-.btn.sm{padding:5px 10px;font-size:.76rem}
+/* hero */
+.hero{background:linear-gradient(180deg,var(--hero),var(--bg));padding:34px 0 30px;text-align:center}
+.hero h1{font-size:clamp(1.65rem,5.2vw,2.5rem);line-height:1.15;letter-spacing:-.02em;font-weight:800}
+.hero p{color:var(--muted);margin-top:8px;font-size:.98rem}
+.sbox{display:flex;align-items:center;gap:8px;max-width:760px;margin:20px auto 0;background:var(--surf);border:1.5px solid var(--border);border-radius:999px;padding:6px 6px 6px 18px;box-shadow:var(--shadow)}
+.sbox:focus-within{border-color:var(--accent)}
+.sbox>svg{flex:none;color:var(--muted)}
+.sbox input{flex:1;min-width:0;border:0;outline:0;background:none;color:var(--text);font:inherit;font-size:1rem;height:44px}
+.sbox input::placeholder{color:var(--muted)}
+.sbtn{width:46px;height:46px;border-radius:50%;border:0;background:var(--accent);color:#fff;display:grid;place-items:center;flex:none}
+.sbtn:hover{background:var(--accent-h)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+.chip{background:var(--surf);border:1px solid var(--border);border-radius:999px;padding:9px 16px;font-size:.84rem;color:var(--muted);min-height:44px;display:inline-flex;align-items:center}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
 
-/* ── Welcome ── */
-.welcome{padding:28px 0 20px}
-.welcome-top{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px}
-.welcome h2{font-family:var(--serif);font-size:1.5rem}
-.welcome h2 span{color:var(--accent)}
-.welcome p{font-size:.83rem;color:var(--muted)}
+/* sections */
+section{margin-top:30px}
+h2{font-size:1.15rem;font-weight:700;margin-bottom:12px;letter-spacing:-.01em}
+.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.tool{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;box-shadow:var(--shadow);transition:transform .15s,border-color .15s}
+.tool:hover{transform:translateY(-2px);border-color:var(--accent)}
+.ti{width:46px;height:46px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:10px}
+.tool h3{font-size:1rem;font-weight:700}
+.tool p{font-size:.86rem;color:var(--muted);margin:4px 0 14px;flex:1}
+.open{align-self:flex-start;background:var(--accent);color:#fff;border-radius:9px;padding:0 20px;font-weight:600;font-size:.88rem;min-height:44px;display:inline-flex;align-items:center}
+.tool:hover .open{background:var(--accent-h)}
 
-/* ── Tool grid ── */
-.tools-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px;margin-top:24px}
-.tools-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.two{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.card{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+.card h3{display:flex;align-items:center;gap:9px;font-size:.98rem;font-weight:700;margin-bottom:6px}
+.card h3 svg{color:var(--accent)}
+.row{display:flex;align-items:center;gap:10px;padding:0 4px;min-height:44px;border-bottom:1px solid var(--border);font-size:.9rem}
+.row:last-of-type{border-bottom:0}
+.row .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .d{flex:none;font-size:.76rem;color:var(--muted)}
+.row svg{flex:none;color:var(--muted)}
+.row:hover .t{color:var(--accent)}
+.more{display:inline-flex;align-items:center;min-height:44px;color:var(--accent);font-weight:600;font-size:.88rem}
+.empty{color:var(--muted);font-size:.88rem;padding:10px 4px 6px}
 
-/* ── Tool card ── */
-.tool-card{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:22px;cursor:pointer;transition:all .22s;position:relative;overflow:hidden;animation:fadeUp .4s ease both;text-decoration:none;display:block}
-.tool-card::before{content:'';position:absolute;inset:0;background:var(--card-glow,transparent);opacity:0;transition:opacity .22s;border-radius:16px}
-.tool-card:hover{border-color:var(--card-color, var(--accent));transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3);text-decoration:none}
-.tool-card:hover::before{opacity:1}
-.tool-card.coming-soon{cursor:default;opacity:.55}
-.tool-card.coming-soon:hover{transform:none;box-shadow:none;border-color:var(--border)}
-.tool-card.coming-soon::before{display:none}
+.stats{background:var(--accent-soft);border:1px solid var(--border);border-radius:16px;padding:16px}
+.stats h2{margin-bottom:10px}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{text-align:center;padding:4px 6px}
+.stat+.stat{border-left:1px solid var(--border)}
+.stat svg{color:var(--accent);margin-bottom:2px}
+.stat b{display:block;font-size:1.45rem;font-weight:800;letter-spacing:-.02em}
+.stat span{font-size:.78rem;color:var(--muted)}
+.stat-note{font-size:.74rem;color:var(--muted);margin-top:8px;text-align:center}
 
-/* Card colors */
-.tool-card.blue{--card-color:rgba(79,141,232,.5);--card-glow:radial-gradient(circle at top left,rgba(79,141,232,.07),transparent 60%)}
-.tool-card.purple{--card-color:rgba(157,110,245,.5);--card-glow:radial-gradient(circle at top left,rgba(157,110,245,.07),transparent 60%)}
-.tool-card.green{--card-color:rgba(62,207,142,.5);--card-glow:radial-gradient(circle at top left,rgba(62,207,142,.07),transparent 60%)}
-.tool-card.gold{--card-color:rgba(232,184,75,.5);--card-glow:radial-gradient(circle at top left,rgba(232,184,75,.07),transparent 60%)}
+.banner{display:flex;align-items:center;gap:12px;background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);margin-top:12px;min-height:64px}
+.banner:hover{border-color:var(--accent)}
+.banner .bi{flex:none;width:42px;height:42px;display:grid;place-items:center;color:var(--accent)}
+.banner .bt{flex:1;min-width:0}
+.banner b{display:block;font-size:.95rem}
+.banner small{display:block;color:var(--muted);font-size:.82rem}
+.tag{display:inline-block;background:var(--accent);color:#fff;font-size:.68rem;font-weight:700;border-radius:999px;padding:1px 9px;margin-right:6px;vertical-align:1px}
+.banner .go{flex:none;color:var(--muted)}
+.guide{background:var(--accent-soft)}
 
-.tool-icon{font-size:2rem;margin-bottom:12px;display:block}
-.tool-name{font-family:var(--serif);font-size:1rem;font-weight:600;margin-bottom:5px;color:var(--text)}
-.tool-desc{font-size:.76rem;color:var(--muted);line-height:1.5}
-.tool-badge{position:absolute;top:12px;right:12px;font-size:.62rem;padding:2px 8px;border-radius:20px;font-family:var(--mono)}
-.badge-free{background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.2);color:var(--green)}
-.badge-soon{background:rgba(90,99,133,.1);border:1px solid rgba(90,99,133,.2);color:var(--muted)}
-.tool-features{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
-.tool-feat{font-size:.66rem;padding:2px 7px;border-radius:20px;background:var(--surf2);border:1px solid var(--border);color:var(--muted)}
+footer{margin-top:34px;border-top:1px solid var(--border);padding:16px 0 30px;font-size:.82rem;color:var(--muted)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between}
+footer nav{display:flex;flex-wrap:wrap;gap:0 6px}
+footer nav a{padding:12px 8px;min-height:44px;display:inline-flex;align-items:center}
+footer nav a:hover{color:var(--accent)}
 
-/* ── Quick actions ── */
-.quick-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;margin-top:26px}
-.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.quick-card{background:var(--surf2);border:1px solid var(--border);border-radius:12px;padding:13px 10px;text-align:center;cursor:pointer;transition:all .18s;text-decoration:none;display:block;animation:fadeUp .4s ease both}
-.quick-card:hover{border-color:var(--accent);background:var(--surf3);text-decoration:none}
-.quick-icon{font-size:1.3rem;margin-bottom:5px;display:block}
-.quick-name{font-size:.72rem;color:var(--muted);line-height:1.3}
-
-/* ── Donate banner ── */
-.donate-banner{margin-top:26px;background:linear-gradient(135deg,rgba(79,141,232,.08),rgba(157,110,245,.06));border:1px solid rgba(157,110,245,.18);border-radius:14px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;animation:fadeUp .5s ease .3s both}
-.donate-banner p{font-size:.8rem;color:var(--muted);line-height:1.5}
-.donate-banner strong{color:var(--text)}
-.btn.donate-cta{background:linear-gradient(135deg,#4f8de8,#9d6ef5);border:none;color:#fff;padding:8px 16px}
-.btn.donate-cta:hover{opacity:.9;transform:translateY(-1px)}
-
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-
-@media(max-width:500px){
-  .tools-grid{grid-template-columns:1fr}
-  .quick-grid{grid-template-columns:repeat(2,1fr)}
-  .welcome h2{font-size:1.25rem}
+@media(min-width:760px){
+  .wrap{padding:0 24px}
+  .hero{padding:48px 0 42px}
+  .tools{grid-template-columns:repeat(4,1fr);gap:16px}
+  .two{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .stat b{font-size:1.7rem}
+  .seg button{padding:6px 18px}
 }
+@media(max-width:480px){.bar{gap:7px}.seg button{padding:6px 10px;font-size:.78rem}.brand{font-size:1.2rem;gap:7px}.icon-btn{width:40px;height:40px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
-<div id="app">
 
-<!-- Header -->
 <header>
-  <div class="logo"><span>Sturch</span></div>
-  <div class="header-right">
-    <span class="user-pill" id="userEmail">Loading…</span>
-    <button class="btn sm" id="themeBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
-    <a href="/saved" class="btn sm" title="Your saved papers">🔖 Saved</a>
-    <a href="/donate" class="btn sm donate">💙 Donate</a>
-    <a href="/logout" class="btn sm danger">Logout</a>
+  <div class="wrap bar">
+    <a class="brand" href="/" aria-label="Sturch home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 342" width="30" height="27" role="img" aria-label="Sturch"><defs><linearGradient id="hg" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="338"><stop offset="0" stop-color="#3e92fc"/><stop offset="1" stop-color="#9357fc"/></linearGradient></defs><path fill="url(#hg)" fill-rule="evenodd" d="M29.48 61.71L29.48 8.32C29.48 5.6 34.93 4.71 36.72 4.56C45.18 3.88 53.73 3.82 62.19 4.54C95.77 7.36 129.77 16.99 158.68 34.65C148.44 47.42 138.58 51.55 129.94 68.82C115.88 96.9 129.21 132.49 157.8 145.67L204.03 166.98C211.02 170.2 217.74 176 222.88 181.65C227.19 186.39 230.6 191.62 233.15 197.5C243.31 220.85 233.98 245.25 217.53 262.89C211.61 269.24 204.61 274.46 198.98 281.1C195.16 285.61 192.9 290.84 189.65 295.61C183.87 288.91 178.45 282.05 171.76 276.18C145.47 253.11 108.67 243.37 74.17 244.78C59.79 245.36 42.79 246.92 30.15 254.41L84.48 263.55C113.81 268.49 153.59 281.05 175.97 301.08C181.53 306.06 185.11 312.39 190.08 317.74C194.28 311.18 198.75 305.24 204.67 300.11C227.72 280.16 268.88 266.94 298.79 262.39L348.54 254.83C348.92 254.77 349.3 254.71 349.68 254.65C346.44 251.84 341.75 250.64 337.64 249.4C317.76 243.34 296.54 243.24 276.5 248.6C269.52 250.46 263.12 254.6 256.32 256.35C260.27 246.34 264.74 237.01 266.72 226.29C273.42 189.99 255.38 153.27 222.01 136.85L175.86 114.14C170.48 111.49 165.25 106.34 161.95 101.41C149.94 83.46 159.19 66.9 174.25 54.84C206.47 29 258.3 12.17 298.83 6.4C311.87 4.54 325.05 3.65 338.21 4.28C340.73 4.4 350.3 4.45 350.3 8.5L350.3 61.83C357.39 61.1 368.72 56.67 373.99 63.08C374.26 63.41 375.45 64.88 375.45 65.22L375.4 122.15L375.4 273.12C375.4 276.41 370.96 281.24 367.71 281.59L309.11 287.88C281.07 290.89 250.9 298.62 225.92 311.82C213.91 318.16 198.4 336.89 190.1 337.04C180.24 337.21 173.05 325.68 166.21 320.08C161.84 316.49 156.92 313.54 151.89 310.98C125.04 297.33 93.34 290.34 63.51 287.14L11.88 281.59C8.95 281.27 4.43 276.45 4.43 273.47L4.43 65.55C4.43 56.25 24.53 61.54 29.18 61.71Z"/></svg><span>Sturch</span></a>
+    <div class="sp"></div>
+    <div class="seg" role="group" aria-label="Search mode">
+      <button type="button" id="mSimple" aria-pressed="true">Simple</button>
+      <button type="button" id="mAdv" aria-pressed="false">Advanced</button>
+    </div>
+    <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch light or dark theme">🌙</button>
+    <div class="me">
+      <button class="avatar" id="meBtn" type="button" aria-label="Account menu" aria-haspopup="true" aria-expanded="false">{{ (session.get('user_email') or 'S')[0]|upper }}</button>
+      <div class="menu" id="meMenu" role="menu">
+        <a href="/saved" role="menuitem">🔖 Saved papers</a>
+        <a href="/collections" role="menuitem">📚 Collections</a>
+        <a href="/history" role="menuitem">🕐 History</a>
+        <a href="/guide" role="menuitem">📖 Guide</a>
+        <hr/>
+        <a href="/logout" role="menuitem">↩ Log out</a>
+      </div>
+    </div>
   </div>
 </header>
 
-<!-- Welcome -->
-<div class="welcome">
-  <div class="welcome-top">
-    <h2>Good <span id="timeGreet">day</span>, researcher 👋</h2>
+<main>
+<div class="hero">
+  <div class="wrap">
+    <h1>What are you researching today?</h1>
+    <p>Free access to millions of scholarly papers.</p>
+    <form class="sbox" id="sform" role="search" autocomplete="off">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Search papers or topics…" aria-label="Search for papers, topics, or questions" maxlength="200"/>
+      <button class="sbtn" type="submit" aria-label="Search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
+    </form>
+    <div class="chips" aria-label="Example searches">
+      <a class="chip" href="/search?tag=climate%20change">e.g. climate change</a>
+      <a class="chip" href="/search?tag=digital%20literacy">e.g. digital literacy</a>
+      <a class="chip" href="/search?tag=renewable%20energy">e.g. renewable energy</a>
+    </div>
   </div>
-  <p>What would you like to do today?</p>
 </div>
 
-<!-- Main tools -->
-<div class="tools-label">Research Tools</div>
-<div class="tools-grid">
-
-  <!-- Search Papers -->
-  <a href="/search" class="tool-card blue">
-    <span class="tool-badge badge-free">FREE</span>
-    <span class="tool-icon">🔍</span>
-    <div class="tool-name">Search Papers</div>
-    <div class="tool-desc">Search 250M+ academic papers across 5 databases simultaneously.</div>
-    <div class="tool-features">
-      <span class="tool-feat">OpenAlex</span>
-      <span class="tool-feat">arXiv</span>
-      <span class="tool-feat">PubMed</span>
-      <span class="tool-feat">Crossref</span>
-      <span class="tool-feat">Europe PMC</span>
+<div class="wrap">
+  <section aria-labelledby="h-tools">
+    <h2 id="h-tools">Your tools</h2>
+    <div class="tools">
+      <a class="tool" href="/search">
+        <div class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><circle cx="11" cy="14" r="2.6"/><path d="M13 16l2 2"/></svg></div>
+        <h3>Search Papers</h3><p>Find papers from millions of sources.</p><span class="open">Open</span></a>
+      <a class="tool" href="/answer">
+        <div class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9.5 10.5h.01M13 10.5h.01M16 10.5h.01"/></svg></div>
+        <h3>Answer Finder</h3><p>Ask a question, get quoted answers from papers.</p><span class="open">Open</span></a>
+      <a class="tool" href="/source-tracer">
+        <div class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></div>
+        <h3>Source Tracer</h3><p>Find where a claim really came from.</p><span class="open">Open</span></a>
+      <a class="tool" href="/topic-generator">
+        <div class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg></div>
+        <h3>Topic Finder</h3><p>Narrow down a research topic.</p><span class="open">Open</span></a>
     </div>
-  </a>
+  </section>
 
-  <!-- Answer Finder -->
-  <a href="/answer" class="tool-card purple">
-    <span class="tool-badge badge-free">FREE</span>
-    <span class="tool-icon">💡</span>
-    <div class="tool-name">Answer Finder</div>
-    <div class="tool-desc">Ask questions using templates and get answers from real academic papers.</div>
-    <div class="tool-features">
-      <span class="tool-feat">What is</span>
-      <span class="tool-feat">What causes</span>
-      <span class="tool-feat">How does</span>
-      <span class="tool-feat">Define</span>
+  <section aria-labelledby="h-left">
+    <h2 id="h-left">Continue where you left off</h2>
+    <div class="two">
+      <div class="card">
+        <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Recent searches</h3>
+        <div id="recent"><p class="empty">Loading…</p></div>
+        <a class="more" href="/history">View all →</a>
+      </div>
+      <div class="card">
+        <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Recently saved papers</h3>
+        <div id="saved"><p class="empty">Loading…</p></div>
+        <a class="more" href="/saved">View all →</a>
+      </div>
     </div>
-  </a>
+  </section>
 
-  <!-- Source Tracer — NEW -->
-  <a href="/source-tracer" class="tool-card green">
-    <span class="tool-badge" style="background:rgba(62,207,142,.15);border-color:rgba(62,207,142,.3);color:var(--green)">FREE</span>
-    <span class="tool-icon">🔎</span>
-    <div class="tool-name">Source Tracer</div>
-    <div class="tool-desc">Paste a quote and find its original academic source. Related papers suggested if not found.</div>
-    <div class="tool-features">
-      <span class="tool-feat">Quote lookup</span>
-      <span class="tool-feat">5 databases</span>
+  <section class="stats" id="stats" aria-labelledby="h-num" hidden>
+    <h2 id="h-num">Sturch by the numbers</h2>
+    <div class="stat-row">
+      <div class="stat"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><b id="nTotal">–</b><span>Total papers</span></div>
+      <div class="stat"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg><b id="nOa">–</b><span>Open access</span></div>
+      <div class="stat"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg><b id="nDb">–</b><span>Databases searched</span></div>
     </div>
-  </a>
+    <p class="stat-note">Counted live from each database. At least this many different papers.</p>
+  </section>
 
-  <!-- Topic Finder — NEW -->
-  <a href="/topic-generator" class="tool-card gold">
-    <span class="tool-badge" style="background:rgba(62,207,142,.15);border-color:rgba(62,207,142,.3);color:var(--green)">FREE</span>
-    <span class="tool-icon">🧭</span>
-    <div class="tool-name">Topic Finder</div>
-    <div class="tool-desc">Generate research topic ideas based on your subject area and interests.</div>
-    <div class="tool-features">
-      <span class="tool-feat">Research focused</span>
-      <span class="tool-feat">Global context</span>
-    </div>
+  {% if latest %}
+  <a class="banner" href="/news" aria-label="What's new on Sturch">
+    <span class="bi"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6zM19 15l.9 2.6L22.5 18.5l-2.6.9L19 22l-.9-2.6-2.6-.9 2.6-.9z"/></svg></span>
+    <span class="bt"><small><span class="tag">New</span>What's new</small><b>{{ latest.title }}</b></span>
+    <span class="go" aria-hidden="true">›</span>
   </a>
+  {% endif %}
 
-</div>
-
-<!-- Quick actions -->
-<div class="quick-label">Quick Access</div>
-<div class="quick-grid">
-  <a href="/saved" class="quick-card" style="animation-delay:.05s">
-    <span class="quick-icon">🔖</span>
-    <span class="quick-name">Saved Papers</span>
-  </a>
-  <a href="/collections" class="quick-card" style="animation-delay:.1s">
-    <span class="quick-icon">📚</span>
-    <span class="quick-name">Collections</span>
-  </a>
-  <a href="/history" class="quick-card" style="animation-delay:.15s">
-    <span class="quick-icon">🕐</span>
-    <span class="quick-name">History</span>
-  </a>
-  <a href="/citations" class="quick-card" style="animation-delay:.2s">
-    <span class="quick-icon">📋</span>
-    <span class="quick-name">Citations</span>
+  <a class="banner guide" href="/guide">
+    <span class="bi"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5.5C5.5 4 8.5 4 12 6c3.5-2 6.5-2 9-.5v13c-2.5-1.5-5.5-1.5-9 .5-3.5-2-6.5-2-9-.5z"/><path d="M12 6v13"/></svg></span>
+    <span class="bt"><b>New here? Read the Guide</b><small>Learn how to search, save, and get the most out of Sturch.</small></span>
+    <span class="go" aria-hidden="true">›</span>
   </a>
 </div>
+</main>
 
-<!-- Donate banner -->
-<div class="donate-banner">
-  <p>
-    <strong>Sturch is 100% free.</strong><br>
-    Built by an 18-year-old student on a mobile phone. If it helped your research, consider supporting.
-  </p>
-  <a href="/donate" class="btn donate-cta">💙 Support Sturch</a>
-</div>
-
-</div>
+<footer>
+  <div class="wrap">
+    <nav aria-label="Footer"><a href="/donate">Support Sturch</a><a href="/#faq">FAQ</a><a href="/#disclaimer">Disclaimer</a><a href="/news">What's new</a></nav>
+    <span style="padding:12px 8px">© <span id="yr">2026</span> Sturch. All rights reserved.</span>
+  </div>
+</footer>
 
 <script>
-// ── Theme Toggle ───────────────────────────────
-function toggleTheme() {
-  const html = document.documentElement;
-  const isDark = html.getAttribute('data-theme') !== 'light';
-  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-  document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
-  localStorage.setItem('sturch_theme', isDark ? 'light' : 'dark');
-}
-(function() {
-  const saved = localStorage.getItem('sturch_theme');
-  if (saved === 'light') {
-    document.documentElement.setAttribute('data-theme', 'light');
-    document.addEventListener('DOMContentLoaded', () => {
-      const btn = document.getElementById('themeBtn');
-      if (btn) btn.textContent = '☀️';
-    });
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  try{$('yr').textContent=new Date().getFullYear()}catch(e){}
+
+  /* theme */
+  var root=document.documentElement,tb=$('themeBtn');
+  function paintTheme(){tb.textContent=root.getAttribute('data-theme')==='dark'?'☀️':'🌙'}
+  tb.addEventListener('click',function(){
+    var d=root.getAttribute('data-theme')==='dark'?'light':'dark';
+    root.setAttribute('data-theme',d);try{localStorage.setItem('sturch_theme',d)}catch(e){}paintTheme();
+  });paintTheme();
+
+  /* Simple / Advanced: same key the search page reads */
+  function readMode(){try{return localStorage.getItem('sturch_mode')==='adv'?'adv':'simple'}catch(e){return 'simple'}}
+  function paintMode(){var a=readMode()==='adv';
+    $('mSimple').classList.toggle('on',!a);$('mAdv').classList.toggle('on',a);
+    $('mSimple').setAttribute('aria-pressed',String(!a));$('mAdv').setAttribute('aria-pressed',String(a));}
+  function setMode(m){try{localStorage.setItem('sturch_mode',m)}catch(e){}paintMode()}
+  $('mSimple').onclick=function(){setMode('simple')};$('mAdv').onclick=function(){setMode('adv')};paintMode();
+
+  /* account menu */
+  var mb=$('meBtn'),mm=$('meMenu');
+  mb.addEventListener('click',function(e){e.stopPropagation();var o=mm.classList.toggle('open');mb.setAttribute('aria-expanded',String(o))});
+  document.addEventListener('click',function(){mm.classList.remove('open');mb.setAttribute('aria-expanded','false')});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){mm.classList.remove('open');mb.setAttribute('aria-expanded','false')}});
+
+  /* search box -> the search page runs it */
+  $('sform').addEventListener('submit',function(e){
+    e.preventDefault();var v=$('q').value.trim();if(!v){$('q').focus();return}
+    location.href='/search?tag='+encodeURIComponent(v);
+  });
+
+  function ago(iso){
+    if(!iso)return '';var t=Date.parse(iso);if(isNaN(t)){t=Date.parse(iso+'Z');if(isNaN(t))return ''}
+    var s=Math.max(0,(Date.now()-t)/1000);
+    if(s<60)return 'just now';var m=s/60;if(m<60)return Math.floor(m)+' min ago';
+    var h=m/60;if(h<24)return Math.floor(h)+' hr'+(Math.floor(h)>1?'s':'')+' ago';
+    var d=h/24;if(d<30)return Math.floor(d)+' day'+(Math.floor(d)>1?'s':'')+' ago';
+    var mo=d/30;if(mo<12)return Math.floor(mo)+' mo ago';return Math.floor(d/365)+' yr ago';
   }
+  var searchIc='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+  var docIc='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
+
+  /* recent searches (de-duplicated, newest first) */
+  fetch('/api/history').then(function(r){return r.ok?r.json():Promise.reject()}).then(function(rows){
+    var seen={},out=[];
+    (rows||[]).forEach(function(r){var q=(r.query||'').trim();if(!q||seen[q.toLowerCase()]||out.length>=3)return;seen[q.toLowerCase()]=1;out.push(r)});
+    if(!out.length){$('recent').innerHTML='<p class="empty">No searches yet. Try one above.</p>';return}
+    $('recent').innerHTML=out.map(function(r){
+      return '<a class="row" href="/search?tag='+encodeURIComponent(r.query)+'">'+searchIc+'<span class="t">'+esc(r.query)+'</span><span class="d">'+esc(ago(r.searched_at))+'</span></a>'}).join('');
+  }).catch(function(){$('recent').innerHTML='<p class="empty">Could not load your searches.</p>'});
+
+  /* recently saved papers */
+  fetch('/api/bookmarks').then(function(r){return r.ok?r.json():Promise.reject()}).then(function(rows){
+    rows=(rows||[]).filter(function(r){return r.paper_data&&r.paper_data.title}).slice(0,3);
+    if(!rows.length){$('saved').innerHTML='<p class="empty">Nothing saved yet. Tap the bookmark on any paper.</p>';return}
+    $('saved').innerHTML=rows.map(function(r){
+      return '<a class="row" href="/saved">'+docIc+'<span class="t">'+esc(r.paper_data.title)+'</span><span class="d">'+esc(ago(r.created_at))+'</span></a>'}).join('');
+  }).catch(function(){$('saved').innerHTML='<p class="empty">Could not load your saved papers.</p>'});
+
+  /* live numbers: shown only when the count really loads */
+  function compact(n){n=Number(n)||0;if(n>=1e9)return (n/1e9).toFixed(1).replace(/\.0$/,'')+'B';if(n>=1e6)return Math.round(n/1e6)+'M';if(n>=1e3)return Math.round(n/1e3)+'K';return String(n)}
+  fetch('/api/paper-count').then(function(r){return r.ok?r.json():Promise.reject()}).then(function(d){
+    if(!d||!d.sources||!d.unique_min)return;
+    $('nTotal').textContent=compact(d.unique_min)+'+';
+    $('nOa').textContent=d.oa_min?compact(d.oa_min)+'+':'–';
+    $('nDb').textContent=String(d.sources.length);
+    $('stats').hidden=false;
+  }).catch(function(){});
 })();
-
-// ── Greeting ──────────────────────────────────
-const h = new Date().getHours();
-document.getElementById('timeGreet').textContent =
-  h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
-
-// ── Load user info ─────────────────────────────
-window.addEventListener('load', async () => {
-  try {
-    const resp = await fetch('/api/me');
-    if (!resp.ok) { window.location.href = '/login'; return; }
-    const user = await resp.json();
-    const name = user.email.split('@')[0];
-    document.getElementById('userEmail').textContent = user.email;
-  } catch(e) {}
-});
-
-// ── Quick access — store intent then redirect ──
 </script>
 </body>
 </html>
