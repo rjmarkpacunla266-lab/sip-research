@@ -6,11 +6,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <!-- ═══ SEO — URLs come from SITE_URL in app.py, so a new domain needs no edits here ═══ -->
   <title>Sturch — Free Academic Paper Search &amp; Citation Tool</title>
-  <meta name="description"  content="Search 250M+ academic papers from 5 databases at once. Free for students: APA citations, Answer Finder, Source Tracer and Topic Finder."/>
+  <meta name="description"  content="Search millions of academic papers from 5 databases at once. Free for students: APA citations, Answer Finder, Source Tracer and Topic Finder."/>
   <meta name="keywords"     content="academic paper search, free research papers, find research papers, student research tool, APA citation generator, answer finder, source tracer, research topic finder, arxiv search, pubmed search, literature review, free academic database"/>
   <meta name="author"       content="Sturch"/>
   <meta name="robots"       content="index, follow, max-image-preview:large"/>
-  <meta name="theme-color"  content="#0b0d12"/>
+  <meta name="theme-color"  content="#2f5bea"/>
   <link rel="canonical"     href="{{ site_url }}/"/>
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml"/>
   <link rel="icon" href="/static/favicon-192.png" sizes="192x192" type="image/png"/>
@@ -20,7 +20,7 @@
   <meta property="og:type"        content="website"/>
   <meta property="og:site_name"   content="Sturch"/>
   <meta property="og:title"       content="Sturch — Free Academic Paper Search &amp; Citation Tool"/>
-  <meta property="og:description" content="Search 250M+ academic papers from 5 databases at once. Free for students: APA citations, Answer Finder, Source Tracer and Topic Finder."/>
+  <meta property="og:description" content="Search millions of academic papers from 5 databases at once. Free for students: APA citations, Answer Finder, Source Tracer and Topic Finder."/>
   <meta property="og:url"         content="{{ site_url }}/"/>
   <meta property="og:image"       content="{{ site_url }}/static/og-image.png"/>
   <meta property="og:image:width"  content="1200"/>
@@ -32,7 +32,7 @@
   <meta name="twitter:card"        content="summary_large_image"/>
   <meta name="twitter:site"        content="@sturch_app"/>
   <meta name="twitter:title"       content="Sturch — Free Academic Paper Search &amp; Citation Tool"/>
-  <meta name="twitter:description" content="Search 250M+ academic papers from 5 databases at once. Free for students: APA citations, Answer Finder, Source Tracer and Topic Finder."/>
+  <meta name="twitter:description" content="Search millions of academic papers from 5 databases at once. Free for students: APA citations, Answer Finder, Source Tracer and Topic Finder."/>
   <meta name="twitter:image"       content="{{ site_url }}/static/og-image.png"/>
   <meta name="twitter:image:alt"   content="Sturch — free academic paper search for students"/>
 
@@ -53,7 +53,7 @@
         "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
         "publisher": {"@id": "{{ site_url }}/#org"},
         "featureList": [
-          "Search 250M+ academic papers from 5 databases at once",
+          "Search millions of academic papers from 5 databases at once",
           "APA, MLA, Chicago and Vancouver citation generator",
           "Answer Finder: answers taken from real academic papers",
           "Source Tracer: find the paper behind a quote",
@@ -80,470 +80,191 @@
     ]
   }
   </script>
-  <!-- Preconnect hints for faster font loading -->
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Lora:ital,wght@0,600;1,400&display=swap" rel="stylesheet"/>
+<script>
+(function(){try{var t=localStorage.getItem('sturch_theme');
+ if(t!=='dark'&&t!=='light')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+ document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();
+</script>
 <style>
+:root,[data-theme="light"]{
+  --bg:#f5f8ff;--surf:#ffffff;--surf2:#f1f5fd;--surf3:#e4ebfb;
+  --border:#dfe6f5;--accent:#2f5bea;--accent-h:#2449c4;--accent-soft:#e6edff;--accent2:#6b4de0;
+  --gold:#a86a00;--green:#12805c;--green-bg:#dcf5ea;--red:#c93a3a;--orange:#b8560f;--orange-bg:#fdeede;
+  --text:#14203d;--muted:#5d6b8c;--shadow:0 1px 2px rgba(25,45,100,.06),0 6px 18px rgba(25,45,100,.06);
+  --mono:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--serif:var(--mono);--sans:var(--mono);--r:12px;
+}
+[data-theme="dark"]{
+  --bg:#0a1020;--surf:#111a30;--surf2:#17223d;--surf3:#1f2c4d;
+  --border:#25314f;--accent:#4d7bff;--accent-h:#6a90ff;--accent-soft:#1a2850;--accent2:#9d86ff;
+  --gold:#f0c35a;--green:#4fd6a0;--green-bg:#123a2d;--red:#f27a7a;--orange:#f0914b;--orange-bg:#3a2713;
+  --text:#e8eeff;--muted:#9aa8c9;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.28);
+}
 *{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
-  --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
-  --gold:#e8b84b;--green:#3ecf8e;--orange:#f0914b;
-  --text:#d8e0f8;--muted:#8892b4;
-  --serif:'Lora',serif;--sans:'Outfit',sans-serif;
-}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
-a{color:var(--accent);text-decoration:none}
-a:hover{text-decoration:underline}
-
-nav{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(11,13,18,.93);backdrop-filter:blur(14px)}
-.logo{font-family:var(--serif);font-size:1.45rem}
-.logo span{color:var(--accent)}
-.beta{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;margin-left:5px;font-family:monospace}
-.nav-btns{display:flex;gap:8px}
-.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 17px;border-radius:10px;font-family:var(--sans);font-size:.87rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .2s;text-decoration:none;white-space:nowrap}
-.btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
-.btn.primary{background:var(--accent);color:#fff;border-color:transparent}
-.btn.primary:hover{background:#3d7fd8}
-.btn.lg{padding:12px 26px;font-size:.98rem;font-weight:600}
-
-/* Hero */
-/* Banner */
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.banner-wrap{max-width:940px;margin:26px auto 0;padding:0 18px}
-.banner{display:block;width:100%;height:auto;border-radius:16px;border:1px solid var(--border);box-shadow:0 18px 50px rgba(0,0,0,.45);background:#080b16}
-
-.hero{text-align:center;padding:34px 24px 55px;max-width:680px;margin:0 auto}
-.hero p{font-size:.97rem;color:var(--muted);margin-bottom:28px;max-width:460px;margin-left:auto;margin-right:auto}
-.hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.sources-note{margin-top:18px;font-size:.73rem;color:var(--muted)}
-.sources-note span{color:var(--text)}
-
-/* Points bar */
-
-
-/* Section */
-.section{padding:56px 24px;max-width:800px;margin:0 auto}
-.section-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:8px}
-.section h2{font-family:var(--serif);font-size:1.55rem;margin-bottom:32px}
-
-/* Steps */
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px}
-.step{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:22px;transition:border-color .2s}
-.step:hover{border-color:var(--accent)}
-.step-num{font-family:monospace;font-size:.7rem;color:var(--accent);background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.18);width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:11px;font-weight:600}
-.step h3{font-size:.93rem;font-weight:600;margin-bottom:5px}
-.step p{font-size:.8rem;color:var(--muted);line-height:1.6}
-
-/* Features */
-.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:14px;margin-top:6px}
-.feature{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:18px}
-.feature .icon{font-size:1.3rem;margin-bottom:9px}
-.feature h3{font-size:.88rem;font-weight:600;margin-bottom:3px}
-.feature p{font-size:.76rem;color:var(--muted);line-height:1.5}
-
-/* Sources */
-.sources-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:11px;margin-top:6px}
-.source-card{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:15px;text-align:center}
-.src-badge{font-size:.68rem;padding:2px 10px;border-radius:20px;display:inline-block;margin-bottom:7px}
-.src-openalex{background:rgba(79,141,232,.1);border:1px solid rgba(79,141,232,.22);color:#4f8de8}
-.src-crossref{background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.22);color:#9d6ef5}
-.src-arxiv{background:rgba(240,145,75,.1);border:1px solid rgba(240,145,75,.22);color:#f0914b}
-.src-pubmed{background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.22);color:#3ecf8e}
-.source-card p{font-size:.73rem;color:var(--muted);line-height:1.5}
-
-/* Rules */
-.rules-box{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:26px;margin-top:6px}
-.rule{display:flex;gap:11px;margin-bottom:14px;align-items:flex-start}
-.rule:last-child{margin-bottom:0}
-.rule .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);margin-top:6px;flex-shrink:0}
-.rule .dot.warn{background:var(--orange)}
-.rule p{font-size:.83rem;color:var(--muted);line-height:1.6}
-.rule p strong{color:var(--text)}
-
-/* Pricing */
-.pricing-box{background:var(--surf);border:2px solid var(--accent);border-radius:16px;padding:28px;text-align:center;max-width:360px;margin:6px auto 0}
-.price{font-size:2.8rem;font-weight:700;color:var(--accent);line-height:1}
-.price sup{font-size:1.2rem;vertical-align:top;margin-top:7px}
-.price-desc{color:var(--muted);font-size:.83rem;margin-top:5px;margin-bottom:18px}
-.price-features{text-align:left;margin:14px 0}
-.pf{display:flex;align-items:center;gap:7px;font-size:.82rem;margin-bottom:7px}
-.pf .check{color:var(--green)}
-.beta-note{background:rgba(157,110,245,.07);border:1px solid rgba(157,110,245,.18);border-radius:8px;padding:9px 13px;font-size:.76rem;color:var(--accent2);margin-top:14px;line-height:1.6}
-
-/* CTA */
-.cta{text-align:center;padding:65px 24px;background:linear-gradient(180deg,transparent,rgba(79,141,232,.04));border-top:1px solid var(--border)}
-.cta h2{font-family:var(--serif);font-size:1.75rem;margin-bottom:9px}
-.cta p{color:var(--muted);font-size:.9rem;margin-bottom:26px}
-
-footer{text-align:center;padding:22px;border-top:1px solid var(--border);font-size:.73rem;color:var(--muted)}
-footer a{color:var(--muted)}
-footer a:hover{color:var(--accent)}
-.divider{height:1px;background:var(--border);margin:0 24px}
-
-/* anchor links land below the sticky bar */
-#tools,#faq,#disclaimer{scroll-margin-top:76px}
-
-/* Beta notice + tools */
-.beta-banner{max-width:520px;margin:22px auto 0;padding:11px 15px;border:1px solid rgba(240,145,75,.28);background:rgba(240,145,75,.06);border-radius:10px;font-size:.78rem;color:var(--muted);line-height:1.6;text-align:left}
-.beta-banner strong{color:var(--orange)}
-.section-intro{color:var(--muted);font-size:.88rem;margin:-18px 0 24px}
-.tools-detail{display:grid;gap:16px}
-.tool{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:22px}
-.tool-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
-.tool-head .icon{font-size:1.3rem}
-.tool-head h3{font-size:1.05rem;font-weight:600}
-.tool-tag{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;font-family:monospace}
-.tool p{font-size:.85rem;color:var(--muted);line-height:1.65}
-.tool-steps{margin:12px 0 12px 20px;font-size:.83rem;color:var(--text);line-height:1.65}
-.tool-steps li{margin-bottom:4px}
-.tool .good{margin-top:10px;padding:10px 13px;background:rgba(240,145,75,.06);border:1px solid rgba(240,145,75,.2);border-radius:8px;font-size:.8rem}
-.tool .good strong{color:var(--orange)}
-.tool-more{margin-top:16px;font-size:.82rem;color:var(--muted)}
-
-/* FAQ */
-.faq details{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px}
-.faq details[open]{border-color:rgba(79,141,232,.35)}
-.faq summary{cursor:pointer;font-weight:600;font-size:.92rem;list-style:none}
-.faq summary::-webkit-details-marker{display:none}
-.faq summary::after{content:'+';float:right;color:var(--accent);font-weight:400}
-.faq details[open] summary::after{content:'−'}
-.faq p{margin-top:9px;font-size:.84rem;color:var(--muted);line-height:1.65}
-
-@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
-.fadein{animation:fadeUp .5s ease both}
-.fadein-d1{animation-delay:.1s}
-.fadein-d2{animation-delay:.2s}
-.fadein-d3{animation-delay:.3s}
-
-@media(max-width:600px){
-  .banner-wrap{margin-top:14px;padding:0 12px}
-  .banner{border-radius:12px}
-  .hero{padding:24px 18px 38px}
-  .section{padding:38px 18px}
-  .btn.lg{padding:11px 20px;font-size:.93rem}
-}
-
-/* What's new strip */
-.news-wrap{max-width:940px;margin:16px auto 0;padding:0 18px}
-.news-strip{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:12px;border:1px solid rgba(157,110,245,.28);background:linear-gradient(90deg,rgba(157,110,245,.10),rgba(79,141,232,.06));color:var(--text);text-decoration:none;font-size:.85rem;transition:border-color .2s,background .2s}
-.news-strip:hover{border-color:var(--accent2);background:linear-gradient(90deg,rgba(157,110,245,.16),rgba(79,141,232,.10));text-decoration:none}
-.news-tag{flex:none;font-family:monospace;font-size:.66rem;letter-spacing:.06em;padding:2px 8px;border-radius:5px;background:var(--accent2);color:#fff}
-.news-text{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.news-text b{font-weight:600}
-.news-date{color:var(--muted);margin-left:6px;font-size:.76rem}
-.news-go{flex:none;color:var(--accent2);font-size:.8rem;white-space:nowrap}
-@media(max-width:600px){.news-wrap{padding:0 12px;margin-top:12px}.news-strip{padding:8px 11px;font-size:.8rem}.news-date{display:none}.news-go{font-size:.74rem}}
-
-/* ── Paper counter ── */
-.counter-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
-.count-card{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px 18px 16px}
-.count-card .big{font-family:var(--serif);font-size:2.2rem;line-height:1.1;color:var(--accent)}
-.count-card.oa .big{color:var(--green,#3ecf8e)}
-.count-card .lbl{font-size:.82rem;margin-top:5px}
-.count-card .sub{font-size:.74rem;color:var(--muted);margin-top:3px;line-height:1.5}
-.count-table{background:var(--surf);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.count-row{display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid var(--border);font-size:.82rem}
-.count-row:first-child{border-top:0}
-.count-row.head{font-size:.64rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);background:var(--surf2)}
-.count-row .n{font-family:monospace;font-size:.8rem}
-.count-row .nm{font-weight:600}
-.count-row .na{color:var(--muted);font-size:.74rem}
-.count-note{font-size:.74rem;color:var(--muted);line-height:1.6;margin-top:12px}
-.count-skel{height:96px;border-radius:14px;background:var(--surf);border:1px solid var(--border);animation:pulse 1.4s ease-in-out infinite}
-@keyframes pulse{50%{opacity:.5}}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;line-height:1.55;font-size:15px;-webkit-text-size-adjust:100%}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--border);background:var(--surf);color:var(--text);font:600 .92rem var(--sans);cursor:pointer;text-decoration:none!important}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff} .btn.primary:hover{background:var(--accent-h);color:#fff}
+.btn.sm{min-height:40px;padding:0 14px;font-size:.84rem}
+header.top{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--surf) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+header.top .wrap{display:flex;align-items:center;gap:8px;height:60px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.3rem;color:var(--text)!important;letter-spacing:-.01em}
+.sp{flex:1}
+.icon-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);background:var(--surf);display:grid;place-items:center;font-size:1rem;cursor:pointer;color:var(--text)}
+.loglink{font-weight:600;font-size:.9rem;color:var(--text)!important;padding:0 8px;min-height:44px;display:inline-flex;align-items:center}
+.news-strip{display:flex;align-items:center;gap:10px;margin:14px 0 0;padding:10px 14px;border:1px solid var(--border);background:var(--surf);border-radius:14px;color:var(--text)!important;text-decoration:none!important;font-size:.88rem}
+.news-tag{background:var(--accent);color:#fff;font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:999px}
+.news-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .news-date{color:var(--muted);margin-left:8px;font-size:.78rem}
+.news-go{color:var(--accent);font-weight:600;white-space:nowrap;font-size:.82rem}
+.hero{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;padding:26px 0 18px}.hero>*{min-width:0}
+.pill{display:inline-block;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:.78rem;padding:5px 12px;border-radius:999px}
+h1{font-size:clamp(2rem,8vw,3.2rem);line-height:1.08;font-weight:800;letter-spacing:-.025em;margin-top:12px}
+h1 em{font-style:normal;color:var(--accent)}
+.lead{color:var(--muted);font-size:1.02rem;max-width:520px;margin-top:12px}
+.sbox{display:flex;align-items:center;gap:6px;background:var(--surf);border:1.5px solid var(--border);border-radius:999px;padding:5px 5px 5px 16px;box-shadow:var(--shadow);margin-top:20px;max-width:560px}
+.sbox:focus-within{border-color:var(--accent)}
+.sbox>svg{flex:none;color:var(--muted)}
+.sbox input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:1rem;color:var(--text);outline:0;min-height:44px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{min-height:40px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--border);background:var(--surf);border-radius:999px;font-size:.84rem;color:var(--text)!important;cursor:pointer;font-family:inherit}
+.chip:hover{border-color:var(--accent);text-decoration:none}
+.live{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:.92rem;color:var(--muted)} .live b{color:var(--text)}
+.art{display:none;max-width:380px;margin:0 auto}
+@media(min-width:860px){.hero{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);align-items:center;padding:48px 0 30px}.art{display:block}}
+@media(max-width:859px){.art{display:block;max-width:240px;margin:6px auto 0}}
+section.s{padding:34px 0 6px} section.s h2{font-size:1.35rem;font-weight:800;letter-spacing:-.01em;margin-bottom:14px}
+.sub{color:var(--muted);margin:-6px 0 14px;font-size:.92rem}
+.grid4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(min-width:860px){.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.card{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow);color:var(--text)!important;text-decoration:none!important;display:block}
+a.card:hover{border-color:var(--accent)}
+.ic{width:42px;height:42px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:10px}
+.card h3{font-size:1rem;font-weight:700;margin-bottom:4px} .card p{font-size:.86rem;color:var(--muted);line-height:1.5}
+.card.wide{margin-top:12px;display:flex;gap:14px;align-items:center} .card.wide .ic{margin:0;flex:none}
+.steps{display:grid;gap:14px;counter-reset:s}
+.step{display:flex;gap:14px;align-items:flex-start}
+.num{flex:none;width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
+.step h3{font-size:1rem} .step p{color:var(--muted);font-size:.88rem}
+@media(min-width:860px){.steps{grid-template-columns:repeat(3,1fr)}}
+.note{display:flex;gap:10px;align-items:flex-start;margin-top:16px;padding:12px 14px;border:1px solid var(--border);background:var(--surf2);border-radius:12px;font-size:.86rem;color:var(--muted)}
+.note svg{flex:none;color:var(--accent);margin-top:2px}
+.src{display:flex;flex-wrap:wrap;gap:8px}
+.src a{padding:9px 16px;border:1px solid var(--border);background:var(--surf);border-radius:999px;font-weight:600;font-size:.88rem;color:var(--text)!important}
+.two{display:grid;gap:14px} @media(min-width:860px){.two{grid-template-columns:1fr 1fr}}
+.cta{margin:34px 0 10px;padding:30px 20px;border-radius:20px;text-align:center;color:#fff;background:linear-gradient(135deg,#2f5bea,#6b4de0)}
+.cta h2{color:#fff;margin-bottom:6px} .cta p{opacity:.9;margin-bottom:16px}
+.cta .btns{display:flex;flex-direction:column;gap:10px;max-width:320px;margin:0 auto}
+@media(min-width:600px){.cta .btns{flex-direction:row;justify-content:center;max-width:none}.cta .btns .btn{min-width:170px}}
+.cta .btn.w{background:#fff;color:#2f5bea;border-color:#fff} .cta .btn.g{background:transparent;color:#fff;border-color:rgba(255,255,255,.7)}
+.rules-box{display:grid;gap:10px}
+.rule{display:flex;gap:12px;background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:.88rem}
+.rule p{color:var(--muted)} .rule strong{color:var(--text)}
+.dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--green);margin-top:7px} .dot.warn{background:var(--orange)}
+.faq details{background:var(--surf);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;padding:0 14px}
+.faq summary{cursor:pointer;min-height:48px;display:flex;align-items:center;font-weight:600;list-style:none} .faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'+';margin-left:auto;color:var(--accent);font-size:1.3rem} .faq details[open] summary::after{content:'−'}
+.faq details p{color:var(--muted);font-size:.9rem;padding:0 0 14px}
+.counter-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.count-card{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:16px}
+.count-card .big{font-size:2rem;font-weight:800;line-height:1.1;color:var(--accent)} .count-card.oa .big{color:var(--green)}
+.count-card .lbl{font-size:.84rem;margin-top:5px} .count-card .sub{font-size:.74rem;color:var(--muted);margin:3px 0 0;line-height:1.5}
+.count-table{background:var(--surf);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.count-row{display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid var(--border);font-size:.84rem}
+.count-row.head{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:var(--surf2);border-top:0}
+.count-row .nm{font-weight:600} .count-row .na{color:var(--muted);font-size:.74rem}
+.count-note{font-size:.74rem;color:var(--muted);line-height:1.6;margin-top:10px}
+.count-skel{height:96px;border-radius:16px;background:var(--surf);border:1px solid var(--border)}
 @media(max-width:560px){.counter-grid{grid-template-columns:1fr}.count-row{grid-template-columns:1fr 1fr 1fr;padding:10px 12px}.count-row .nm{grid-column:1/-1}.count-row.head span:first-child{display:none}}
+footer{margin-top:34px;border-top:1px solid var(--border);padding:20px 0 34px;font-size:.84rem;color:var(--muted)}
+footer nav{display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:10px} footer nav a{color:var(--text);min-height:36px;display:inline-flex;align-items:center}
+footer p{margin-top:6px;line-height:1.6}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
-
-<nav>
-  <div class="logo" style="display:flex;align-items:center;gap:12px">
-    <span>Sturch</span>
-    <a href="/donate" class="btn" style="border-color:rgba(157,110,245,.3);color:#9d6ef5;font-size:.78rem;padding:4px 11px">💙 Donate</a>
-  </div>
-  <div class="nav-btns"><a href="/login" class="btn">Log in</a></div>
-</nav>
-
-<main>
-
+<header class="top"><div class="wrap">
+  <a href="/" class="brand" aria-label="Sturch home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 342" width="30" height="27" role="img" aria-label="Sturch"><defs><linearGradient id="hg" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="338"><stop offset="0" stop-color="#3e92fc"/><stop offset="1" stop-color="#9357fc"/></linearGradient></defs><path fill="url(#hg)" fill-rule="evenodd" d="M29.48 61.71L29.48 8.32C29.48 5.6 34.93 4.71 36.72 4.56C45.18 3.88 53.73 3.82 62.19 4.54C95.77 7.36 129.77 16.99 158.68 34.65C148.44 47.42 138.58 51.55 129.94 68.82C115.88 96.9 129.21 132.49 157.8 145.67L204.03 166.98C211.02 170.2 217.74 176 222.88 181.65C227.19 186.39 230.6 191.62 233.15 197.5C243.31 220.85 233.98 245.25 217.53 262.89C211.61 269.24 204.61 274.46 198.98 281.1C195.16 285.61 192.9 290.84 189.65 295.61C183.87 288.91 178.45 282.05 171.76 276.18C145.47 253.11 108.67 243.37 74.17 244.78C59.79 245.36 42.79 246.92 30.15 254.41L84.48 263.55C113.81 268.49 153.59 281.05 175.97 301.08C181.53 306.06 185.11 312.39 190.08 317.74C194.28 311.18 198.75 305.24 204.67 300.11C227.72 280.16 268.88 266.94 298.79 262.39L348.54 254.83C348.92 254.77 349.3 254.71 349.68 254.65C346.44 251.84 341.75 250.64 337.64 249.4C317.76 243.34 296.54 243.24 276.5 248.6C269.52 250.46 263.12 254.6 256.32 256.35C260.27 246.34 264.74 237.01 266.72 226.29C273.42 189.99 255.38 153.27 222.01 136.85L175.86 114.14C170.48 111.49 165.25 106.34 161.95 101.41C149.94 83.46 159.19 66.9 174.25 54.84C206.47 29 258.3 12.17 298.83 6.4C311.87 4.54 325.05 3.65 338.21 4.28C340.73 4.4 350.3 4.45 350.3 8.5L350.3 61.83C357.39 61.1 368.72 56.67 373.99 63.08C374.26 63.41 375.45 64.88 375.45 65.22L375.4 122.15L375.4 273.12C375.4 276.41 370.96 281.24 367.71 281.59L309.11 287.88C281.07 290.89 250.9 298.62 225.92 311.82C213.91 318.16 198.4 336.89 190.1 337.04C180.24 337.21 173.05 325.68 166.21 320.08C161.84 316.49 156.92 313.54 151.89 310.98C125.04 297.33 93.34 290.34 63.51 287.14L11.88 281.59C8.95 281.27 4.43 276.45 4.43 273.47L4.43 65.55C4.43 56.25 24.53 61.54 29.18 61.71Z"/></svg><span>Sturch</span></a>
+  <div class="sp"></div>
+  <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Switch light or dark mode">🌙</button>
+  <a class="loglink" href="/login">Log in</a>
+  <a class="btn primary sm" href="/signup">Sign up free</a>
+</div></header>
+<main class="wrap">
 {% if latest %}
-<!-- What's new: the newest update; click to see them all -->
-<div class="news-wrap fadein">
-  <a class="news-strip" href="/news" aria-label="What's new on Sturch: see all updates">
-    <span class="news-tag">NEW</span>
-    <span class="news-text"><b>{{ latest.title }}</b><span class="news-date">{{ latest.date_text }}</span></span>
-    <span class="news-go">What's new →</span>
-  </a>
-</div>
+<a class="news-strip" href="/news" aria-label="What's new on Sturch: see all updates">
+  <span class="news-tag">NEW</span>
+  <span class="news-text"><b>{{ latest.title }}</b><span class="news-date">{{ latest.date_text }}</span></span>
+  <span class="news-go">What's new →</span>
+</a>
 {% endif %}
-
-<!-- Banner -->
-<header class="banner-wrap fadein">
-  <h1 class="sr-only">Find research papers in seconds</h1>
-  <picture>
-    <source srcset="/static/banner.webp" type="image/webp"/>
-    <img class="banner" src="/static/banner.jpg" width="1600" height="837" fetchpriority="high" decoding="async"
-         alt="Sturch: find research papers in seconds. 250M+ papers, 5 databases, free for students."/>
-  </picture>
-</header>
-
-<!-- Hero -->
 <div class="hero">
-  <p class="fadein fadein-d2">Search 250M+ academic papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC at once. Free for students, with APA citations, an Answer Finder and a Source Tracer.</p>
-  <div class="hero-btns fadein fadein-d3">
-    <a href="/signup" class="btn primary lg">Get Started Free</a>
+  <div>
+    <span class="pill">Free for students. No AI-written answers.</span>
+    <h1>Find research papers you can actually read and <em>cite.</em></h1>
+    <p class="lead">Search millions of papers from trusted sources, see which ones are open access, and copy the citation in one tap.</p>
+    <form class="sbox" id="hs" role="search" onsubmit="return go(event)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="hq" type="search" placeholder="Try: sleep and grades" aria-label="Search papers" autocomplete="off"/>
+      <button class="btn primary" type="submit">Search</button>
+    </form>
+    <div class="chips" aria-label="Example searches">
+      <button class="chip" type="button" onclick="ex('climate change')">climate change</button>
+      <button class="chip" type="button" onclick="ex('social media and anxiety')">social media and anxiety</button>
+      <button class="chip" type="button" onclick="ex('online learning')">online learning</button>
+    </div>
+    <div class="live" id="live" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span><b id="liveN">0</b> papers searchable right now</span></div>
+    <p style="margin-top:12px"><a href="/signup">Create a free account to save papers</a></p>
   </div>
-  <div class="sources-note fadein fadein-d3">
-    Searches <span>OpenAlex · arXiv · PubMed · Crossref · Europe PMC</span> at the same time
-  </div>
-  <div class="beta-banner fadein fadein-d3" role="note">
-    <strong>Beta notice:</strong> Sturch is still being built. Tools like the Answer Finder and Source Tracer read paper abstracts and can be incomplete or wrong, so always check the original paper. <a href="#disclaimer">Read the full disclaimer</a>
-  </div>
-
-
+  <svg viewBox="0 0 220 180" width="100%" role="img" aria-label="A paper with a magnifying glass" class="art"><ellipse cx="110" cy="165" rx="80" ry="8" fill="var(--accent-soft)"/><rect x="48" y="14" width="104" height="132" rx="12" fill="var(--surf)" stroke="var(--accent)" stroke-width="3"/><rect x="62" y="34" width="46" height="8" rx="4" fill="var(--accent)"/><rect x="62" y="54" width="76" height="6" rx="3" fill="var(--surf3)"/><rect x="62" y="68" width="68" height="6" rx="3" fill="var(--surf3)"/><rect x="62" y="82" width="76" height="6" rx="3" fill="var(--surf3)"/><rect x="62" y="96" width="50" height="6" rx="3" fill="var(--surf3)"/><circle cx="140" cy="112" r="28" fill="var(--accent-soft)" fill-opacity=".7" stroke="var(--accent)" stroke-width="5"/><path d="M160 133l22 24" stroke="var(--accent)" stroke-width="9" stroke-linecap="round"/><path d="M200 30l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="var(--accent)" opacity=".5"/></svg>
 </div>
 
-<!-- Paper counter -->
-<section class="section" id="numbers" hidden>
-  <div class="section-label">By the numbers</div>
+<section class="s" id="tools">
+  <h2>What you can do</h2>
+  <div class="grid4">
+    <a class="card" href="/signup"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div><h3>Search papers</h3><p>Filter by year and open access. Results come from several sources at once.</p></a>
+    <a class="card" href="/signup"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 10h7M8.5 13.5h4"/></svg></div><h3>Answer Finder</h3><p>Ask a question and see what papers actually say, with the exact sentence and where it came from.</p></a>
+    <a class="card" href="/signup"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></div><h3>Source Tracer</h3><p>Paste a claim and find the paper behind it.</p></a>
+    <a class="card" href="/signup"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></div><h3>Topic Finder</h3><p>Not sure what to research? Find topics and gaps in a field.</p></a>
+  </div>
+  <a class="card wide" href="/signup"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><div><h3>Your library</h3><p>Save papers, group them in collections, and revisit your search history.</p></div></a>
+</section>
+
+<section class="s">
+  <h2>How it works</h2>
+  <div class="steps">
+    <div class="step"><div class="num">1</div><div><h3>Search or ask</h3><p>Type keywords or a question.</p></div></div>
+    <div class="step"><div class="num">2</div><div><h3>Check the evidence</h3><p>Open access papers can be read right here, with highlights.</p></div></div>
+    <div class="step"><div class="num">3</div><div><h3>Cite and save</h3><p>Copy APA, MLA, Chicago or Harvard, then save it to a collection.</p></div></div>
+  </div>
+  <div class="note"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>References are auto-generated. Always check them before you submit.</span></div>
+</section>
+
+<section class="s">
+  <div class="two">
+    <div>
+      <h2>Built on open scholarly sources</h2>
+      <p class="sub">No made-up answers. Everything shown comes from a real paper.</p>
+      <div class="src"><a href="https://openalex.org" target="_blank" rel="noopener">OpenAlex</a><a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank" rel="noopener">PubMed</a><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a><a href="https://crossref.org" target="_blank" rel="noopener">Crossref</a><a href="https://europepmc.org" target="_blank" rel="noopener">Europe PMC</a></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px"><span style="color:var(--accent)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span><h3>Made for students, by a student</h3></div>
+      <p>Sturch is a free school project. It uses fixed rules to find answers in papers, not a chatbot.</p>
+      <p style="margin-top:8px"><a href="/guide">Read the guide →</a></p>
+    </div>
+  </div>
+</section>
+
+<section class="s" id="numbers" hidden>
   <h2>How many papers can Sturch search?</h2>
-  <p class="section-intro">Counted live from each database, not a guess.</p>
+  <p class="sub">Counted live from each database, not a guess.</p>
   <div id="countBody"><div class="count-skel"></div></div>
 </section>
-<script>
-(function(){
-  var sec = document.getElementById('numbers'), body = document.getElementById('countBody');
-  function compact(n){ if (n == null) return null; if (n >= 1e9) return (n / 1e9).toFixed(2).replace(/\.?0+$/, '') + 'B'; if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M'; if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K'; return String(n); }
-  function full(n){ return Number(n).toLocaleString('en-US'); }
-  function esc(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  fetch('/api/paper-count').then(function(r){ return r.ok ? r.json() : Promise.reject(); }).then(function(d){
-    if (!d || !d.sources || !d.unique_min) return;
-    var rows = d.sources.map(function(s){
-      if (!s.total) return '<div class="count-row"><span class="nm">' + esc(s.name) + '</span><span class="na" style="grid-column:2/-1">not available right now</span></div>';
-      return '<div class="count-row"><span class="nm">' + esc(s.name) + '</span><span class="n" title="' + full(s.total) + '">' + compact(s.total) + '</span>' +
-        (s.oa_reported ? '<span class="n" title="' + full(s.oa) + '">' + compact(s.oa) + '</span><span class="n" title="' + full(s.closed) + '">' + compact(s.closed) + '</span>'
-                       : '<span class="na">not reported</span><span class="na">not reported</span>') + '</div>';
-    }).join('');
-    body.innerHTML =
-      '<div class="counter-grid">' +
-        '<div class="count-card"><div class="big" title="' + full(d.unique_min) + '">' + compact(d.unique_min) + '+</div><div class="lbl">different papers, at least</div>' +
-          '<div class="sub">Up to ' + compact(d.sum_total) + ' records if every database is added together. The same paper can be in more than one.</div></div>' +
-        '<div class="count-card oa"><div class="big" title="' + full(d.oa_min) + '">' + compact(d.oa_min) + '+</div><div class="lbl">free to read (open access), at least</div>' +
-          '<div class="sub">Up to ' + compact(d.sum_oa) + ' open-access records across the databases that report it.</div></div>' +
-      '</div>' +
-      '<div class="count-table"><div class="count-row head"><span>Database</span><span>Papers</span><span>Open access</span><span>Not open access</span></div>' + rows + '</div>' +
-      '<p class="count-note">Each number comes from the database\'s own count and is refreshed about every 6 hours (last counted ' + esc(d.updated) + ').' +
-      (d.complete ? '' : ' One or more databases did not answer, so the totals may be low.') +
-      ' Duplicates between databases cannot be removed exactly, so the real number of different papers is between the two big numbers. Crossref does not say which of its records are open access.</p>';
-    sec.hidden = false;
-  }).catch(function(){ /* no counter: the section stays hidden */ });
-})();
-</script>
 
-<div class="divider"></div>
-
-<!-- Research tools -->
-<section class="section" id="tools">
-  <div class="section-label">Research tools</div>
-  <h2>Tools that go beyond a paper search</h2>
-  <p class="section-intro">Every tool uses the same five databases and the same filters: years, Open Access, sources and sort.</p>
-  <div class="tools-detail">
-
-    <article class="tool">
-      <div class="tool-head"><div class="icon">💡</div><h3>Answer Finder</h3><span class="tool-tag">BETA</span></div>
-      <p>Ask a question and get sentences from real academic papers that answer it, each linked to the paper it came from.</p>
-      <ol class="tool-steps">
-        <li>Pick a template: What is, What are, What causes, Effect of, How does, Why is, Define or Difference between.</li>
-        <li>Type your topic, for example “antibiotic resistance” after “What causes”, and press Ask.</li>
-        <li>Read the answers, then use View Source or Read to open the paper behind each one.</li>
-      </ol>
-      <p class="good"><strong>Good to know:</strong> Answers come from paper abstracts, not the full text. Sturch shows fewer answers instead of weak ones, so a very common or very narrow topic may return none. If that happens, try a more specific topic or use Search Papers.</p>
-    </article>
-
-    <article class="tool">
-      <div class="tool-head"><div class="icon">🔎</div><h3>Source Tracer</h3><span class="tool-tag">BETA</span></div>
-      <p>Paste a quote or claim and find the academic paper it most likely came from.</p>
-      <ol class="tool-steps">
-        <li>Paste the quote or claim (at least 10 characters).</li>
-        <li>Sturch compares your wording with paper abstracts across the five databases.</li>
-        <li>Check the best match and its confidence level. If no exact source is found, related papers are shown instead.</li>
-      </ol>
-      <p class="good"><strong>Good to know:</strong> Paraphrased quotes, text that only appears in a paper’s full text, or papers that are not in these databases may not be found. A match means the wording is similar. It does not prove the claim is true.</p>
-    </article>
-
-    <article class="tool">
-      <div class="tool-head"><div class="icon">🧭</div><h3>Topic Finder</h3><span class="tool-tag">BETA</span></div>
-      <p>Explore a field and see which papers are being written, to spark ideas for your own research topic.</p>
-      <ol class="tool-steps">
-        <li>Enter a field or subject area. You can add a focus and extra keywords to narrow it down.</li>
-        <li>Sturch lists relevant papers, most cited or most recent depending on your sort.</li>
-        <li>Use them to see what is already studied, then save the ones you like.</li>
-      </ol>
-      <p class="good"><strong>Good to know:</strong> It shows papers, not finished topics. Check with your teacher or adviser that your topic fits your assignment.</p>
-    </article>
-
-  </div>
-  <p class="tool-more">Also included: an APA, MLA, Chicago and Vancouver citation generator, bookmarks, collections, search history, and export to CSV and BibTeX.</p>
-</section>
-
-<div class="divider"></div>
-
-<!-- How it works -->
-<div class="section">
-  <div class="section-label">How it works</div>
-  <h2>3 steps to find your paper</h2>
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">1</div>
-      <h3>Type your topic</h3>
-      <p>Type a keyword, press Enter to add it as a tag. Add multiple tags for more precise results.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">2</div>
-      <h3>Get results instantly</h3>
-      <p>Sturch searches 5 major academic databases at the same time and shows the best matching papers.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">3</div>
-      <h3>Save and cite</h3>
-      <p>Copy APA references, bookmark papers, organize into collections, or export to BibTeX/CSV.</p>
-    </div>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<!-- Features -->
-<div class="section">
-  <div class="section-label">Features</div>
-  <h2>Everything researchers need</h2>
-  <div class="features">
-    <div class="feature">
-      <div class="icon">🔍</div>
-      <h3>5-Source Search</h3>
-      <p>OpenAlex, arXiv, PubMed, Crossref and Europe PMC searched simultaneously.</p>
-    </div>
-    <div class="feature">
-      <div class="icon">📄</div>
-      <h3>Load More Papers</h3>
-      <p>Get 100 more results on the same topic instantly with the Load More button.</p>
-    </div>
-    <div class="feature">
-      <div class="icon">📋</div>
-      <h3>APA References</h3>
-      <p>Auto-generated APA references ready to copy. One tap. Always verify before submitting.</p>
-    </div>
-    <div class="feature">
-      <div class="icon">📖</div>
-      <h3>Full Paper Reader</h3>
-      <p>Read full papers inside Sturch with keyword search, reading progress bar and estimated read time.</p>
-    </div>
-    <div class="feature">
-      <div class="icon">🔗</div>
-      <h3>Related Papers</h3>
-      <p>From any paper, find related ones using the same topic and concepts.</p>
-    </div>
-    <div class="feature">
-      <div class="icon">🔖</div>
-      <h3>Bookmarks</h3>
-      <p>Save papers you want to read later. Access them anytime from your Saved panel.</p>
-    </div>
-    <div class="feature">
-      <div class="icon">📚</div>
-      <h3>Collections</h3>
-      <p>Organize saved papers into folders by subject, chapter, or project.</p>
-    </div>
-    <div class="feature">
-      <div class="icon">🕐</div>
-      <h3>Search History</h3>
-      <p>Your last 50 searches are saved. Tap any past search to run it again instantly.</p>
-    </div>
-    <div class="feature">
-      <div class="icon">📥</div>
-      <h3>Export</h3>
-      <p>Download results as CSV, BibTeX, JSON, or plain text for any citation tool.</p>
-    </div>
-    <div class="feature">
-      <div class="icon">🔓</div>
-      <h3>Open Access Filter</h3>
-      <p>Filter results to only show freely accessible full papers.</p>
-    </div>
-
-    <div class="feature">
-      <div class="icon">📱</div>
-      <h3>Mobile Friendly</h3>
-      <p>Works on your phone. No laptop needed to do proper academic research.</p>
-    </div>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<!-- Sources -->
-<div class="section">
-  <div class="section-label">Data Sources</div>
-  <h2>Powered by 5 trusted databases</h2>
-  <div class="sources-grid">
-    <div class="source-card">
-      <div class="src-badge src-openalex">OpenAlex</div>
-      <p>250M+ papers across all fields. The largest open academic database.</p>
-    </div>
-    <div class="source-card">
-      <div class="src-badge src-arxiv">arXiv</div>
-      <p>Open access preprints in Physics, Math, CS, Biology and more.</p>
-    </div>
-    <div class="source-card">
-      <div class="src-badge src-pubmed">PubMed</div>
-      <p>35M+ biomedical and life science papers from NCBI.</p>
-    </div>
-    <div class="source-card">
-      <div class="src-badge src-crossref">Crossref</div>
-      <p>Complete metadata and DOIs for 140M+ scholarly works. Best for citations.</p>
-    </div>
-    <div class="source-card">
-      <div class="src-badge src-pubmed">Europe PMC</div>
-      <p>40M+ life science papers. Strong in biology, medicine and health research.</p>
-    </div>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<!-- Search Tips -->
-<div class="section">
-  <div class="section-label">Search Tips</div>
-  <h2>How to search like a pro</h2>
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">💡</div>
-      <h3>Use multiple tags</h3>
-      <p>Type a keyword → press <strong>Enter</strong> → add more tags → press Search. More specific tags = more relevant results.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">📅</div>
-      <h3>Filter by year</h3>
-      <p>Use <strong>Year From</strong> and <strong>To</strong> to narrow results. For school projects, 2015–2024 is a good range.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">💎</div>
-      <h3>Use Load More</h3>
-      <p>After results appear, tap <strong>Load More</strong> to get more papers on the same topic for free — no extra search needed.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">🔖</div>
-      <h3>Bookmark as you go</h3>
-      <p>Don't rely on browser history. Tap <strong>Save</strong> on good papers and organize them into collections.</p>
-    </div>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<!-- Rules -->
-<div class="section" id="disclaimer">
-  <div class="section-label">Disclaimer &amp; rules</div>
+<section class="s" id="disclaimer">
   <h2>Before you use Sturch</h2>
   <div class="rules-box">
     <div class="rule">
@@ -579,13 +300,9 @@ footer a:hover{color:var(--accent)}
       <p><strong>Not professional advice.</strong> Papers about health, law or money are shown for study. They are not medical, legal or financial advice.</p>
     </div>
   </div>
-</div>
+</section>
 
-<div class="divider"></div>
-
-<!-- FAQ -->
-<section class="section faq" id="faq">
-  <div class="section-label">FAQ</div>
+<section class="s faq" id="faq">
   <h2>Frequently asked questions</h2>
   <details>
     <summary>Is Sturch really free?</summary>
@@ -625,31 +342,54 @@ footer a:hover{color:var(--accent)}
   </details>
 </section>
 
-<div class="divider"></div>
-
-<!-- CTA -->
 <div class="cta">
-  <h2>Ready to start your research?</h2>
-  <p>Join students and researchers already using Sturch to find papers faster.</p>
-  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-    <a href="/signup" class="btn primary lg">Create Free Account</a>
-  </div>
+  <h2>Start your research today</h2>
+  <p>Free. No credit card.</p>
+  <div class="btns"><a class="btn w" href="/signup">Sign up free</a><a class="btn g" href="/login">Log in</a></div>
 </div>
-
 </main>
-
-<footer>
-  <nav aria-label="Footer" style="margin-bottom:9px"><a href="/signup">Sign up free</a> &nbsp;·&nbsp; <a href="/login">Log in</a> &nbsp;·&nbsp; <a href="/donate">Support Sturch</a><br><a href="/guide">Guide</a> &nbsp;·&nbsp; <a href="/news">What's new</a> &nbsp;·&nbsp; <a href="#tools">Tools</a> &nbsp;·&nbsp; <a href="#faq">FAQ</a> &nbsp;·&nbsp; <a href="#disclaimer">Disclaimer</a></nav>
-  <p>
-    Sturch — Built by a student, for students and researchers everywhere. &nbsp;·&nbsp;
-    Data from <a href="https://openalex.org" target="_blank">OpenAlex</a>,
-    <a href="https://arxiv.org" target="_blank">arXiv</a>,
-    <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank">PubMed</a>,
-    <a href="https://crossref.org" target="_blank">Crossref</a> &amp;
-    <a href="https://europepmc.org" target="_blank">Europe PMC</a>
-  </p>
-  <p style="margin-top:5px">References are auto-generated — always verify before academic submission.</p>
-</footer>
-
+<footer><div class="wrap">
+  <nav aria-label="Footer"><a href="/donate">Support Sturch</a><a href="/guide">Guide</a><a href="/news">What's new</a><a href="#faq">FAQ</a><a href="#disclaimer">Disclaimer</a></nav>
+  <p>© <span id="yr">2026</span> Sturch. All rights reserved. Built by a student, for students and researchers everywhere.</p>
+  <p>Data from <a href="https://openalex.org" target="_blank" rel="noopener">OpenAlex</a>, <a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a>, <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank" rel="noopener">PubMed</a>, <a href="https://crossref.org" target="_blank" rel="noopener">Crossref</a> &amp; <a href="https://europepmc.org" target="_blank" rel="noopener">Europe PMC</a>. References are auto-generated: always verify before academic submission.</p>
+</div></footer>
+<script>
+function toggleTheme(){var h=document.documentElement,d=h.getAttribute('data-theme')==='dark';h.setAttribute('data-theme',d?'light':'dark');paint();try{localStorage.setItem('sturch_theme',d?'light':'dark')}catch(e){}}
+function paint(){var b=document.getElementById('themeBtn');if(b)b.textContent=document.documentElement.getAttribute('data-theme')==='dark'?'☀️':'🌙';}
+paint();try{document.getElementById('yr').textContent=new Date().getFullYear()}catch(e){}
+function ex(t){document.getElementById('hq').value=t;document.getElementById('hq').focus();}
+function go(e){e.preventDefault();var q=document.getElementById('hq').value.trim();location.href=q?'/search?tag='+encodeURIComponent(q):'/signup';return false;}
+// live number in the hero (same data as the counter section; hidden if the count is unavailable)
+fetch('/api/paper-count').then(function(r){return r.ok?r.json():Promise.reject()}).then(function(d){if(d&&d.unique_min){document.getElementById('liveN').textContent=Number(d.unique_min).toLocaleString('en-US')+'+';document.getElementById('live').hidden=false;}}).catch(function(){});
+</script>
+<script>
+(function(){
+  var sec = document.getElementById('numbers'), body = document.getElementById('countBody');
+  function compact(n){ if (n == null) return null; if (n >= 1e9) return (n / 1e9).toFixed(2).replace(/\.?0+$/, '') + 'B'; if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M'; if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K'; return String(n); }
+  function full(n){ return Number(n).toLocaleString('en-US'); }
+  function esc(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  fetch('/api/paper-count').then(function(r){ return r.ok ? r.json() : Promise.reject(); }).then(function(d){
+    if (!d || !d.sources || !d.unique_min) return;
+    var rows = d.sources.map(function(s){
+      if (!s.total) return '<div class="count-row"><span class="nm">' + esc(s.name) + '</span><span class="na" style="grid-column:2/-1">not available right now</span></div>';
+      return '<div class="count-row"><span class="nm">' + esc(s.name) + '</span><span class="n" title="' + full(s.total) + '">' + compact(s.total) + '</span>' +
+        (s.oa_reported ? '<span class="n" title="' + full(s.oa) + '">' + compact(s.oa) + '</span><span class="n" title="' + full(s.closed) + '">' + compact(s.closed) + '</span>'
+                       : '<span class="na">not reported</span><span class="na">not reported</span>') + '</div>';
+    }).join('');
+    body.innerHTML =
+      '<div class="counter-grid">' +
+        '<div class="count-card"><div class="big" title="' + full(d.unique_min) + '">' + compact(d.unique_min) + '+</div><div class="lbl">different papers, at least</div>' +
+          '<div class="sub">Up to ' + compact(d.sum_total) + ' records if every database is added together. The same paper can be in more than one.</div></div>' +
+        '<div class="count-card oa"><div class="big" title="' + full(d.oa_min) + '">' + compact(d.oa_min) + '+</div><div class="lbl">free to read (open access), at least</div>' +
+          '<div class="sub">Up to ' + compact(d.sum_oa) + ' open-access records across the databases that report it.</div></div>' +
+      '</div>' +
+      '<div class="count-table"><div class="count-row head"><span>Database</span><span>Papers</span><span>Open access</span><span>Not open access</span></div>' + rows + '</div>' +
+      '<p class="count-note">Each number comes from the database\'s own count and is refreshed about every 6 hours (last counted ' + esc(d.updated) + ').' +
+      (d.complete ? '' : ' One or more databases did not answer, so the totals may be low.') +
+      ' Duplicates between databases cannot be removed exactly, so the real number of different papers is between the two big numbers. Crossref does not say which of its records are open access.</p>';
+    sec.hidden = false;
+  }).catch(function(){ /* no counter: the section stays hidden */ });
+})();
+</script>
 </body>
 </html>
