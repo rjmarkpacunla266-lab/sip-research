@@ -311,7 +311,54 @@ header.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:
 @media(max-width:480px){header.top{gap:6px}.brand{font-size:1.15rem;gap:6px}.icon-btn{width:38px;height:38px}.ans-actions .btn{flex:1 1 auto;justify-content:center}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
-<link rel="stylesheet" href="/static/mobile.css"/>
+<style>
+/* Phone fixes shared by all Sturch pages (loaded after each page's own styles). */
+@media(max-width:600px){
+  /* header: one row, never wraps (it used to push the avatar onto the page below) */
+  header.top{flex-wrap:nowrap!important;gap:6px!important;padding-left:12px!important;padding-right:12px!important;overflow:visible}
+  header.top .brand{font-size:1.12rem;gap:6px;min-width:0;flex:none}
+  header.top .brand svg{width:26px;height:24px}
+  header.top .seg{flex:none}
+  header.top .seg button{padding:0 9px!important;font-size:.76rem!important;min-height:30px!important}
+  header.top .icon-btn{width:38px;height:38px;flex:none}
+  header.top .me{flex:none}
+  header.top .avatar{width:36px;height:36px;flex:none}
+  header.top .gchip{flex:none;min-height:32px;padding:0 9px;font-size:.72rem}
+  /* account menu: always opens inside the screen, right-aligned */
+  .menu{right:0!important;left:auto!important;width:min(250px,calc(100vw - 24px));min-width:0!important}
+  .menu a{white-space:nowrap}
+  /* search results: "169,992 results · showing 10 · from 5 sources" in one wrapping line */
+  .stats-bar{flex-direction:row!important;flex-wrap:wrap!important;justify-content:flex-start!important;text-align:left!important;gap:2px 8px!important;display:flex!important;grid-template-columns:none!important}
+  .stats-bar>*{display:inline!important}
+  .stats-bar .dot{display:inline!important}
+  .stats-bar .stat{padding:0!important;background:none!important;border:0!important}
+  /* open card: the "auto-generated" label sits above the reference, not beside it */
+  .card-foot{display:block!important}
+  .card-foot .ref-warn{display:inline-block;margin-bottom:6px;white-space:normal}
+  .card-foot .apa-text{display:block!important;width:100%!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;word-break:break-word;overflow-wrap:anywhere;font-size:.8rem}
+  /* answer finder: source paper uses the full width, buttons wrap underneath */
+  .source-card{flex-wrap:wrap!important}
+  .source-info{flex:1 1 100%!important;min-width:0}
+  .source-btns{flex:1 1 100%;flex-wrap:wrap}
+  /* paper reader */
+  .pagehead .pact.print{display:none}
+  .pagehead{flex-wrap:nowrap;gap:6px}
+  .pagehead h1{font-size:1.25rem}
+  .pactions{flex-wrap:nowrap;gap:6px}
+  .find-bar{gap:5px!important;padding:8px 12px!important}
+  .find-wrap{flex:1 1 auto;min-width:0}
+  .find-wrap input{font-size:.9rem;padding-right:8px}
+  .find-nav{display:flex;align-items:center;gap:4px;flex:none}
+  .nav-btn{width:34px!important;height:38px!important}
+  .find-count{min-width:36px!important;font-size:.7rem!important;text-align:center}
+  .find-bar .btn.sm{font-size:0!important;width:38px;min-width:38px;padding:0!important}
+  .find-bar .btn.sm::before{content:'\2715';font-size:.9rem}
+  .empty-state{padding:14px 8px 6px}
+  .empty-state h2{font-size:1.1rem}
+  .empty-state p{font-size:.86rem}
+  .empty-state .es-ic svg{width:44px;height:44px}
+}
+</style>
 </head>
 <body>
 <div id="app">
@@ -917,6 +964,44 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
 }
 </script>
-<script src="/static/guest.js" defer></script>
+<script>
+/* Guest notice: a slim banner under the header, and a small "Guest" chip once it is closed.
+   Only shows for guest accounts (from /api/me). Safe to load on any page. */
+(function(){
+  var KEY='sturch_guest_note';
+  function get(){try{return localStorage.getItem(KEY)}catch(e){return null}}
+  function set(v){try{v?localStorage.setItem(KEY,v):localStorage.removeItem(KEY)}catch(e){}}
+  fetch('/api/me').then(function(r){return r.ok?r.json():null}).then(function(u){
+    if(!u||!u.is_guest)return;
+    var days=u.guest_days||30,hd=document.querySelector('header.top')||document.querySelector('header');
+    if(!hd)return;
+    var st=document.createElement('style');
+    st.textContent='.gn{display:flex;align-items:center;gap:10px;margin:10px 0 0;padding:10px 12px;border-radius:14px;border:1px solid var(--orange,#e0852f);background:var(--orange-bg,rgba(240,145,75,.16));color:var(--text);font-size:.86rem;line-height:1.4}'
+      +'.gn span.t{flex:1;min-width:0}.gn a.gb{flex:none;display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:999px;background:var(--accent,#2f5bea);color:#fff!important;font-weight:700;font-size:.82rem;text-decoration:none}'
+      +'.gn button{flex:none;width:40px;height:40px;border:0;background:none;color:var(--muted,#7a86a8);font-size:1.05rem;cursor:pointer}'
+      +'.gchip{flex:none;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--orange,#e0852f);background:var(--orange-bg,rgba(240,145,75,.16));color:var(--text);font:700 .78rem system-ui,sans-serif;cursor:pointer}'
+      +'@media(max-width:520px){.gn{flex-wrap:wrap}.gn span.t{flex:1 1 100%}}';
+    document.head.appendChild(st);
+    var msg="You're using a guest account. Your saved papers stay on this browser for "+days+" days.";
+    var bar=null,chip=null;
+    function showBar(){
+      if(bar)return;set(null);if(chip){chip.remove();chip=null}
+      bar=document.createElement('div');bar.className='gn';bar.setAttribute('role','note');
+      bar.innerHTML='<span aria-hidden="true">ⓘ</span><span class="t"></span><a class="gb" href="/signup">Create account</a><button type="button" aria-label="Close">✕</button>';
+      bar.querySelector('.t').textContent=msg;
+      bar.querySelector('button').onclick=function(){bar.remove();bar=null;set('closed');showChip()};
+      hd.insertAdjacentElement('afterend',bar);
+    }
+    function showChip(){
+      if(chip)return;var me=hd.querySelector('.me');if(!me)return;
+      chip=document.createElement('button');chip.type='button';chip.className='gchip';chip.textContent='Guest';chip.setAttribute('aria-label','Guest account info');
+      chip.onclick=showBar;me.parentNode.insertBefore(chip,me);
+      /* no room in the header (small phones): drop the chip and use a menu item instead */
+      if(hd.scrollWidth>hd.clientWidth+1||(me.offsetTop-hd.offsetTop)>20){chip.remove();chip=null;var m=hd.querySelector('.menu');if(m&&!m.querySelector('.gmi')){var a=document.createElement('a');a.className='gmi';a.href='#';a.setAttribute('role','menuitem');a.textContent='\u24d8 Guest account';a.onclick=function(e){e.preventDefault();showBar();window.scrollTo(0,0)};var w=m.querySelector('.menu-who');w?w.after(a):m.prepend(a);}}
+    }
+    if(get()==='closed')showChip();else showBar();
+  }).catch(function(){});
+})();
+</script>
 </body>
 </html>
