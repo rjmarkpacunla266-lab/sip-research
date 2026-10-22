@@ -205,5 +205,6 @@ try { document.getElementById('yr').textContent = new Date().getFullYear(); } ca
 fetch('/api/me').then(r => r.ok ? r.json() : null).then(u => { if (u && u.email) { document.getElementById('userEmail').textContent = u.email; document.getElementById('meBtn').textContent = u.email.trim().charAt(0).toUpperCase(); } }).catch(() => {});
 
 </script>
+<script src="/static/guest.js" defer></script>
 </body>
 </html>

@@ -63,6 +63,22 @@ app.register_blueprint(library_bp)
 app.register_blueprint(tools_bp)
 
 # ─── Run ─────────────────────────────────────────────────────────────
+# ── Sturch error pages (404 / 500) ──
+from flask import request as _rq, jsonify as _jf, render_template as _rt
+
+@app.errorhandler(404)
+def _sturch_404(e):
+    if _rq.path.startswith("/api/"):
+        return _jf({"error": "Not found"}), 404
+    return _rt("404.html"), 404
+
+@app.errorhandler(500)
+def _sturch_500(e):
+    if _rq.path.startswith("/api/"):
+        return _jf({"error": "Something went wrong. Please try again."}), 500
+    return _rt("500.html"), 500
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port, debug=False)

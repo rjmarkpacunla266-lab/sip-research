@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Something went wrong: Sturch</title>
+<meta name="robots" content="noindex, nofollow"/>
+<meta name="theme-color" content="#2f5bea"/>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml"/>
+<script>
+(function(){try{var t=localStorage.getItem('sturch_theme');
+ if(t!=='dark'&&t!=='light')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+ document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();
+</script>
+<style>
+:root,[data-theme="light"]{
+  --bg:#f5f8ff;--surf:#ffffff;--surf2:#f1f5fd;--surf3:#e4ebfb;
+  --border:#dfe6f5;--accent:#2f5bea;--accent-h:#2449c4;--accent-soft:#e6edff;--accent2:#6b4de0;
+  --gold:#a86a00;--green:#12805c;--green-bg:#dcf5ea;--red:#c93a3a;--orange:#b8560f;--orange-bg:#fdeede;
+  --text:#14203d;--muted:#5d6b8c;--shadow:0 1px 2px rgba(25,45,100,.06),0 6px 18px rgba(25,45,100,.06);
+  --mono:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--serif:var(--mono);--sans:var(--mono);--r:12px;
+}
+[data-theme="dark"]{
+  --bg:#0a1020;--surf:#111a30;--surf2:#17223d;--surf3:#1f2c4d;
+  --border:#25314f;--accent:#4d7bff;--accent-h:#6a90ff;--accent-soft:#1a2850;--accent2:#9d86ff;
+  --gold:#f0c35a;--green:#4fd6a0;--green-bg:#123a2d;--red:#f27a7a;--orange:#f0914b;--orange-bg:#3a2713;
+  --text:#e8eeff;--muted:#9aa8c9;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--accent)}
+
+/* ═════════ Sturch redesign (matches home, search, answer) ═════════ */
+body{font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+a:hover{text-decoration:none}
+.btn{border-radius:10px;min-height:40px;padding:0 16px;font-weight:600;background:var(--surf)}
+.btn:hover{border-color:var(--accent);color:var(--accent);background:var(--surf)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{background:var(--accent-h);color:#fff}
+.btn.sm{min-height:40px;padding:0 14px}
+.btn.xs{min-height:38px;padding:0 13px;font-size:.8rem}
+header.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:8px;height:60px;margin:0 -16px;padding:0 16px;background:color-mix(in srgb,var(--surf) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);flex-wrap:nowrap}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.3rem;letter-spacing:-.01em;color:var(--text)}
+.sp{flex:1}
+.icon-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);background:var(--surf);display:grid;place-items:center;font-size:1.02rem;cursor:pointer;color:var(--text)}
+.icon-btn:hover{border-color:var(--accent)}
+.me{position:relative}
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#3e92fc,#9357fc);color:#fff;font:700 1rem var(--sans);display:grid;place-items:center;border:0;cursor:pointer}
+.menu{position:absolute;right:0;top:46px;min-width:210px;background:var(--surf);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:6px;display:none;z-index:40}
+.menu.open{display:block}
+.menu a{display:flex;gap:9px;align-items:center;padding:0 12px;min-height:44px;border-radius:9px;font-size:.92rem;color:var(--text)}
+.menu a:hover{background:var(--surf2)}
+.menu hr{border:0;border-top:1px solid var(--border);margin:4px 0}
+.menu-who{padding:8px 12px;font-size:.78rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px}
+.pagehead{display:flex;align-items:center;gap:10px;margin:16px 0 0}
+.pagehead h1{font-size:1.4rem;font-weight:800;letter-spacing:-.01em}
+.back{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;color:var(--text);font-size:1.2rem}
+.back:hover{background:var(--surf2)}
+.subtitle{color:var(--muted);font-size:.92rem;margin:2px 0 14px 2px}
+#app{max-width:860px;margin:0 auto;padding:0 16px 40px}
+
+/* filters */
+.fx-bar{margin:0 0 14px}
+.fx-btn{min-height:44px;border-radius:12px;background:var(--surf);padding:0 14px;font-weight:600;font-size:.88rem;width:100%;justify-content:space-between;color:var(--text)}
+.fx-sum{font-weight:500;font-family:var(--sans)}
+.fx-panel{border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+.fx-g label{font-size:.72rem;font-weight:600;letter-spacing:.03em;text-transform:none}
+.fx-g input,.fx-g select{min-height:42px;border-radius:10px;font-family:var(--sans);font-size:.9rem;background:var(--surf);color:var(--text)}
+.fx-g input{width:90px}
+.fx-toggle{min-height:42px;border-radius:10px;font-weight:600;background:var(--surf)}
+.fx-toggle.on{color:var(--green);border-color:var(--green);background:var(--green-bg)}
+.fx-chip{min-height:40px;display:inline-flex;align-items:center;padding:0 14px;font-size:.84rem;background:var(--surf)}
+.fx-chip.active{background:var(--accent-soft)}
+.fx-btn.sm{width:auto;min-height:40px;justify-content:flex-start}
+.fx-note{font-size:.88rem;color:var(--muted);margin:10px 2px}
+.fx-note b{color:var(--text)}
+.tagrow{gap:6px}
+.oa-b{font-size:.72rem;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--green-bg);border:0;color:var(--green)}
+.pw-b{font-size:.72rem;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--surf2);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+.src-b{font-size:.72rem;font-weight:600;padding:2px 9px}
+.fx-empty,.no-result{padding:34px 16px}
+.spinner{margin:40px auto}
+#toast{background:var(--surf);color:var(--text);box-shadow:var(--shadow)}
+.foot{margin:30px -16px 0;border-top:1px solid var(--border);padding:12px 16px 30px;font-size:.82rem;color:var(--muted);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 18px}
+.foot nav{display:flex;flex-wrap:wrap}
+.foot nav a{color:var(--muted);min-height:44px;display:inline-flex;align-items:center;padding:0 10px 0 0;margin-right:8px}
+.foot nav a:hover{color:var(--accent)}
+.empty-state{text-align:center;padding:26px 16px 10px}
+.es-ic{color:var(--accent);margin-bottom:8px}
+.empty-state h2{font-size:1.25rem;font-weight:800;margin-bottom:6px}
+.empty-state p{color:var(--muted);font-size:.92rem;max-width:460px;margin:0 auto}
+.es-ex{max-width:520px;margin:22px auto 0;text-align:left}
+.es-lbl{font-size:.82rem;font-weight:600;color:var(--muted);margin-bottom:8px}
+.es-q{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:52px;padding:0 16px;margin-bottom:8px;background:var(--surf);border:1px solid var(--border);border-radius:12px;font:500 .95rem var(--sans);color:var(--text);cursor:pointer;text-align:left}
+.es-q:hover{border-color:var(--accent);color:var(--accent)}
+.es-q i{font-style:normal;color:var(--muted);font-size:1.3rem}
+@media(max-width:480px){header.top{gap:6px}.brand{font-size:1.15rem;gap:6px}.icon-btn{width:38px;height:38px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+
+a{text-decoration:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);color:var(--text)!important;font-weight:600;background:var(--surf)}
+#app{max-width:560px}
+.err{text-align:center;padding:26px 8px 10px;position:relative}
+.num404{font-size:5.5rem;font-weight:900;letter-spacing:-.03em;line-height:1;color:var(--accent);opacity:.22;margin-bottom:-34px}
+.art{display:block;margin:0 auto 12px;max-width:100%}
+.err h1{font-size:1.5rem;font-weight:800;line-height:1.25}
+.err p{color:var(--muted);margin:8px 0 20px}
+.err .btns{display:grid;gap:10px;max-width:340px;margin:0 auto}
+.b{display:inline-flex;align-items:center;justify-content:center;min-height:50px;border-radius:999px;border:1.5px solid var(--accent);font:700 1rem var(--sans);color:var(--accent)!important;background:var(--surf);cursor:pointer;text-decoration:none!important}
+.b.p{background:var(--accent);color:#fff!important}
+.small{font-size:.84rem;color:var(--muted);margin-top:18px}
+.foot{margin:30px auto 0;max-width:860px;padding:12px 16px 30px}
+
+</style>
+</head>
+<body>
+<div id="app">
+<header class="top">
+  <a href="/" class="brand" aria-label="Sturch home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 342" width="30" height="27" role="img" aria-label="Sturch"><defs><linearGradient id="hg" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="338"><stop offset="0" stop-color="#3e92fc"/><stop offset="1" stop-color="#9357fc"/></linearGradient></defs><path fill="url(#hg)" fill-rule="evenodd" d="M29.48 61.71L29.48 8.32C29.48 5.6 34.93 4.71 36.72 4.56C45.18 3.88 53.73 3.82 62.19 4.54C95.77 7.36 129.77 16.99 158.68 34.65C148.44 47.42 138.58 51.55 129.94 68.82C115.88 96.9 129.21 132.49 157.8 145.67L204.03 166.98C211.02 170.2 217.74 176 222.88 181.65C227.19 186.39 230.6 191.62 233.15 197.5C243.31 220.85 233.98 245.25 217.53 262.89C211.61 269.24 204.61 274.46 198.98 281.1C195.16 285.61 192.9 290.84 189.65 295.61C183.87 288.91 178.45 282.05 171.76 276.18C145.47 253.11 108.67 243.37 74.17 244.78C59.79 245.36 42.79 246.92 30.15 254.41L84.48 263.55C113.81 268.49 153.59 281.05 175.97 301.08C181.53 306.06 185.11 312.39 190.08 317.74C194.28 311.18 198.75 305.24 204.67 300.11C227.72 280.16 268.88 266.94 298.79 262.39L348.54 254.83C348.92 254.77 349.3 254.71 349.68 254.65C346.44 251.84 341.75 250.64 337.64 249.4C317.76 243.34 296.54 243.24 276.5 248.6C269.52 250.46 263.12 254.6 256.32 256.35C260.27 246.34 264.74 237.01 266.72 226.29C273.42 189.99 255.38 153.27 222.01 136.85L175.86 114.14C170.48 111.49 165.25 106.34 161.95 101.41C149.94 83.46 159.19 66.9 174.25 54.84C206.47 29 258.3 12.17 298.83 6.4C311.87 4.54 325.05 3.65 338.21 4.28C340.73 4.4 350.3 4.45 350.3 8.5L350.3 61.83C357.39 61.1 368.72 56.67 373.99 63.08C374.26 63.41 375.45 64.88 375.45 65.22L375.4 122.15L375.4 273.12C375.4 276.41 370.96 281.24 367.71 281.59L309.11 287.88C281.07 290.89 250.9 298.62 225.92 311.82C213.91 318.16 198.4 336.89 190.1 337.04C180.24 337.21 173.05 325.68 166.21 320.08C161.84 316.49 156.92 313.54 151.89 310.98C125.04 297.33 93.34 290.34 63.51 287.14L11.88 281.59C8.95 281.27 4.43 276.45 4.43 273.47L4.43 65.55C4.43 56.25 24.53 61.54 29.18 61.71Z"/></svg><span>Sturch</span></a>
+  <div class="sp"></div>
+  <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Switch light or dark" aria-label="Switch light or dark theme">🌙</button>
+  <a class="btn sm" href="/login">Log in</a>
+</header>
+<div class="err"><svg class="art" viewBox="0 0 200 170" width="190" role="img" aria-label="A paper with a warning sign"><circle cx="100" cy="90" r="70" fill="var(--accent-soft)"/><rect x="44" y="24" width="86" height="112" rx="10" fill="var(--surf)" stroke="var(--accent)" stroke-width="3"/><rect x="56" y="42" width="40" height="7" rx="3.5" fill="var(--accent)"/><rect x="56" y="60" width="62" height="6" rx="3" fill="var(--surf3)"/><rect x="56" y="74" width="54" height="6" rx="3" fill="var(--surf3)"/><path d="M130 84l32 56H98z" fill="var(--orange)" stroke="var(--surf)" stroke-width="4" stroke-linejoin="round"/><rect x="128" y="102" width="4" height="18" rx="2" fill="#fff"/><circle cx="130" cy="129" r="2.6" fill="#fff"/></svg><h1>Something went wrong on our side</h1><p>This is not your fault. Please try again in a moment.</p>
+<div class="btns"><a class="b p" href="javascript:location.reload()">Try again</a><a class="b" href="/">Go home</a></div>
+<p class="small">If it keeps happening, tell us on the <a href="/donate">Support page</a>.</p></div>
+</div>
+
+<footer class="foot">
+  <nav aria-label="Footer"><a href="/donate">Support Sturch</a><a href="/guide">Guide</a><a href="/#faq">FAQ</a><a href="/#disclaimer">Disclaimer</a></nav>
+  <span>© <span id="yr">2026</span> Sturch. All rights reserved.</span>
+</footer>
+<script>
+function toggleTheme() {
+  const html = document.documentElement, isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark'); paintTheme();
+  try { localStorage.setItem('sturch_theme', isDark ? 'light' : 'dark'); } catch (e) {}
+}
+function paintTheme() { const b = document.getElementById('themeBtn'); if (b) b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'; }
+function toggleMeMenu(e) {
+  if (e) e.stopPropagation();
+  const m = document.getElementById('meMenu'), btn = document.getElementById('meBtn');
+  const o = m.classList.toggle('open'); btn.setAttribute('aria-expanded', String(o));
+}
+document.addEventListener('click', () => { const m = document.getElementById('meMenu'); if (m) { m.classList.remove('open'); document.getElementById('meBtn').setAttribute('aria-expanded', 'false'); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { const m = document.getElementById('meMenu'); if (m) m.classList.remove('open'); } });
+paintTheme();
+try { document.getElementById('yr').textContent = new Date().getFullYear(); } catch (e) {}
+fetch('/api/me').then(r => r.ok ? r.json() : null).then(u => { if (u && u.email) { document.getElementById('userEmail').textContent = u.email; document.getElementById('meBtn').textContent = u.email.trim().charAt(0).toUpperCase(); } }).catch(() => {});
+
+</script>
+</body>
+</html>

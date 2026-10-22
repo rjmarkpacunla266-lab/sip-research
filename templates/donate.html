@@ -171,7 +171,7 @@ header.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:
   <div class="gc">
     <span class="gl">GCash</span>
     <small>GCash number</small>
-    <div class="num" id="gnum">09123456789</div>
+    <div class="num" id="gnum">09XX XXX XXXX</div>
     <button class="cbtn" id="cb" type="button" onclick="copyNum()">⧉ Copy number</button>
   </div>
   <div class="note">Donating is optional. You do not need to pay to use any part of Sturch.</div>
@@ -215,5 +215,6 @@ function copyNum(){
     try{var r=document.createRange();r.selectNodeContents(document.getElementById('gnum'));var s=getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');ok();}catch(e){b.textContent='Press and hold the number to copy';}});
 }
 </script>
+<script src="/static/guest.js" defer></script>
 </body>
 </html>
