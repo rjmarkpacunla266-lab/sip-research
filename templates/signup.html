@@ -4,218 +4,168 @@
 <meta name="google-site-verification" content="oZpY9svmka-mPNF1Bp2Wr7GkmhslZ315Jik_dEEYQL0" />
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <!-- ═══════════════════════════════════════════════════
-       SEO — searchability & visibility
-  ═══════════════════════════════════════════════════ -->
   <title>Sign Up Free — Sturch Academic Research Tool</title>
-  <meta name="description"  content="Create a free Sturch account. Search millions of academic papers, auto-generate APA citations, bookmark papers and more. No credit card needed."/>
-  <meta name="keywords"     content="sturch sign up, free academic research account, student research tool signup"/>
-  <meta name="author"       content="Sturch"/>
-  <meta name="robots"       content="index, follow"/>
-  <meta name="theme-color"  content="#0b0d12"/>
+  <meta name="description" content="Create a free Sturch account. Search millions of academic papers, auto-generate APA citations, bookmark papers and more. No credit card needed."/>
+  <meta name="author" content="Sturch"/>
+  <meta name="robots" content="index, follow"/>
+  <meta name="theme-color" content="#2f5bea"/>
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml"/>
   <link rel="icon" href="/static/favicon-192.png" sizes="192x192" type="image/png"/>
   <link rel="apple-touch-icon" href="/static/favicon-192.png"/>
-  <link rel="canonical"     href="{{ site_url }}/signup"/>
-
-  <!-- Open Graph — social sharing preview -->
-  <meta property="og:type"        content="website"/>
-  <meta property="og:site_name"   content="Sturch"/>
-  <meta property="og:title"       content="Sign Up Free — Sturch Academic Research Tool"/>
+  <link rel="canonical" href="{{ site_url }}/signup"/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:site_name" content="Sturch"/>
+  <meta property="og:title" content="Sign Up Free — Sturch Academic Research Tool"/>
   <meta property="og:description" content="Create a free Sturch account. Search millions of academic papers, auto-generate APA citations, bookmark papers and more. No credit card needed."/>
-  <meta property="og:url"         content="{{ site_url }}/signup"/>
-  <meta property="og:image"       content="{{ site_url }}/static/og-image.png"/>
-  <meta property="og:image:width"  content="1200"/>
-  <meta property="og:image:height" content="630"/>
-  <meta property="og:image:alt"   content="Sturch — free academic paper search for students"/>
-  <meta property="og:locale"      content="en_US"/>
-
-  <!-- Twitter Card -->
-  <meta name="twitter:card"        content="summary_large_image"/>
-  <meta name="twitter:site"        content="@sturch_app"/>
-  <meta name="twitter:title"       content="Sign Up Free — Sturch Academic Research Tool"/>
+  <meta property="og:url" content="{{ site_url }}/signup"/>
+  <meta property="og:image" content="{{ site_url }}/static/og-image.png"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="Sign Up Free — Sturch Academic Research Tool"/>
   <meta name="twitter:description" content="Create a free Sturch account. Search millions of academic papers, auto-generate APA citations, bookmark papers and more. No credit card needed."/>
-  <meta name="twitter:image"       content="{{ site_url }}/static/og-image.png"/>
-  <meta name="twitter:image:alt"   content="Sturch — free academic paper search for students"/>
-
-  <!-- ═══════════════════════════════════════════════ -->
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Lora:ital,wght@0,600;1,400&display=swap" rel="stylesheet"/>
+  <meta name="twitter:image" content="{{ site_url }}/static/og-image.png"/>
+<script>
+(function(){try{var t=localStorage.getItem('sturch_theme');
+ if(t!=='dark'&&t!=='light')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+ document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();
+</script>
 <style>
+:root,[data-theme="light"]{
+  --bg:#f5f8ff;--surf:#ffffff;--surf2:#f1f5fd;--surf3:#e4ebfb;
+  --border:#dfe6f5;--accent:#2f5bea;--accent-h:#2449c4;--accent-soft:#e6edff;--accent2:#6b4de0;
+  --gold:#a86a00;--green:#12805c;--green-bg:#dcf5ea;--red:#c93a3a;--orange:#b8560f;--orange-bg:#fdeede;
+  --text:#14203d;--muted:#5d6b8c;--shadow:0 1px 2px rgba(25,45,100,.06),0 6px 18px rgba(25,45,100,.06);
+  --mono:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--serif:var(--mono);--sans:var(--mono);--r:12px;
+}
+[data-theme="dark"]{
+  --bg:#0a1020;--surf:#111a30;--surf2:#17223d;--surf3:#1f2c4d;
+  --border:#25314f;--accent:#4d7bff;--accent-h:#6a90ff;--accent-soft:#1a2850;--accent2:#9d86ff;
+  --gold:#f0c35a;--green:#4fd6a0;--green-bg:#123a2d;--red:#f27a7a;--orange:#f0914b;--orange-bg:#3a2713;
+  --text:#e8eeff;--muted:#9aa8c9;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.28);
+}
+
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Outfit',sans-serif;background:#0b0d12;color:#d8e0f8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{background:#111520;border:1px solid rgba(100,130,220,.12);border-radius:16px;padding:38px 34px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
-.logo{font-family:'Lora',serif;font-size:1.75rem;text-align:center;margin-bottom:5px}
-.logo span{color:#4f8de8}
-.tagline{text-align:center;color:#5a6385;font-size:.83rem;margin-bottom:22px;font-weight:400}
-.form-group{margin-bottom:15px}
-label{display:block;font-size:.76rem;text-transform:uppercase;letter-spacing:.08em;color:#5a6385;font-weight:600;margin-bottom:5px}
-input{width:100%;background:#181d2e;border:1px solid rgba(100,130,220,.12);border-radius:10px;color:#d8e0f8;font-family:'Outfit',sans-serif;font-size:.93rem;padding:11px 13px;outline:none;transition:border-color .2s,box-shadow .2s}
-input:focus{border-color:#4f8de8;box-shadow:0 0 0 3px rgba(79,141,232,.1)}
-input::placeholder{color:#3a4060}
-.btn{width:100%;padding:12px;background:#4f8de8;border:none;border-radius:10px;color:#fff;font-family:'Outfit',sans-serif;font-size:.97rem;font-weight:600;cursor:pointer;transition:background .2s,box-shadow .2s;margin-top:5px}
-.btn:hover{background:#3d7fd8;box-shadow:0 0 20px rgba(79,141,232,.28)}
-.btn:disabled{opacity:.6;cursor:not-allowed}
-.error{background:rgba(240,106,106,.07);border:1px solid rgba(240,106,106,.18);border-radius:8px;color:#f06a6a;font-size:.81rem;padding:9px 13px;margin-bottom:13px;display:none}
-.success{background:rgba(62,207,142,.07);border:1px solid rgba(62,207,142,.18);border-radius:8px;color:#3ecf8e;font-size:.81rem;padding:9px 13px;margin-bottom:13px;display:none}
-.bottom{text-align:center;margin-top:18px;font-size:.83rem;color:#5a6385}
-.bottom a{color:#4f8de8;text-decoration:none}
-.bottom a:hover{text-decoration:underline}
-.perks{background:#181d2e;border:1px solid rgba(100,130,220,.1);border-radius:10px;padding:13px 15px;margin-bottom:20px}
-.perk{display:flex;align-items:center;gap:8px;font-size:.81rem;color:#5a6385;margin-bottom:5px}
-.perk:last-child{margin-bottom:0}
-.perk .icon{font-size:.88rem}
-.perk strong{color:#d8e0f8}
-.beta-badge{display:inline-block;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.18);color:#9d6ef5;font-size:.66rem;padding:2px 7px;border-radius:20px;margin-left:5px;vertical-align:middle}
-.pts-hero{text-align:center;margin-bottom:18px;padding:14px 16px;background:linear-gradient(135deg,rgba(79,141,232,.1),rgba(157,110,245,.08));border:1px solid rgba(79,141,232,.2);border-radius:12px}
-.pts-num{font-size:2.2rem;font-weight:700;color:#4f8de8;line-height:1;font-family:'Lora',serif}
-.pts-label{font-size:.75rem;color:#5a6385;margin-top:3px}
-.guestbtn{width:100%;padding:11px;background:transparent;border:1px solid rgba(100,130,220,.25);border-radius:10px;color:#d8e0f8;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;transition:border-color .2s,background .2s}
-.guestbtn:hover{border-color:#4f8de8;background:rgba(79,141,232,.06)}
-.guestbtn:disabled{opacity:.6;cursor:not-allowed}
-.hint{font-size:.74rem;color:#5a6385;margin-top:5px;line-height:1.4}
-.guestnote{font-size:.74rem;color:#5a6385;text-align:center;margin-top:8px;line-height:1.45}
-.codebox{background:#181d2e;border:1px dashed rgba(79,141,232,.45);border-radius:12px;padding:16px;text-align:center;margin:14px 0}
-.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.35rem;letter-spacing:.12em;color:#4f8de8;font-weight:700;user-select:all}
-.warn{background:rgba(240,180,60,.07);border:1px solid rgba(240,180,60,.22);border-radius:8px;color:#e8b84a;font-size:.8rem;padding:10px 13px;line-height:1.45;margin-bottom:14px}
-.btn2{width:100%;padding:10px;background:#181d2e;border:1px solid rgba(100,130,220,.2);border-radius:10px;color:#d8e0f8;font-family:'Outfit',sans-serif;font-size:.88rem;cursor:pointer;margin-top:8px}
-.divider{display:flex;align-items:center;gap:10px;margin:20px 0 14px;color:#3a4060;font-size:.78rem}
-.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(100,130,220,.1)}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+.hidden{display:none!important}
+header.top{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--surf) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+header.top .in{max-width:1000px;margin:0 auto;padding:0 16px;display:flex;align-items:center;gap:8px;height:60px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.3rem;color:var(--text)!important;text-decoration:none!important}
+.sp{flex:1}
+.icon-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);background:var(--surf);display:grid;place-items:center;font-size:1rem;cursor:pointer;color:var(--text)}
+.icon-btn:hover{border-color:var(--accent)}
+main{max-width:1000px;margin:0 auto;padding:6px 16px 40px}
+.back{display:inline-flex;align-items:center;gap:8px;min-height:44px;color:var(--text)!important;font-weight:600;font-size:.92rem;margin:6px 0}
+.shell{display:grid;grid-template-columns:minmax(0,1fr);max-width:440px;margin:6px auto 0;background:var(--surf);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+.side{display:none;background:var(--surf2);padding:30px 26px;border-right:1px solid var(--border)}
+.side h2{font-size:1.15rem;font-weight:800;margin-bottom:18px;line-height:1.3}
+.ben{display:flex;gap:14px;align-items:center;margin-bottom:18px;font-size:.92rem;color:var(--muted)}
+.ben i{flex:none;width:44px;height:44px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-style:normal;font-size:1.15rem}
+@media(min-width:860px){.shell{max-width:860px;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}.side{display:block}}
+.form{padding:26px 22px 22px}
+@media(min-width:480px){.form{padding:30px 30px 26px}}
+.form h1{font-size:1.5rem;font-weight:800;letter-spacing:-.01em}
+.form .lead{color:var(--muted);font-size:.92rem;margin:4px 0 18px}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:.82rem;font-weight:700;margin-bottom:6px}
+.inp{position:relative}
+.inp input{width:100%;min-height:50px;border:1.5px solid var(--border);background:var(--surf);color:var(--text);border-radius:12px;padding:0 14px;font:inherit;font-size:1rem;outline:0}
+.inp input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.inp input.bad{border-color:var(--red)}
+.inp .eye{position:absolute;right:4px;top:3px;width:44px;height:44px;border:0;background:none;color:var(--muted);cursor:pointer;font-size:1.05rem}
+.inp.pw input{padding-right:50px}
+.hint{font-size:.78rem;color:var(--muted);margin-top:5px}
+.rowr{display:flex;justify-content:flex-end;margin:-6px 0 10px}
+.rowr a{font-size:.84rem;font-weight:600;min-height:40px;display:inline-flex;align-items:center}
+.btn{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;border-radius:999px;border:1px solid var(--border);background:var(--surf);color:var(--text);font:700 1rem var(--sans);cursor:pointer;text-decoration:none!important}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-h)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.sm{min-height:44px;font-size:.92rem}
+.msg{display:none;border-radius:12px;padding:10px 13px;font-size:.88rem;margin-bottom:14px;align-items:flex-start;gap:8px}
+.msg.err{border:1px solid var(--red);color:var(--red);background:color-mix(in srgb,var(--red) 8%,transparent)}
+.msg.ok{border:1px solid var(--green);color:var(--green);background:var(--green-bg)}
+.sw{text-align:center;font-size:.9rem;color:var(--muted);margin-top:16px}
+.sw a{font-weight:700}
+.or{display:flex;align-items:center;gap:10px;margin:18px 0 14px;color:var(--muted);font-size:.8rem}
+.or::before,.or::after{content:'';flex:1;height:1px;background:var(--border)}
+.gnote{font-size:.78rem;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5}
+.tiny{font-size:.78rem;color:var(--muted);text-align:center;margin-top:14px}
+.perks{display:grid;gap:8px;background:var(--surf2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:16px;font-size:.86rem;color:var(--muted)}
+.perks b{color:var(--text)}
+.warn{background:var(--orange-bg);border:1px solid var(--orange);color:var(--text);border-radius:12px;padding:11px 13px;font-size:.88rem;margin:0 0 14px}
+.codebox{border:2px dashed var(--accent);background:var(--accent-soft);border-radius:14px;padding:18px;text-align:center;margin:0 0 12px}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.45rem;letter-spacing:.12em;color:var(--accent);font-weight:800;user-select:all;word-break:break-all}
+.chk{display:flex;gap:12px;align-items:center;min-height:48px;font-size:.92rem;cursor:pointer;margin:6px 0 10px}
+.chk input{width:22px;height:22px;accent-color:var(--accent)}
+.icircle{width:84px;height:84px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:2.2rem;margin:0 auto 14px}
+.spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-<div class="card" id="formCard">
-
-  <div class="logo"><span>Sturch</span><span class="beta-badge">BETA</span></div>
-  <h1 class="tagline">Create your free account</h1>
-
-  
-
-  <!-- Perks -->
-  <div class="perks">
-    <div class="perk"><span class="icon">🔍</span> <strong>Completely free</strong> — no credit card needed</div>
-    <div class="perk"><span class="icon">📄</span> Load more papers with one tap</div>
-    <div class="perk"><span class="icon">📋</span> APA references auto-generated</div>
-    <div class="perk"><span class="icon">🔖</span> Bookmarks + Collections to organize papers</div>
-    <div class="perk"><span class="icon">🕐</span> Search history saved automatically</div>
-    <div class="perk"><span class="icon">📥</span> Export to CSV and BibTeX</div>
-  </div>
-
-  <div class="error"   id="errorMsg"></div>
-  <div class="success" id="successMsg"></div>
-
-  <div class="form-group">
-    <label for="username">Username</label>
-    <input type="text" id="username" placeholder="e.g. juan_delacruz" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="20"/>
-    <div class="hint">3–20 characters: letters, numbers and underscore. No email needed.</div>
-  </div>
-
-  <div class="form-group">
-    <label for="password">Password</label>
-    <input type="password" id="password" placeholder="At least 8 characters" autocomplete="new-password"/>
-  </div>
-
-  <div class="form-group">
-    <label for="password2">Confirm Password</label>
-    <input type="password" id="password2" placeholder="Repeat your password" autocomplete="new-password"/>
-  </div>
-
-  <button class="btn" id="signupBtn" onclick="doSignup()">Create Free Account →</button>
-
-  <div class="bottom" style="margin-top:18px">
-    Already have an account? <a href="/login">Sign in</a>
-  </div>
-
-  <div class="divider">or</div>
-  <button class="guestbtn" type="button" onclick="doGuest(this)">Continue as guest</button>
-  <div class="guestnote">Guest searches and saved papers are kept only for this browser for 30 days. If you clear your browser data or switch devices they are lost. You can create an account later and keep them.</div>
-
-</div>
-
-<div class="card" id="codeCard" style="display:none">
-  <div class="logo"><span>Sturch</span></div>
-  <h1 class="tagline">Save your recovery code</h1>
-  <div class="warn"><strong>Important:</strong> you signed up without an email, so this code is the only way to reset your password if you forget it. It is shown <strong>once</strong>. Screenshot it or write it down.</div>
-  <div class="codebox"><div class="code" id="codeText"></div></div>
-  <button class="btn2" type="button" onclick="copyCode()" id="copyBtn">Copy code</button>
-  <label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font-size:.82rem;margin:16px 0 4px;cursor:pointer">
-    <input type="checkbox" id="savedChk" style="width:auto" onchange="document.getElementById('goBtn').disabled=!this.checked"/> I saved my recovery code
-  </label>
-  <button class="btn" id="goBtn" disabled onclick="window.location.href='/'">Continue to Sturch →</button>
-</div>
-
+<header class="top"><div class="in"><a href="/" class="brand" aria-label="Sturch home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 342" width="30" height="27" role="img" aria-label="Sturch"><defs><linearGradient id="hg" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="338"><stop offset="0" stop-color="#3e92fc"/><stop offset="1" stop-color="#9357fc"/></linearGradient></defs><path fill="url(#hg)" fill-rule="evenodd" d="M29.48 61.71L29.48 8.32C29.48 5.6 34.93 4.71 36.72 4.56C45.18 3.88 53.73 3.82 62.19 4.54C95.77 7.36 129.77 16.99 158.68 34.65C148.44 47.42 138.58 51.55 129.94 68.82C115.88 96.9 129.21 132.49 157.8 145.67L204.03 166.98C211.02 170.2 217.74 176 222.88 181.65C227.19 186.39 230.6 191.62 233.15 197.5C243.31 220.85 233.98 245.25 217.53 262.89C211.61 269.24 204.61 274.46 198.98 281.1C195.16 285.61 192.9 290.84 189.65 295.61C183.87 288.91 178.45 282.05 171.76 276.18C145.47 253.11 108.67 243.37 74.17 244.78C59.79 245.36 42.79 246.92 30.15 254.41L84.48 263.55C113.81 268.49 153.59 281.05 175.97 301.08C181.53 306.06 185.11 312.39 190.08 317.74C194.28 311.18 198.75 305.24 204.67 300.11C227.72 280.16 268.88 266.94 298.79 262.39L348.54 254.83C348.92 254.77 349.3 254.71 349.68 254.65C346.44 251.84 341.75 250.64 337.64 249.4C317.76 243.34 296.54 243.24 276.5 248.6C269.52 250.46 263.12 254.6 256.32 256.35C260.27 246.34 264.74 237.01 266.72 226.29C273.42 189.99 255.38 153.27 222.01 136.85L175.86 114.14C170.48 111.49 165.25 106.34 161.95 101.41C149.94 83.46 159.19 66.9 174.25 54.84C206.47 29 258.3 12.17 298.83 6.4C311.87 4.54 325.05 3.65 338.21 4.28C340.73 4.4 350.3 4.45 350.3 8.5L350.3 61.83C357.39 61.1 368.72 56.67 373.99 63.08C374.26 63.41 375.45 64.88 375.45 65.22L375.4 122.15L375.4 273.12C375.4 276.41 370.96 281.24 367.71 281.59L309.11 287.88C281.07 290.89 250.9 298.62 225.92 311.82C213.91 318.16 198.4 336.89 190.1 337.04C180.24 337.21 173.05 325.68 166.21 320.08C161.84 316.49 156.92 313.54 151.89 310.98C125.04 297.33 93.34 290.34 63.51 287.14L11.88 281.59C8.95 281.27 4.43 276.45 4.43 273.47L4.43 65.55C4.43 56.25 24.53 61.54 29.18 61.71Z"/></svg><span>Sturch</span></a><div class="sp"></div><button class="icon-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Switch light or dark mode">🌙</button></div></header>
+<main>
+<a class="back" href="/">← Back</a>
+<div class="shell" id="formCard"><aside class="side"><h2>A better way to<br>find and manage papers</h2>
+<div class="ben"><i>📁</i><span>Save papers and group them in collections</span></div>
+<div class="ben"><i>🔎</i><span>Run your searches again in one tap</span></div>
+<div class="ben"><i>❝</i><span>Copy citations in APA, MLA, Chicago or Harvard</span></div></aside><div class="form">
+<h1>Create your free account</h1><p class="lead">Save papers, build collections, and keep your search history.</p>
+<div class="msg err" id="errorMsg" role="alert"></div><div class="msg ok" id="successMsg" role="status"></div>
+<div class="fg"><label for="username">Username</label><div class="inp"><input type="text" id="username" placeholder="e.g. juan_delacruz" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="20"/></div><div class="hint">3–20 characters: letters, numbers and underscore. No email needed.</div></div>
+<div class="fg"><label for="password">Password</label><div class="inp pw"><input type="password" id="password" placeholder="At least 8 characters" autocomplete="new-password"/><button class="eye" type="button" onclick="eye('password',this)" aria-label="Show password">👁</button></div><div class="hint">At least 8 characters</div></div>
+<div class="fg"><label for="password2">Confirm password</label><div class="inp pw"><input type="password" id="password2" placeholder="Repeat your password" autocomplete="new-password"/><button class="eye" type="button" onclick="eye('password2',this)" aria-label="Show password">👁</button></div></div>
+<button class="btn primary" id="signupBtn" onclick="doSignup()">Sign up free</button>
+<div class="sw">Already have an account? <a href="/login">Log in</a></div>
+<div class="or">or</div>
+<button class="btn" type="button" onclick="doGuest(this)">Continue as guest</button>
+<div class="gnote">Guest searches and saved papers are kept only for this browser for 30 days. If you clear your browser data or switch devices they are lost. You can create an account later and keep them.</div>
+<div class="tiny">Free for students. No credit card.</div>
+</div></div>
+<div class="shell" id="codeCard" style="display:none"><div class="form" style="grid-column:1/-1">
+<div class="icircle" aria-hidden="true">🔑</div>
+<h1 style="text-align:center">Save your recovery code</h1>
+<div class="warn" style="margin-top:14px"><strong>Important:</strong> you signed up without an email, so this code is the only way to reset your password if you forget it. It is shown <strong>once</strong>. Screenshot it or write it down.</div>
+<div class="codebox"><div class="code" id="codeText"></div></div>
+<button class="btn sm" type="button" onclick="copyCode()" id="copyBtn">Copy code</button>
+<label class="chk"><input type="checkbox" id="savedChk" onchange="$('goBtn').disabled=!this.checked"/> I saved my recovery code</label>
+<button class="btn primary" id="goBtn" disabled onclick="location.href='/'">Continue to Sturch →</button>
+</div></div>
+</main>
 <script>
-document.addEventListener('keydown', e => { if (e.key === 'Enter') doSignup(); });
+function toggleTheme(){var h=document.documentElement,d=h.getAttribute('data-theme')==='dark';h.setAttribute('data-theme',d?'light':'dark');paint();try{localStorage.setItem('sturch_theme',d?'light':'dark')}catch(e){}}
+function paint(){var b=document.getElementById('themeBtn');if(b)b.textContent=document.documentElement.getAttribute('data-theme')==='dark'?'\u2600\ufe0f':'\ud83c\udf19';}
+paint();
+function $(i){return document.getElementById(i)}
+function showErr(m){var e=$('errorMsg');e.textContent=m;e.style.display='flex';$('successMsg').style.display='none';}
+function eye(id,b){var i=$(id);var s=i.type==='password';i.type=s?'text':'password';b.setAttribute('aria-label',s?'Hide password':'Show password');b.textContent=s?'\ud83d\ude48':'\ud83d\udc41';}
+async function doGuest(btn){
+  $('errorMsg').style.display='none';btn.disabled=true;var old=btn.textContent;btn.textContent='Starting\u2026';
+  try{var r=await fetch('/guest',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});var d=await r.json();
+    if(d.success){location.href=d.redirect||'/';return;}showErr(d.error||'Could not start a guest session');}
+  catch(e){showErr('Connection error. Try again.');}
+  btn.disabled=false;btn.textContent=old;}
+function copyCode(){var t=$('codeText').textContent,b=$('copyBtn');(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent='Copied \u2713'}).catch(function(){b.textContent='Press and hold the code to copy'});}
 
-async function doSignup() {
-  const username = document.getElementById('username').value.trim().toLowerCase();
-  const password = document.getElementById('password').value.trim();
-  const password2= document.getElementById('password2').value.trim();
-  const btn      = document.getElementById('signupBtn');
-  const errorEl  = document.getElementById('errorMsg');
-  const successEl= document.getElementById('successMsg');
-
-  errorEl.style.display = successEl.style.display = 'none';
-
-  if (!username || !password || !password2) {
-    errorEl.textContent = 'Please fill in all fields';
-    errorEl.style.display = 'block'; return;
-  }
-  if (!/^[a-z0-9_]{3,20}$/.test(username)) {
-    errorEl.textContent = 'Username must be 3–20 characters: letters, numbers and underscore only';
-    errorEl.style.display = 'block'; return;
-  }
-  if (password.length < 8) {
-    errorEl.textContent = 'Password must be at least 8 characters';
-    errorEl.style.display = 'block'; return;
-  }
-  if (password !== password2) {
-    errorEl.textContent = 'Passwords do not match';
-    errorEl.style.display = 'block'; return;
-  }
-
-  btn.disabled = true; btn.textContent = 'Creating account…';
-
-  try {
-    const resp = await fetch('/signup', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({username, password})
-    });
-    const data = await resp.json();
-    if (data.success) {
-      document.getElementById('codeText').textContent = data.recovery_code;
-      document.getElementById('formCard').style.display = 'none';
-      document.getElementById('codeCard').style.display = 'block';
-    } else {
-      errorEl.textContent = data.error || 'Signup failed';
-      errorEl.style.display = 'block';
-      btn.disabled = false; btn.textContent = 'Create Free Account →';
-    }
-  } catch(e) {
-    errorEl.textContent = 'Connection error. Try again.';
-    errorEl.style.display = 'block';
-    btn.disabled = false; btn.textContent = 'Create Free Account →';
-  }
-}
-
-async function doGuest(btn) {
-  const errorEl = document.getElementById('errorMsg');
-  errorEl.style.display = 'none';
-  btn.disabled = true; const old = btn.textContent; btn.textContent = 'Starting…';
-  try {
-    const resp = await fetch('/guest', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
-    const data = await resp.json();
-    if (data.success) { window.location.href = data.redirect || '/'; return; }
-    errorEl.textContent = data.error || 'Could not start a guest session';
-  } catch(e) { errorEl.textContent = 'Connection error. Try again.'; }
-  errorEl.style.display = 'block'; btn.disabled = false; btn.textContent = old;
-}
-
-function copyCode() {
-  const t = document.getElementById('codeText').textContent, b = document.getElementById('copyBtn');
-  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => b.textContent = 'Copied ✓').catch(() => b.textContent = 'Press and hold the code to copy');
+document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.tagName==='INPUT'&&e.target.type!=='checkbox')doSignup();});
+async function doSignup(){
+  var username=$('username').value.trim().toLowerCase(),password=$('password').value.trim(),password2=$('password2').value.trim(),btn=$('signupBtn');
+  $('errorMsg').style.display=$('successMsg').style.display='none';
+  ['username','password','password2'].forEach(function(i){$(i).classList.remove('bad')});
+  function bad(id,m){$(id).classList.add('bad');showErr(m);}
+  if(!username||!password||!password2){showErr('Please fill in all fields');return;}
+  if(!/^[a-z0-9_]{3,20}$/.test(username)){bad('username','Username must be 3\u201320 characters: letters, numbers and underscore only');return;}
+  if(password.length<8){bad('password','Password must be at least 8 characters');return;}
+  if(password!==password2){bad('password2','Passwords do not match');return;}
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Creating account\u2026';
+  try{
+    var resp=await fetch('/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:username,password:password})});
+    var data=await resp.json();
+    if(data.success){$('codeText').textContent=data.recovery_code;$('formCard').style.display='none';$('codeCard').style.display='grid';window.scrollTo(0,0);}
+    else{if(/username/i.test(data.error||''))$('username').classList.add('bad');showErr(data.error||'Signup failed');btn.disabled=false;btn.textContent='Sign up free';}
+  }catch(e){showErr('Connection error. Try again.');btn.disabled=false;btn.textContent='Sign up free';}
 }
 </script>
 </body>

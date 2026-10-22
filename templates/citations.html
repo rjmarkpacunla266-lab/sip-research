@@ -3,110 +3,180 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Citations — Sturch</title>
+<title>Citations: Sturch</title>
 <meta name="robots" content="noindex, nofollow"/>
-<meta name="theme-color" content="#0b0d12"/>
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<meta name="theme-color" content="#2f5bea"/>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml"/>
+<script>
+(function(){try{var t=localStorage.getItem('sturch_theme');
+ if(t!=='dark'&&t!=='light')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+ document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();
+</script>
 <style>
-:root{
-  --bg:#0b0d12;--surf:#111520;--surf2:#181d2e;--surf3:#1f2540;
-  --border:rgba(100,130,220,.1);--accent:#4f8de8;--accent2:#9d6ef5;
-  --gold:#e8b84b;--green:#3ecf8e;--red:#f06a6a;
-  --text:#d8e0f8;--muted:#5a6385;
-  --mono:'IBM Plex Mono',monospace;--serif:'Lora',serif;--sans:'Outfit',sans-serif;
+:root,[data-theme="light"]{
+  --bg:#f5f8ff;--surf:#ffffff;--surf2:#f1f5fd;--surf3:#e4ebfb;
+  --border:#dfe6f5;--accent:#2f5bea;--accent-h:#2449c4;--accent-soft:#e6edff;--accent2:#6b4de0;
+  --gold:#a86a00;--green:#12805c;--green-bg:#dcf5ea;--red:#c93a3a;--orange:#b8560f;--orange-bg:#fdeede;
+  --text:#14203d;--muted:#5d6b8c;--shadow:0 1px 2px rgba(25,45,100,.06),0 6px 18px rgba(25,45,100,.06);
+  --mono:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--serif:var(--mono);--sans:var(--mono);--r:12px;
 }
-[data-theme="light"]{
-  --bg:#f4f6fb;--surf:#ffffff;--surf2:#eef1f8;--surf3:#e2e7f4;
-  --border:rgba(80,100,180,.15);--text:#1a2040;--muted:#6b7599;
+[data-theme="dark"]{
+  --bg:#0a1020;--surf:#111a30;--surf2:#17223d;--surf3:#1f2c4d;
+  --border:#25314f;--accent:#4d7bff;--accent-h:#6a90ff;--accent-soft:#1a2850;--accent2:#9d86ff;
+  --gold:#f0c35a;--green:#4fd6a0;--green-bg:#123a2d;--red:#f27a7a;--orange:#f0914b;--orange-bg:#3a2713;
+  --text:#e8eeff;--muted:#9aa8c9;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.28);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
 a{color:var(--accent);text-decoration:none}
+
+/* ═════════ Sturch redesign (matches home, search, answer) ═════════ */
+body{font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+a:hover{text-decoration:none}
+.btn{border-radius:10px;min-height:40px;padding:0 16px;font-weight:600;background:var(--surf)}
+.btn:hover{border-color:var(--accent);color:var(--accent);background:var(--surf)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{background:var(--accent-h);color:#fff}
+.btn.sm{min-height:40px;padding:0 14px}
+.btn.xs{min-height:38px;padding:0 13px;font-size:.8rem}
+header.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:8px;height:60px;margin:0 -16px;padding:0 16px;background:color-mix(in srgb,var(--surf) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);flex-wrap:nowrap}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.3rem;letter-spacing:-.01em;color:var(--text)}
+.sp{flex:1}
+.icon-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);background:var(--surf);display:grid;place-items:center;font-size:1.02rem;cursor:pointer;color:var(--text)}
+.icon-btn:hover{border-color:var(--accent)}
+.me{position:relative}
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#3e92fc,#9357fc);color:#fff;font:700 1rem var(--sans);display:grid;place-items:center;border:0;cursor:pointer}
+.menu{position:absolute;right:0;top:46px;min-width:210px;background:var(--surf);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:6px;display:none;z-index:40}
+.menu.open{display:block}
+.menu a{display:flex;gap:9px;align-items:center;padding:0 12px;min-height:44px;border-radius:9px;font-size:.92rem;color:var(--text)}
+.menu a:hover{background:var(--surf2)}
+.menu hr{border:0;border-top:1px solid var(--border);margin:4px 0}
+.menu-who{padding:8px 12px;font-size:.78rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px}
+.pagehead{display:flex;align-items:center;gap:10px;margin:16px 0 0}
+.pagehead h1{font-size:1.4rem;font-weight:800;letter-spacing:-.01em}
+.back{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;color:var(--text);font-size:1.2rem}
+.back:hover{background:var(--surf2)}
+.subtitle{color:var(--muted);font-size:.92rem;margin:2px 0 14px 2px}
+#app{max-width:860px;margin:0 auto;padding:0 16px 40px}
+
+/* filters */
+.fx-bar{margin:0 0 14px}
+.fx-btn{min-height:44px;border-radius:12px;background:var(--surf);padding:0 14px;font-weight:600;font-size:.88rem;width:100%;justify-content:space-between;color:var(--text)}
+.fx-sum{font-weight:500;font-family:var(--sans)}
+.fx-panel{border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+.fx-g label{font-size:.72rem;font-weight:600;letter-spacing:.03em;text-transform:none}
+.fx-g input,.fx-g select{min-height:42px;border-radius:10px;font-family:var(--sans);font-size:.9rem;background:var(--surf);color:var(--text)}
+.fx-g input{width:90px}
+.fx-toggle{min-height:42px;border-radius:10px;font-weight:600;background:var(--surf)}
+.fx-toggle.on{color:var(--green);border-color:var(--green);background:var(--green-bg)}
+.fx-chip{min-height:40px;display:inline-flex;align-items:center;padding:0 14px;font-size:.84rem;background:var(--surf)}
+.fx-chip.active{background:var(--accent-soft)}
+.fx-btn.sm{width:auto;min-height:40px;justify-content:flex-start}
+.fx-note{font-size:.88rem;color:var(--muted);margin:10px 2px}
+.fx-note b{color:var(--text)}
+.tagrow{gap:6px}
+.oa-b{font-size:.72rem;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--green-bg);border:0;color:var(--green)}
+.pw-b{font-size:.72rem;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--surf2);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+.src-b{font-size:.72rem;font-weight:600;padding:2px 9px}
+.fx-empty,.no-result{padding:34px 16px}
+.spinner{margin:40px auto}
+#toast{background:var(--surf);color:var(--text);box-shadow:var(--shadow)}
+.foot{margin:30px -16px 0;border-top:1px solid var(--border);padding:12px 16px 30px;font-size:.82rem;color:var(--muted);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 18px}
+.foot nav{display:flex;flex-wrap:wrap}
+.foot nav a{color:var(--muted);min-height:44px;display:inline-flex;align-items:center;padding:0 10px 0 0;margin-right:8px}
+.foot nav a:hover{color:var(--accent)}
+.empty-state{text-align:center;padding:26px 16px 10px}
+.es-ic{color:var(--accent);margin-bottom:8px}
+.empty-state h2{font-size:1.25rem;font-weight:800;margin-bottom:6px}
+.empty-state p{color:var(--muted);font-size:.92rem;max-width:460px;margin:0 auto}
+.es-ex{max-width:520px;margin:22px auto 0;text-align:left}
+.es-lbl{font-size:.82rem;font-weight:600;color:var(--muted);margin-bottom:8px}
+.es-q{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:52px;padding:0 16px;margin-bottom:8px;background:var(--surf);border:1px solid var(--border);border-radius:12px;font:500 .95rem var(--sans);color:var(--text);cursor:pointer;text-align:left}
+.es-q:hover{border-color:var(--accent);color:var(--accent)}
+.es-q i{font-style:normal;color:var(--muted);font-size:1.3rem}
+@media(max-width:480px){header.top{gap:6px}.brand{font-size:1.15rem;gap:6px}.icon-btn{width:38px;height:38px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+
 .hidden{display:none!important}
-#app{max-width:900px;margin:0 auto;padding:0 16px 80px}
-
-header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
-.logo{font-family:var(--serif);font-size:1.4rem;display:flex;align-items:center;gap:6px}
-.beta{font-size:.62rem;background:rgba(157,110,245,.1);border:1px solid rgba(157,110,245,.2);color:var(--accent2);padding:2px 7px;border-radius:4px;font-family:var(--mono)}
-.header-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:10px;font-family:var(--sans);font-size:.8rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--text);transition:all .18s;white-space:nowrap;text-decoration:none}
-.btn:hover{background:var(--surf3);border-color:var(--accent);text-decoration:none}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.btn.sm{padding:5px 10px;font-size:.76rem}
-.btn.xs{padding:4px 9px;font-size:.72rem;border-radius:8px}
-.btn.danger{background:rgba(240,106,106,.08);border-color:rgba(240,106,106,.2);color:var(--red)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-weight:600;cursor:pointer;text-decoration:none;background:var(--surf)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-
-.page-title{padding:22px 0 12px}
-.page-title h1{font-family:var(--serif);font-size:1.45rem}
-.page-title p{font-size:.8rem;color:var(--muted);margin-top:2px}
-
-.panel{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:12px}
-.row{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end}
-.fg{display:flex;flex-direction:column;gap:4px;min-width:0}
-.fg label{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-.fg select{background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.78rem;padding:7px 8px;outline:none;max-width:100%}
-.seg{display:flex;gap:4px;flex-wrap:wrap}
-.seg button{font-family:var(--sans);font-size:.78rem;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surf2);color:var(--muted);cursor:pointer}
-.seg button.on{border-color:var(--accent);color:var(--accent);background:rgba(79,141,232,.1);font-weight:600}
-.notice{font-size:.74rem;color:var(--muted);background:rgba(232,184,75,.07);border:1px solid rgba(232,184,75,.2);border-radius:10px;padding:8px 12px;margin:12px 0}
-.notice.warn{color:var(--gold)}
-
-.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:12px 0 8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.subtitle{display:none}
+#app{padding-bottom:100px}
+.panel{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow);margin-top:12px}
+.row{display:flex;flex-wrap:wrap;gap:12px 14px;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fg label{font-size:.8rem;font-weight:700}
+.fg select{min-height:46px;background:var(--surf);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font:inherit;font-size:.95rem;padding:0 12px;outline:0;max-width:100%}
+.fg select:focus{border-color:var(--accent)}
+.seg{display:flex;gap:4px;flex-wrap:wrap;background:var(--surf2);border:1px solid var(--border);border-radius:20px;padding:4px}
+.seg button{flex:1;min-height:42px;min-width:64px;border:0;border-radius:999px;background:none;color:var(--muted);font:700 .86rem var(--sans);cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+.info{font-size:.8rem;color:var(--muted)}
+.notice{display:flex;gap:10px;font-size:.84rem;color:var(--muted);background:var(--surf2);border:1px solid var(--border);border-radius:12px;padding:11px 14px;margin:14px 0}
+.notice.warn{color:var(--text);background:var(--orange-bg);border-color:var(--orange)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0 10px}
 .bar .sp{flex:1}
-.info{font-size:.76rem;color:var(--muted);font-family:var(--mono)}
-
-.item{display:flex;gap:10px;background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;animation:fadeUp .25s ease both}
-.item.off{opacity:.45}
-.item input{margin-top:5px;accent-color:var(--accent);flex-shrink:0;width:17px;height:17px}
+.btn.xs{min-height:40px;padding:0 14px;font-size:.84rem;border-radius:999px}
+.btn.danger{color:var(--red);border-color:var(--red)}
+.item{display:flex;gap:12px;background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.item.off{opacity:.5}
+.item input{margin-top:3px;accent-color:var(--accent);flex-shrink:0;width:22px;height:22px}
 .item .body{min-width:0;flex:1}
-.ref{font-size:.88rem;line-height:1.6;padding-left:1.4em;text-indent:-1.4em;word-break:break-word}
-.flags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-.flag{font-size:.68rem;font-family:var(--mono);color:var(--gold);border:1px solid rgba(232,184,75,.3);border-radius:20px;padding:0 8px}
-.item .acts{margin-top:6px}
-
-.state{text-align:center;padding:46px 16px;color:var(--muted)}
-.state .big{font-size:2.4rem;margin-bottom:8px}
-.state h3{font-family:var(--serif);color:var(--text);font-size:1.05rem;margin-bottom:6px}
-.state p{font-size:.82rem;margin-bottom:14px}
-.errbox{background:rgba(240,106,106,.07);border:1px solid rgba(240,106,106,.2);border-radius:12px;padding:14px;color:var(--red);font-size:.84rem;margin-top:14px}
-.errbox code{display:block;margin-top:8px;font-family:var(--mono);font-size:.7rem;color:var(--muted);white-space:pre-wrap;word-break:break-word}
-.errbox summary{color:var(--muted);margin-top:8px;cursor:pointer;font-size:.74rem}
-.spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto}
-#stick{position:fixed;left:0;right:0;bottom:0;background:var(--surf);border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;z-index:100}
-#toast{position:fixed;bottom:70px;left:50%;transform:translate(-50%,60px);background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:9px 16px;font-size:.82rem;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:300;opacity:0;transition:all .3s;max-width:90vw;text-align:center}
-#toast.show{transform:translate(-50%,0);opacity:1}
+.ref{font-size:.92rem;line-height:1.6;padding-left:1.4em;text-indent:-1.4em;overflow-wrap:anywhere}
+.flags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.flag{font-size:.72rem;font-weight:600;color:var(--orange);background:var(--orange-bg);border-radius:999px;padding:2px 10px}
+.item .acts{margin-top:10px}
+.state{text-align:center;padding:40px 16px;color:var(--muted)}
+.state .big{font-size:2.6rem;margin-bottom:8px}
+.state h3{color:var(--text);font-size:1.1rem;margin-bottom:6px}
+.state p{font-size:.9rem;margin-bottom:14px}
+.errbox{background:color-mix(in srgb,var(--red) 8%,transparent);border:1px solid var(--red);border-radius:14px;padding:14px;color:var(--red);font-size:.9rem;margin-top:14px}
+.errbox code{display:block;margin-top:8px;font-size:.74rem;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+.errbox summary{color:var(--muted);margin-top:8px;cursor:pointer;font-size:.8rem}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#stick{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--surf) 95%,transparent);backdrop-filter:blur(8px);border-top:1px solid var(--border);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;gap:10px;justify-content:center;z-index:50}
+#stick .btn{min-height:46px;padding:0 20px;flex:0 1 auto}
+#toast{position:fixed;bottom:84px;left:50%;transform:translate(-50%,60px);background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:10px 16px;font-size:.88rem;box-shadow:var(--shadow);z-index:300;opacity:0;transition:all .3s;max-width:90vw;text-align:center;pointer-events:none}
+#toast.show{transform:translate(-50%,0);opacity:1}
+.foot{margin:30px auto 0;max-width:860px;padding:12px 16px 30px}
+
 </style>
 </head>
 <body>
 <div id="app">
-
-<header>
-  <a href="/" class="logo" style="text-decoration:none"><span style="color:var(--accent)">Sturch</span><span class="beta">BETA</span></a>
-  <div class="header-right">
-    <a href="/" class="btn sm">🏠 Home</a>
-    <a href="/search" class="btn sm">🔍 Search</a>
-    <a href="/saved" class="btn sm">🔖 Saved</a>
-    <a href="/collections" class="btn sm">📚 Collections</a>
-    <button class="btn sm" id="themeBtn" onclick="toggleTheme()" title="Dark / light">🌙</button>
-    <a href="/logout" class="btn sm danger">Logout</a>
+<header class="top">
+  <a href="/" class="brand" aria-label="Sturch home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 342" width="30" height="27" role="img" aria-label="Sturch"><defs><linearGradient id="hg" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="338"><stop offset="0" stop-color="#3e92fc"/><stop offset="1" stop-color="#9357fc"/></linearGradient></defs><path fill="url(#hg)" fill-rule="evenodd" d="M29.48 61.71L29.48 8.32C29.48 5.6 34.93 4.71 36.72 4.56C45.18 3.88 53.73 3.82 62.19 4.54C95.77 7.36 129.77 16.99 158.68 34.65C148.44 47.42 138.58 51.55 129.94 68.82C115.88 96.9 129.21 132.49 157.8 145.67L204.03 166.98C211.02 170.2 217.74 176 222.88 181.65C227.19 186.39 230.6 191.62 233.15 197.5C243.31 220.85 233.98 245.25 217.53 262.89C211.61 269.24 204.61 274.46 198.98 281.1C195.16 285.61 192.9 290.84 189.65 295.61C183.87 288.91 178.45 282.05 171.76 276.18C145.47 253.11 108.67 243.37 74.17 244.78C59.79 245.36 42.79 246.92 30.15 254.41L84.48 263.55C113.81 268.49 153.59 281.05 175.97 301.08C181.53 306.06 185.11 312.39 190.08 317.74C194.28 311.18 198.75 305.24 204.67 300.11C227.72 280.16 268.88 266.94 298.79 262.39L348.54 254.83C348.92 254.77 349.3 254.71 349.68 254.65C346.44 251.84 341.75 250.64 337.64 249.4C317.76 243.34 296.54 243.24 276.5 248.6C269.52 250.46 263.12 254.6 256.32 256.35C260.27 246.34 264.74 237.01 266.72 226.29C273.42 189.99 255.38 153.27 222.01 136.85L175.86 114.14C170.48 111.49 165.25 106.34 161.95 101.41C149.94 83.46 159.19 66.9 174.25 54.84C206.47 29 258.3 12.17 298.83 6.4C311.87 4.54 325.05 3.65 338.21 4.28C340.73 4.4 350.3 4.45 350.3 8.5L350.3 61.83C357.39 61.1 368.72 56.67 373.99 63.08C374.26 63.41 375.45 64.88 375.45 65.22L375.4 122.15L375.4 273.12C375.4 276.41 370.96 281.24 367.71 281.59L309.11 287.88C281.07 290.89 250.9 298.62 225.92 311.82C213.91 318.16 198.4 336.89 190.1 337.04C180.24 337.21 173.05 325.68 166.21 320.08C161.84 316.49 156.92 313.54 151.89 310.98C125.04 297.33 93.34 290.34 63.51 287.14L11.88 281.59C8.95 281.27 4.43 276.45 4.43 273.47L4.43 65.55C4.43 56.25 24.53 61.54 29.18 61.71Z"/></svg><span>Sturch</span></a>
+  <div class="sp"></div>
+  <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Switch light or dark" aria-label="Switch light or dark theme">🌙</button>
+  <div class="me">
+    <button class="avatar" id="meBtn" type="button" aria-label="Account menu" aria-haspopup="true" aria-expanded="false" onclick="toggleMeMenu(event)">S</button>
+    <div class="menu" id="meMenu" role="menu">
+      <div class="menu-who" id="userEmail">…</div>
+      <a href="/search" role="menuitem">🔎 Search papers</a>
+      <a href="/saved" role="menuitem">🔖 Saved papers</a>
+      <a href="/collections" role="menuitem">📚 Collections</a>
+      <a href="/history" role="menuitem">🕐 History</a>
+      <a href="/guide" role="menuitem">📖 Guide</a>
+      <hr/>
+      <a href="/logout" role="menuitem">↩ Log out</a>
+    </div>
   </div>
 </header>
 
-<div class="page-title">
-  <h1>📋 Citations</h1>
-  <p>Build a reference list from your saved papers or a collection.</p>
-</div>
+<div class="pagehead"><a href="/" class="back" aria-label="Back to home">←</a><h1>Citations</h1></div>
+<p class="subtitle"></p>
 
+<p class="info" style="margin:6px 2px 0">Build a reference list from your saved papers or a collection.</p>
 <div id="error"></div>
-
 <div id="main" class="hidden">
   <div class="panel">
     <div class="row">
-      <div class="fg" style="flex:1;min-width:180px"><label>Papers from</label><select id="source"></select></div>
-      <div class="fg"><label>Order</label>
+      <div class="fg" style="flex:1;min-width:200px"><label for="source">Papers from</label><select id="source"></select></div>
+      <div class="fg"><label for="order">Order</label>
         <select id="order">
           <option value="alpha">A–Z (standard)</option>
           <option value="new">Year, newest first</option>
@@ -114,7 +184,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:16p
           <option value="given">As saved</option>
         </select></div>
     </div>
-    <div class="fg" style="margin-top:10px"><label>Style</label>
+    <div class="fg" style="margin-top:14px"><label>Style</label>
       <div class="seg" id="styles">
         <button data-s="apa" class="on">APA</button><button data-s="mla">MLA</button>
         <button data-s="chicago">Chicago</button><button data-s="harvard">Harvard</button>
@@ -123,7 +193,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:16p
       <div class="info" id="styleNote" style="margin-top:6px"></div></div>
   </div>
 
-  <div class="notice">⚠️ References are generated automatically from database records. Volume, issue or page numbers can be missing, and unusual names (organisations, books, theses) can come out wrong, so check each one against the paper before you submit. Plain text cannot show italics: italicise journal names (and APA volume numbers) in your document.</div>
+  <div class="notice"><span>ⓘ</span><span>References are generated automatically from database records. Volume, issue or page numbers can be missing, and unusual names (organisations, books, theses) can come out wrong, so check each one against the paper before you submit. Plain text cannot show italics: italicise journal names (and APA volume numbers) in your document.</span></div>
   <div class="notice warn hidden" id="fallbackNote">The reference formatter could not be reached, so a simplified format is shown. Reload to try again.</div>
 
   <div class="bar">
@@ -135,16 +205,36 @@ header{display:flex;align-items:center;justify-content:space-between;padding:16p
   <div id="list"></div>
 </div>
 <div id="loading"><div class="spinner"></div></div>
-
 </div>
 
+<footer class="foot">
+  <nav aria-label="Footer"><a href="/donate">Support Sturch</a><a href="/guide">Guide</a><a href="/#faq">FAQ</a><a href="/#disclaimer">Disclaimer</a></nav>
+  <span>© <span id="yr">2026</span> Sturch. All rights reserved.</span>
+</footer>
 <div id="stick" class="hidden">
   <button class="btn primary" id="copyBtn" onclick="copyBib()">📋 Copy bibliography</button>
   <button class="btn" id="dlBtn" onclick="download()">⬇ Download</button>
 </div>
 <div id="toast"></div>
-
 <script>
+function toggleTheme() {
+  const html = document.documentElement, isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark'); paintTheme();
+  try { localStorage.setItem('sturch_theme', isDark ? 'light' : 'dark'); } catch (e) {}
+}
+function paintTheme() { const b = document.getElementById('themeBtn'); if (b) b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'; }
+function toggleMeMenu(e) {
+  if (e) e.stopPropagation();
+  const m = document.getElementById('meMenu'), btn = document.getElementById('meBtn');
+  const o = m.classList.toggle('open'); btn.setAttribute('aria-expanded', String(o));
+}
+document.addEventListener('click', () => { const m = document.getElementById('meMenu'); if (m) { m.classList.remove('open'); document.getElementById('meBtn').setAttribute('aria-expanded', 'false'); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { const m = document.getElementById('meMenu'); if (m) m.classList.remove('open'); } });
+paintTheme();
+try { document.getElementById('yr').textContent = new Date().getFullYear(); } catch (e) {}
+fetch('/api/me').then(r => r.ok ? r.json() : null).then(u => { if (u && u.email) { document.getElementById('userEmail').textContent = u.email; document.getElementById('meBtn').textContent = u.email.trim().charAt(0).toUpperCase(); } }).catch(() => {});
+
+
 const $ = id => document.getElementById(id);
 const STYLE_NAMES = {apa: 'APA', mla: 'MLA', chicago: 'Chicago', harvard: 'Harvard', bibtex: 'BibTeX'};
 const STYLE_NOTES = {
@@ -166,13 +256,6 @@ let bookmarksCache = null;
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 let toastT;
 function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
-function toggleTheme(){
-  const dark = document.documentElement.getAttribute('data-theme') !== 'light';
-  document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
-  $('themeBtn').textContent = dark ? '☀️' : '🌙';
-  try { localStorage.setItem('sturch_theme', dark ? 'light' : 'dark'); } catch(e) {}
-}
-(function(){ try { if (localStorage.getItem('sturch_theme') === 'light') { document.documentElement.setAttribute('data-theme','light'); document.addEventListener('DOMContentLoaded', () => { $('themeBtn').textContent = '☀️'; }); } } catch(e) {} })();
 const norm = s => String(s == null ? '' : s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 async function api(url, opts){
   const resp = await fetch(url, Object.assign({headers: {'Accept': 'application/json'}}, opts || {}));
@@ -366,6 +449,7 @@ window.addEventListener('load', async () => {
     await chooseSource(key);
   } catch(e) { if (e.message !== 'login') showError('Connection problem. Check your internet and try again.', String(e)); }
 });
+
 </script>
 </body>
 </html>
