@@ -101,6 +101,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
+[hidden]{display:none!important}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;line-height:1.55;font-size:15px;-webkit-text-size-adjust:100%}
 a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
@@ -118,7 +119,7 @@ header.top .wrap{display:flex;align-items:center;gap:8px;height:60px}
 .loglink{font-weight:600;font-size:.9rem;color:var(--text)!important;padding:0 8px;min-height:44px;display:inline-flex;align-items:center}
 .news-strip{display:flex;align-items:center;gap:10px;margin:14px 0 0;padding:10px 14px;border:1px solid var(--border);background:var(--surf);border-radius:14px;color:var(--text)!important;text-decoration:none!important;font-size:.88rem}
 .news-tag{background:var(--accent);color:#fff;font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:999px}
-.news-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .news-date{color:var(--muted);margin-left:8px;font-size:.78rem}
+.news-text{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden} .news-date{color:var(--muted);margin-left:8px;font-size:.78rem}
 .news-go{color:var(--accent);font-weight:600;white-space:nowrap;font-size:.82rem}
 .hero{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;padding:26px 0 18px}.hero>*{min-width:0}
 .pill{display:inline-block;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:.78rem;padding:5px 12px;border-radius:999px}
@@ -182,6 +183,8 @@ a.card:hover{border-color:var(--accent)}
 footer{margin-top:34px;border-top:1px solid var(--border);padding:20px 0 34px;font-size:.84rem;color:var(--muted)}
 footer nav{display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:10px} footer nav a{color:var(--text);min-height:36px;display:inline-flex;align-items:center}
 footer p{margin-top:6px;line-height:1.6}
+header.top .wrap{flex-wrap:nowrap} .btn,.loglink,.brand{white-space:nowrap}
+@media(max-width:480px){header.top .wrap{gap:4px}.brand{font-size:1.1rem;gap:6px}.brand svg{width:26px;height:24px}.loglink{padding:0 6px;font-size:.86rem}.btn.sm{padding:0 12px;font-size:.8rem}.icon-btn{width:38px;height:38px}.news-date{display:none}.news-go{display:none}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
 </head>

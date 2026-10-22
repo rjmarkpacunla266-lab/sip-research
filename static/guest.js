@@ -29,6 +29,8 @@
       if(chip)return;var me=hd.querySelector('.me');if(!me)return;
       chip=document.createElement('button');chip.type='button';chip.className='gchip';chip.textContent='Guest';chip.setAttribute('aria-label','Guest account info');
       chip.onclick=showBar;me.parentNode.insertBefore(chip,me);
+      /* no room in the header (small phones): drop the chip and use a menu item instead */
+      if(hd.scrollWidth>hd.clientWidth+1||(me.offsetTop-hd.offsetTop)>20){chip.remove();chip=null;var m=hd.querySelector('.menu');if(m&&!m.querySelector('.gmi')){var a=document.createElement('a');a.className='gmi';a.href='#';a.setAttribute('role','menuitem');a.textContent='\u24d8 Guest account';a.onclick=function(e){e.preventDefault();showBar();window.scrollTo(0,0)};var w=m.querySelector('.menu-who');w?w.after(a):m.prepend(a);}}
     }
     if(get()==='closed')showChip();else showBar();
   }).catch(function(){});
