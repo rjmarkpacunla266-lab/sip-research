@@ -1,5 +1,18 @@
 [
   {
+    "date": "2026-10-23",
+    "tag": "Update",
+    "title": "Sturch 1.0 is here",
+    "summary": "Sturch is out of beta. Version 1.0 is the first full release.",
+    "points": [
+      "Simple mode now searches paper titles only, so results stay on topic. Advanced mode still lets you search the abstract too.",
+      "Better references: fixed author names with initials, page ranges, DOI links, and papers with no author or no journal.",
+      "A new look across the whole site, with light and dark mode, a better phone layout, and a new guide."
+    ],
+    "link": "/guide",
+    "link_text": "Read the Guide"
+  },
+  {
     "date": "2026-10-20",
     "tag": "Guide",
     "title": "New Guide: how to use every Sturch tool",
