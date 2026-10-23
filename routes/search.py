@@ -143,14 +143,13 @@ def related_papers():
 @search_bp.route("/api/citations", methods=["POST"])
 @login_required
 def get_citations():
-    data = request.get_json() or {}
-    if not data.get("title"):
+    data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict) or not data.get("title"):
         return jsonify({"error": "Title is required"}), 400
     return jsonify(_all_citations(
-        data.get("authors") or [], data.get("year") or "n.d.",
-        data.get("title") or "", data.get("journal") or "",
-        data.get("volume") or "", data.get("issue") or "",
-        data.get("pages") or "", data.get("doi") or ""))
+        data.get("authors"), data.get("year"), str(data.get("title"))[:600],
+        str(data.get("journal") or "")[:300], data.get("volume"), data.get("issue"),
+        data.get("pages"), data.get("doi"), str(data.get("oa_url") or "")[:500]))
 
 # ─── /api/citations/bulk ─────────────────────────────────────────────
 @search_bp.route("/api/citations/bulk", methods=["POST"])
@@ -169,7 +168,7 @@ def citations_bulk():
             out.append(_all_citations(authors, str(p.get("year") or "n.d."), str(p.get("title") or ""),
                                       str(p.get("journal") or ""), str(p.get("volume") or ""),
                                       str(p.get("issue") or ""), str(p.get("pages") or ""),
-                                      str(p.get("doi") or "")))
+                                      str(p.get("doi") or ""), str(p.get("oa_url") or "")[:500]))
         except Exception:
             out.append({})        # the page falls back to its own formatting for this one
     return jsonify({"citations": out})

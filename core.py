@@ -147,9 +147,13 @@ def get_user_by_email(email):
     return result[0] if result else None
 
 # ─── CITATION BUILDERS ───────────────────────────────────────────────
+def _s(v):
+    """Any value -> clean string (None/ints/floats never crash the builders)."""
+    return "" if v is None else str(v).strip()
+
 def _dot(text):
     """Add a full stop unless the text already ends with one (avoids 'et al..' and 'Q..')."""
-    text = (text or "").strip()
+    text = _s(text)
     return text if text.endswith((".", "?", "!")) else text + "."
 
 _PARTICLES = {"van", "von", "de", "del", "della", "der", "den", "di", "da", "du", "le", "la", "los", "las",
@@ -159,12 +163,14 @@ _ORG_WORDS = {"organization", "organisation", "association", "society", "univers
               "consortium", "collaboration", "group", "commission", "department", "ministry", "agency", "council",
               "foundation", "centre", "center", "network", "team", "initiative", "board", "bureau", "federation",
               "union", "laboratory", "hospital", "college", "school", "academy", "alliance", "program", "programme"}
+# Search sources put these in the journal field when the real journal is unknown. They are NOT journals.
+_PLACEHOLDER_JOURNALS = {"crossref", "semantic scholar", "europe pmc", "pubmed", "openalex"}
 
 def _name_parts(name):
     """-> (family, given_tokens, initials_only, suffix).
-    Understands 'Jane Q. Smith', 'Smith, Jane Q.', 'Waterhouse A' (Europe PMC / PubMed style),
+    Understands 'Jane Q. Smith', 'Smith, Jane Q.', 'Waterhouse A' / 'Van Der Meer JWM' (Europe PMC / PubMed style),
     particles ('Maria de la Cruz'), suffixes ('Martin Luther King Jr.') and group authors."""
-    name = re.sub(r"\s+", " ", (name or "").strip())
+    name = re.sub(r"\s+", " ", _s(name))
     if not name:
         return "", [], False, ""
     words = {w.strip(".,").lower() for w in name.split()}
@@ -185,8 +191,8 @@ def _name_parts(name):
     if len(parts) == 1:
         return parts[0], [], False, suffix
     last = parts[-1]
-    if re.fullmatch(r"[A-Z]{1,2}", last) and any(c.islower() for c in "".join(parts[:-1])):
-        return " ".join(parts[:-1]), [last], True, suffix   # 'Waterhouse A', 'Smith JK'
+    if re.fullmatch(r"[A-Z]{1,3}", last) and any(c.islower() for c in "".join(parts[:-1])):
+        return " ".join(parts[:-1]), [last], True, suffix   # 'Waterhouse A', 'Smith JK', 'Van Der Meer JWM'
     i = len(parts) - 1
     while i > 1 and parts[i - 1].lower() in _PARTICLES:     # keep 'de la', 'van der' with the surname
         i -= 1
@@ -195,7 +201,7 @@ def _name_parts(name):
 def _initials(given, initials_only):
     out = []
     for tok in given:
-        t = tok.strip(".")
+        t = re.sub(r"^[^\w]+", "", tok.strip("."))          # drop stray ( [ " etc.
         if not t:
             continue
         if initials_only and t.isupper() and len(t) <= 3:
@@ -204,12 +210,31 @@ def _initials(given, initials_only):
             out.append("-".join(f"{p[0].upper()}." for p in t.split("-") if p))
     return " ".join(out)
 
+def _author_list(authors):
+    """Accept a list (strings or {'name':..} dicts) or one string; never explode a string into letters."""
+    if authors is None:
+        return []
+    if isinstance(authors, str):
+        authors = re.split(r"\s*;\s*|\s*\n\s*|\s+and\s+", authors)
+    elif not isinstance(authors, (list, tuple)):
+        return []
+    out = []
+    for a in authors[:100]:
+        if isinstance(a, dict):
+            a = a.get("name") or a.get("display_name") or a.get("fullName") or ""
+        a = _s(a)[:120]
+        if a:
+            out.append(a)
+    return out
+
 def _people(authors):
-    return [_name_parts(a) for a in (authors or []) if a and a.strip()]
+    return [_name_parts(a) for a in _author_list(authors)]
 
 def _given_full(p):
     fam, given, ini, suf = p
-    return _initials(given, True) if ini else " ".join(given)
+    if ini:
+        return _initials(given, True)
+    return " ".join(t + "." if len(t) == 1 and t.isalpha() else t for t in given)   # 'A' -> 'A.' 
 
 def _inverted(p, full=False):
     """'Smith, J. Q.' (APA/Harvard initials) or 'Smith, Jane Q.' (MLA/Chicago full names)."""
@@ -225,16 +250,67 @@ def _natural(p):
     return f"{out} {suf}" if suf else out
 
 def _doi_url(doi):
-    doi = (doi or "").strip()
-    return "" if not doi else (doi if doi.startswith("http") else f"https://doi.org/{doi}")
+    """'10.1/x', 'doi:10.1/x', 'doi.org/10.1/x', 'http://dx.doi.org/10.1/x' -> 'https://doi.org/10.1/x'.
+    Other links (e.g. an arXiv page) are kept as they are."""
+    d = _s(doi)
+    if not d:
+        return ""
+    d = re.sub(r"^doi:\s*", "", d, flags=re.I)
+    m = re.match(r"^(?:https?://)?(?:dx\.)?doi\.org/(.+)$", d, re.I)
+    if m:
+        return "https://doi.org/" + m.group(1)
+    return d if d.lower().startswith("http") else "https://doi.org/" + d
+
+def _link_fallback(journal, doi, oa_url):
+    """arXiv papers often have no DOI; cite the arXiv page instead of leaving the reference without a link."""
+    if not _s(doi) and _s(journal).lower() == "arxiv":
+        return _s(oa_url)
+    return _s(doi)
+
+def _pages(pages):
+    """'1234-40' -> '1234–1240', '45-67' -> '45–67', 'e123-e130' -> 'e123–e130', 'e123' stays."""
+    p = _s(pages)
+    m = re.fullmatch(r"(\d+)\s*[-–—]+\s*(\d+)", p)
+    if m:
+        a, b = m.groups()
+        if len(b) < len(a):
+            b = a[:len(a) - len(b)] + b
+        return f"{a}–{b}"
+    return re.sub(r"\s*[-–—]+\s*", "–", p)
 
 def _en_dash(pages):
-    return re.sub(r"(?<=[0-9A-Za-z])-(?=[0-9A-Za-z])", "–", pages or "")
+    return _pages(pages)
+
+def _pp(pages):
+    """'pp. 45–67' for a range, 'p. 5' for one page, plain 'e123' for article numbers."""
+    p = _pages(pages)
+    if not p:
+        return ""
+    if "–" in p:
+        return f"pp. {p}"
+    return f"p. {p}" if p.isdigit() else p
+
+def _year(year):
+    m = re.search(r"\b(1[5-9]\d\d|20\d\d)\b", _s(year))
+    return m.group(1) if m else "n.d."
+
+def _journal(journal):
+    j = _s(journal)
+    return "" if j.lower() in _PLACEHOLDER_JOURNALS else j
+
+def _title(title):
+    t = _s(title)
+    m = re.fullmatch(r"\[([^\[\]]+)\]\.?", t)               # PubMed '[Title.]' = translated title
+    if m:
+        t = m.group(1).strip()
+    return t or "Untitled"
 
 def _build_apa(authors, year, title, journal, volume, issue, pages, doi):
     names = [_inverted(p) for p in _people(authors)]
+    y, ttl, journal, volume, issue = _year(year), _title(title), _journal(journal), _s(volume), _s(issue)
+    pg = _pages(pages)
     if not names:
-        author_str = "Unknown"
+        author_str = ""
     elif len(names) == 1:
         author_str = names[0]
     elif len(names) <= 20:                                  # APA 7: list up to 20 authors
@@ -242,8 +318,9 @@ def _build_apa(authors, year, title, journal, volume, issue, pages, doi):
     else:                                                   # 21+: first 19, ellipsis, last author
         author_str = ", ".join(names[:19]) + ", … " + names[-1]
     vol_issue  = f", {volume}({issue})" if volume and issue else (f", {volume}" if volume else "")
-    pages_part = f", {_en_dash(pages)}" if pages else ""
-    out = f"{_dot(author_str)} ({year or 'n.d.'}). {_dot((title or '').strip() or 'Untitled')}"
+    pages_part = f", {pg}" if pg else ""
+    # APA 7: no author -> the title moves to the author position
+    out = f"{_dot(author_str)} ({y}). {_dot(ttl)}" if author_str else f"{_dot(ttl)} ({y})."
     if journal:
         out += f" {journal}{vol_issue}{pages_part}."
     d = _doi_url(doi)
@@ -251,8 +328,9 @@ def _build_apa(authors, year, title, journal, volume, issue, pages, doi):
 
 def _build_mla(authors, year, title, journal, volume, issue, pages, doi):
     ppl = _people(authors)
+    y, ttl, journal, volume, issue = _year(year), _title(title), _journal(journal), _s(volume), _s(issue)
     if not ppl:
-        author_str = "Unknown"
+        author_str = ""
     elif len(ppl) == 1:
         author_str = _inverted(ppl[0], full=True)
     elif len(ppl) == 2:
@@ -263,19 +341,20 @@ def _build_mla(authors, year, title, journal, volume, issue, pages, doi):
     if journal: bits.append(journal)
     if volume:  bits.append(f"vol. {volume}")
     if issue:   bits.append(f"no. {issue}")
-    if year:    bits.append(str(year))
-    if pages:   bits.append(f"pp. {pages}")
-    ref = f'{_dot(author_str)} "{_dot((title or "").strip() or "Untitled")}"'
-    if bits:
-        ref += " " + _dot(", ".join(bits))
+    bits.append(y)
+    pp = _pp(pages)
+    if pp:      bits.append(pp)
+    ref = (f'{_dot(author_str)} ' if author_str else "") + f'"{_dot(ttl)}"'
+    ref += " " + _dot(", ".join(bits))
     d = _doi_url(doi)
     return ref + (f" {d}." if d else "")
 
 def _build_chicago(authors, year, title, journal, volume, issue, pages, doi):
     """Chicago author-date style (17th ed.)."""
     ppl = _people(authors)
+    y, ttl, journal, volume, issue = _year(year), _title(title), _journal(journal), _s(volume), _s(issue)
     if not ppl:
-        author_str = "Unknown"
+        author_str = ""
     else:
         shown = ppl if len(ppl) <= 10 else ppl[:7]
         names = [_inverted(shown[0], full=True)] + [_natural(p) for p in shown[1:]]
@@ -287,13 +366,13 @@ def _build_chicago(authors, year, title, journal, volume, issue, pages, doi):
             author_str = f"{names[0]}, and {names[1]}"
         else:
             author_str = ", ".join(names[:-1]) + ", and " + names[-1]
-    y   = str(year) if year else "n.d."
-    ref = f'{_dot(author_str)} {_dot(y)} "{_dot((title or "").strip() or "Untitled")}"'
-    tail = journal or ""
+    ref  = f'{_dot(author_str)} {_dot(y)} "{_dot(ttl)}"' if author_str else f'"{_dot(ttl)}" {_dot(y)}'
+    tail = journal
+    pg   = _pages(pages)
     if volume:
         tail += f" {volume}"
         if issue: tail += f" ({issue})"
-    if pages: tail += f": {_en_dash(pages)}"
+    if pg: tail += f": {pg}"
     if tail.strip():
         ref += " " + _dot(tail.strip())
     d = _doi_url(doi)
@@ -301,28 +380,30 @@ def _build_chicago(authors, year, title, journal, volume, issue, pages, doi):
 
 def _build_harvard(authors, year, title, journal, volume, issue, pages, doi):
     names = [_inverted(p) for p in _people(authors)]
+    y, ttl, journal, volume, issue = _year(year), _title(title), _journal(journal), _s(volume), _s(issue)
     if not names:
-        author_str = "Unknown"
+        author_str = ""
     elif len(names) == 1:
         author_str = names[0]
     elif len(names) <= 3:
         author_str = ", ".join(names[:-1]) + " and " + names[-1]
     else:
         author_str = names[0] + " et al."
-    y   = str(year) if year else "n.d."
-    ref = f"{author_str} ({y}) '{((title or '').strip().rstrip('.') or 'Untitled')}'"
+    ref = f"{author_str} ({y}) '{ttl.rstrip('.')}'" if author_str else f"'{ttl.rstrip('.')}' ({y})"
     if journal: ref += f", {journal}"
     if volume:
         ref += f", {volume}"
         if issue: ref += f"({issue})"
-    if pages: ref += f", pp. {_en_dash(pages)}"
+    pp = _pp(pages)
+    if pp: ref += f", {pp}"
     ref += "."
     d = _doi_url(doi)
     if d:
         ref += f" Available at: {d} (Accessed: {datetime.now().strftime('%d %B %Y')})."
     return ref
 
-def _all_citations(authors, year, title, journal, volume, issue, pages, doi):
+def _all_citations(authors, year, title, journal, volume, issue, pages, doi, oa_url=""):
+    doi = _link_fallback(journal, doi, oa_url)
     return {
         "apa":     _build_apa(authors, year, title, journal, volume, issue, pages, doi),
         "mla":     _build_mla(authors, year, title, journal, volume, issue, pages, doi),
@@ -357,15 +438,15 @@ def format_paper(paper):
         if c.get("display_name")
     ]
     abstract   = reconstruct_abstract(paper.get("abstract_inverted_index"))
-    year       = paper.get("publication_year", "n.d.")
+    year       = paper.get("publication_year") or "n.d."
     title      = clean_text(paper.get("title", ""))
     journal    = source.get("display_name", "")
-    doi        = paper.get("doi", "")
-    volume     = biblio.get("volume", "")
-    issue      = biblio.get("issue", "")
-    first_page = biblio.get("first_page", "")
-    last_page  = biblio.get("last_page", "")
-    pages      = f"{first_page}\u2013{last_page}" if first_page and last_page else ""
+    doi        = paper.get("doi") or ""
+    volume     = (biblio.get("volume") or "")
+    issue      = (biblio.get("issue") or "")
+    first_page = (biblio.get("first_page") or "")
+    last_page  = (biblio.get("last_page") or "")
+    pages      = f"{first_page}\u2013{last_page}" if first_page and last_page else (str(first_page or ""))
     missing    = [l for l, v in [("volume", volume), ("issue", issue), ("page range", pages), ("DOI", doi)] if not v]
     return {
         "title": title, "date": paper.get("publication_date") or "", "authors": authors, "year": year, "journal": journal,
@@ -536,7 +617,7 @@ def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE,
                 "abstract": abstract, "citations": 0, "is_oa": True, "oa_url": page_link,
                 "doi": doi_link, "concepts": [], "openalex_id": page_link,
                 "volume": "", "issue": "", "pages": "",
-                "apa_reference": _build_apa(authors, year, title, "arXiv", "", "", "", doi_link),
+                "apa_reference": _build_apa(authors, year, title, "arXiv", "", "", "", doi_link or page_link),
                 "apa_missing": ["volume", "issue", "page range"],
                 "data_source": "arXiv (arxiv.org)",
                 "ref_warning": "Auto-generated — verify before academic use",
