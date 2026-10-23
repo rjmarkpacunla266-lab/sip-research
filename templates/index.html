@@ -798,7 +798,7 @@ function filterQS() {
   const yt = document.getElementById('yearTo').value.trim();
   const sort = document.getElementById('sortBy').value;
   const src = selectedSources();
-  const field = document.getElementById('fieldBy').value;
+  const field = isSimple() ? 'title' : document.getElementById('fieldBy').value;   // Simple mode always matches titles only
   let qs = '';
   if (yf) qs += `&year_from=${yf}`;
   if (yt) qs += `&year_to=${yt}`;
@@ -1067,7 +1067,7 @@ function applyRerunFromURL() {
   const p    = new URLSearchParams(location.search);
   const tags = p.getAll('tag').map(t => t.trim().toLowerCase()).filter(Boolean).slice(0, 10);
   if (!tags.length) return false;
-  if (p.get('yt') || p.get('src') || (p.get('field') && p.get('field') !== 'both')) setMode(true, true);   // that search used Advanced options
+  if (p.get('yt') || p.get('src') || p.get('field') === 'abstract') setMode(true, true);   // that search used Advanced options
   searchTags = [...new Set(tags)]; renderTags();
   document.getElementById('yearFrom').value = p.get('yf') || '';
   document.getElementById('yearTo').value   = p.get('yt') || '';
