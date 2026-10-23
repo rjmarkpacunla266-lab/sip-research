@@ -219,7 +219,7 @@ footer{border-top:1px solid var(--border);margin-top:48px;padding:26px 0 40px;te
 
   <h3>Simple mode (the default)</h3>
   <ol class="steps">
-    <li><b>Type what you are looking for</b> in the box and press <kbd>Enter</kbd> or tap <b>Search</b>. No tags needed.</li>
+    <li><b>Type what you are looking for</b> in the box and press <kbd>Enter</kbd> or tap <b>Search</b>. No tags needed. Simple mode matches your words against <b>paper titles only</b>, so the results stay on topic.</li>
     <li><b>Narrow it down</b> with the three filters under the box:
       <ul class="dots">
         <li><b>Date:</b> Any time, or since a recent year.</li>
@@ -245,13 +245,13 @@ footer{border-top:1px solid var(--border);margin-top:48px;padding:26px 0 40px;te
     <li><b>Tags:</b> type a keyword and press <kbd>Enter</kbd> to add it as a tag. Add several tags for a sharper search, and tap the × on a tag to remove it.</li>
     <li><b>From year / To year:</b> only papers published in that range.</li>
     <li><b>Sort by:</b> Most cited or Most recent.</li>
-    <li><b>Word in:</b> look for your words in the title and abstract, the title only, or the abstract only.</li>
+    <li><b>Word in:</b> look for your words in the title and abstract (the default here), the title only, or the abstract only. Use this when you also want papers that mention your topic only in the abstract.</li>
     <li><b>Open access only:</b> same as "Free to read only" in Simple mode.</li>
     <li><b>Sources:</b> turn databases on or off. For example, keep only PubMed for medicine topics, or only arXiv for computer science and physics.</li>
     <li><b>Expand All / Collapse All / Copy All APA:</b> open every card, close them, or copy every reference at once.</li>
     <li><b>Add to collection (📚+), Share (🔗) and Export:</b> organize, share, or download your results.</li>
   </ul>
-  <div class="warn"><b>Heads up:</b> going back to Simple mode resets the Advanced-only options (end year, sources, and title or abstract only). Sturch tells you when that happens.</div>
+  <div class="warn"><b>Heads up:</b> going back to Simple mode resets the Advanced-only options (end year, sources, and the Word in setting). Simple mode always searches titles only. Sturch tells you when options are reset.</div>
 
   <h3>Search tips</h3>
   <ul class="dots">
@@ -377,10 +377,11 @@ footer{border-top:1px solid var(--border);margin-top:48px;padding:26px 0 40px;te
   <h2><span class="ic">🛟</span> Help and common questions</h2>
   <details><summary>Is Sturch really free?</summary><div class="in"><p>Yes. Searching, the tools, and saving papers are free for students. If you like it, you can support it from the Donate page.</p></div></details>
   <details><summary>Does Sturch use AI to write the answers?</summary><div class="in"><p>No. The Answer Finder and Topic Finder find and show sentences that already exist in published papers, using fixed rules. Every answer links to the paper it came from.</p></div></details>
-  <details><summary>I got no results. What can I do?</summary><div class="in"><p>Try fewer or simpler words, remove the date or "Free to read only" filter, or switch to Advanced mode and make sure all sources are on.</p></div></details>
+  <details><summary>I got no results. What can I do?</summary><div class="in"><p>Try fewer or simpler words, remove the date or "Free to read only" filter, or switch to Advanced mode and make sure all sources are on. Simple mode only looks at titles, so if your words appear only in abstracts, use Advanced mode and set <b>Word in</b> to title and abstract.</p></div></details>
   <details><summary>Why can't I read the full paper?</summary><div class="in"><p>Many papers are behind a paywall. Sturch only shows the full text when a free copy exists. You can turn on "Free to read only" to see just those papers, or ask your school library for access.</p></div></details>
   <details><summary>The search or a tool is slow.</summary><div class="in"><p>Sturch searches several databases at once, so a search can take a few seconds. Tools that read full papers, like the full Source Tracer, can take around a minute and a half. Keep the page open and wait for it to finish.</p></div></details>
   <details><summary>How many papers can Sturch search?</summary><div class="in"><p>See the live count on the <a href="/#numbers">home page</a>. It is taken from each database and shows a range, because the same paper can appear in more than one database.</p></div></details>
+  <details><summary>How does Sturch list authors in a reference?</summary><div class="in"><p>Each style has its own rule. <b>APA</b> lists every author up to 20 (with &amp; before the last one). <b>MLA</b> uses the first author and "et al." for three or more. <b>Chicago</b> lists up to 10 authors, then the first seven and "et al." <b>Harvard</b> lists up to three, then the first author and "et al." <b>BibTeX</b> keeps every author. Some schools use slightly different rules, so check what your teacher asks for.</p></div></details>
   <details><summary>I forgot my password.</summary><div class="in"><p>Use the recovery code you were given when you signed up, on the login page's reset option. Keep that code somewhere safe.</p></div></details>
   <details><summary>I saw something wrong or a bug.</summary><div class="in"><p>Sturch is still in beta, so mistakes can happen. Tell your teacher or the person who shared Sturch with you, and check any important fact in the original paper.</p></div></details>
   <div class="row-btns" style="margin-top:16px"><a href="/search" class="btn primary">Start searching</a><a href="/news" class="btn">What's new</a></div>
