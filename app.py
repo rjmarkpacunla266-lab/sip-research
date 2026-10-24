@@ -24,7 +24,7 @@ app = Flask(__name__)
 # When you get your own domain, set SITE_URL on Render (for example https://sturch.com).
 # No template needs editing: every page reads {{ site_url }}.
 SITE_URL = os.getenv("SITE_URL", "https://sturch.onrender.com").strip().rstrip("/")
-PUBLIC_PAGES = ["/", "/signup", "/donate"]        # pages that should appear in Google
+PUBLIC_PAGES = ["/", "/guide", "/news", "/signup", "/donate"]        # pages that should appear in Google
 
 @app.context_processor
 def inject_site_url():

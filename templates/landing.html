@@ -5,9 +5,9 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <!-- ═══ SEO — URLs come from SITE_URL in app.py, so a new domain needs no edits here ═══ -->
-  <title>Sturch — Free Academic Paper Search &amp; Citation Tool</title>
-  <meta name="description"  content="Search millions of academic papers from 5 databases at once. Free for students: APA citations, Answer Finder, Source Tracer and Topic Finder."/>
-  <meta name="keywords"     content="academic paper search, free research papers, find research papers, student research tool, APA citation generator, answer finder, source tracer, research topic finder, arxiv search, pubmed search, literature review, free academic database"/>
+  <title>Sturch — Free Paper Search &amp; Google Scholar Alternative</title>
+  <meta name="description"  content="Free Google Scholar alternative for students: search papers from 5 databases at once, get APA, MLA, Chicago and Harvard citations, and find answers."/>
+  <meta name="keywords"     content="google scholar alternative, free google scholar alternative, academic search engine, academic paper search, free research papers, find research papers, student research tool, APA citation generator, answer finder, source tracer, research topic finder, arxiv search, pubmed search, literature review, free academic database"/>
   <meta name="author"       content="Sturch"/>
   <meta name="robots"       content="index, follow, max-image-preview:large"/>
   <meta name="theme-color"  content="#2f5bea"/>
@@ -15,8 +15,8 @@
   <!-- Open Graph — social sharing preview -->
   <meta property="og:type"        content="website"/>
   <meta property="og:site_name"   content="Sturch"/>
-  <meta property="og:title"       content="Sturch — Free Academic Paper Search &amp; Citation Tool"/>
-  <meta property="og:description" content="Search millions of academic papers from 5 databases at once. Free for students: APA citations, Answer Finder, Source Tracer and Topic Finder."/>
+  <meta property="og:title"       content="Sturch — Free Paper Search &amp; Google Scholar Alternative"/>
+  <meta property="og:description" content="Free Google Scholar alternative for students: search papers from 5 databases at once, get APA, MLA, Chicago and Harvard citations, and find answers."/>
   <meta property="og:url"         content="{{ site_url }}/"/>
   <meta property="og:image"       content="{{ site_url }}/static/og-image.png"/>
   <meta property="og:image:width"  content="1200"/>
@@ -27,8 +27,8 @@
   <!-- Twitter Card -->
   <meta name="twitter:card"        content="summary_large_image"/>
   <meta name="twitter:site"        content="@sturch_app"/>
-  <meta name="twitter:title"       content="Sturch — Free Academic Paper Search &amp; Citation Tool"/>
-  <meta name="twitter:description" content="Search millions of academic papers from 5 databases at once. Free for students: APA citations, Answer Finder, Source Tracer and Topic Finder."/>
+  <meta name="twitter:title"       content="Sturch — Free Paper Search &amp; Google Scholar Alternative"/>
+  <meta name="twitter:description" content="Free Google Scholar alternative for students: search papers from 5 databases at once, get APA, MLA, Chicago and Harvard citations, and find answers."/>
   <meta name="twitter:image"       content="{{ site_url }}/static/og-image.png"/>
   <meta name="twitter:image:alt"   content="Sturch — free academic paper search for students"/>
 
@@ -40,8 +40,9 @@
         "@type": "WebApplication",
         "@id": "{{ site_url }}/#webapp",
         "name": "Sturch",
+        "alternateName": "Sturch Free Paper Search",
         "url": "{{ site_url }}/",
-        "description": "Free academic paper search for students. Search millions of papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC, find answers in real papers, trace quotes to their source and generate citations.",
+        "description": "Free academic paper search for students, a Google Scholar alternative. Search millions of papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC, find answers in real papers, trace quotes to their source and generate citations.",
         "applicationCategory": "EducationalApplication",
         "operatingSystem": "Web",
         "inLanguage": "en",
@@ -50,7 +51,7 @@
         "publisher": {"@id": "{{ site_url }}/#org"},
         "featureList": [
           "Search millions of academic papers from 5 databases at once",
-          "APA, MLA, Chicago and Vancouver citation generator",
+          "APA, MLA, Chicago and Harvard citation generator",
           "Answer Finder: answers taken from real academic papers",
           "Source Tracer: find the paper behind a quote",
           "Topic Finder: research topic ideas from recent and highly cited papers",
@@ -327,6 +328,10 @@ header.top .wrap{flex-wrap:nowrap} .btn,.loglink,.brand{white-space:nowrap}
   <details>
     <summary>Why did the Answer Finder show no answer?</summary>
     <p>Sturch only shows sentences that clearly answer your question, and it only reads abstracts. Very common words, very narrow topics or strict filters can return nothing. Try a more specific topic, a different question template, or fewer filters, or use Search Papers.</p>
+  </details>
+  <details>
+    <summary>Is Sturch a Google Scholar alternative?</summary>
+    <p>Yes, you can use it that way. Sturch is a separate, free website. It is not made by or connected to Google. Like Google Scholar, it helps you find scholarly papers, but it searches OpenAlex, arXiv, PubMed, Crossref and Europe PMC at once, and adds citations in four styles, Answer Finder, Source Tracer and Topic Finder.</p>
   </details>
   <details>
     <summary>What is new in version 1.0?</summary>
