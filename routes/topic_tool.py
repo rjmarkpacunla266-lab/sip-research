@@ -193,30 +193,111 @@ def _size_info(total):
     return {"count": int(total), "level": level[1], "label": level[2], "advice": level[3],
             "scale": [{"key": k, "label": lab} for _, k, lab, _ in _SIZE_LEVELS]}
 
-_PH = "(Philippines OR Philippine OR Filipino OR Filipinos)"
+_COUNTRIES = {
+    'PH': ('Philippines', ['Philippines', 'Philippine', 'Filipino', 'Filipinos']),
+    'US': ('United States', ['United States', 'USA']),
+    'GB': ('United Kingdom', ['United Kingdom', 'Britain', 'British']),
+    'CA': ('Canada', ['Canada', 'Canadian']),
+    'AU': ('Australia', ['Australia', 'Australian']),
+    'NZ': ('New Zealand', ['New Zealand']),
+    'IN': ('India', ['India', 'Indian']),
+    'PK': ('Pakistan', ['Pakistan', 'Pakistani']),
+    'BD': ('Bangladesh', ['Bangladesh', 'Bangladeshi']),
+    'LK': ('Sri Lanka', ['Sri Lanka', 'Sri Lankan']),
+    'NP': ('Nepal', ['Nepal', 'Nepali', 'Nepalese']),
+    'ID': ('Indonesia', ['Indonesia', 'Indonesian']),
+    'MY': ('Malaysia', ['Malaysia', 'Malaysian']),
+    'SG': ('Singapore', ['Singapore', 'Singaporean']),
+    'TH': ('Thailand', ['Thailand', 'Thai']),
+    'VN': ('Vietnam', ['Vietnam', 'Vietnamese']),
+    'KH': ('Cambodia', ['Cambodia', 'Cambodian']),
+    'MM': ('Myanmar', ['Myanmar', 'Burmese']),
+    'CN': ('China', ['China', 'Chinese']),
+    'HK': ('Hong Kong', ['Hong Kong']),
+    'TW': ('Taiwan', ['Taiwan', 'Taiwanese']),
+    'JP': ('Japan', ['Japan', 'Japanese']),
+    'KR': ('South Korea', ['South Korea', 'Korean']),
+    'SA': ('Saudi Arabia', ['Saudi Arabia', 'Saudi']),
+    'AE': ('United Arab Emirates', ['United Arab Emirates', 'UAE']),
+    'QA': ('Qatar', ['Qatar', 'Qatari']),
+    'IL': ('Israel', ['Israel', 'Israeli']),
+    'TR': ('Turkey', ['Turkey', 'Turkish', 'Turkiye']),
+    'IR': ('Iran', ['Iran', 'Iranian']),
+    'IQ': ('Iraq', ['Iraq', 'Iraqi']),
+    'EG': ('Egypt', ['Egypt', 'Egyptian']),
+    'NG': ('Nigeria', ['Nigeria', 'Nigerian']),
+    'GH': ('Ghana', ['Ghana', 'Ghanaian']),
+    'KE': ('Kenya', ['Kenya', 'Kenyan']),
+    'ET': ('Ethiopia', ['Ethiopia', 'Ethiopian']),
+    'ZA': ('South Africa', ['South Africa', 'South African']),
+    'TZ': ('Tanzania', ['Tanzania', 'Tanzanian']),
+    'UG': ('Uganda', ['Uganda', 'Ugandan']),
+    'ZW': ('Zimbabwe', ['Zimbabwe', 'Zimbabwean']),
+    'MA': ('Morocco', ['Morocco', 'Moroccan']),
+    'DZ': ('Algeria', ['Algeria', 'Algerian']),
+    'TN': ('Tunisia', ['Tunisia', 'Tunisian']),
+    'DE': ('Germany', ['Germany', 'German']),
+    'FR': ('France', ['France', 'French']),
+    'IT': ('Italy', ['Italy', 'Italian']),
+    'ES': ('Spain', ['Spain', 'Spanish']),
+    'PT': ('Portugal', ['Portugal', 'Portuguese']),
+    'NL': ('Netherlands', ['Netherlands', 'Dutch']),
+    'BE': ('Belgium', ['Belgium', 'Belgian']),
+    'CH': ('Switzerland', ['Switzerland', 'Swiss']),
+    'AT': ('Austria', ['Austria', 'Austrian']),
+    'SE': ('Sweden', ['Sweden', 'Swedish']),
+    'NO': ('Norway', ['Norway', 'Norwegian']),
+    'DK': ('Denmark', ['Denmark', 'Danish']),
+    'FI': ('Finland', ['Finland', 'Finnish']),
+    'IE': ('Ireland', ['Ireland', 'Irish']),
+    'PL': ('Poland', ['Poland', 'Polish']),
+    'CZ': ('Czechia', ['Czech Republic', 'Czechia', 'Czech']),
+    'GR': ('Greece', ['Greece', 'Greek']),
+    'RU': ('Russia', ['Russia', 'Russian']),
+    'UA': ('Ukraine', ['Ukraine', 'Ukrainian']),
+    'RO': ('Romania', ['Romania', 'Romanian']),
+    'HU': ('Hungary', ['Hungary', 'Hungarian']),
+    'MX': ('Mexico', ['Mexico', 'Mexican']),
+    'BR': ('Brazil', ['Brazil', 'Brazilian']),
+    'AR': ('Argentina', ['Argentina', 'Argentine', 'Argentinian']),
+    'CL': ('Chile', ['Chile', 'Chilean']),
+    'CO': ('Colombia', ['Colombia', 'Colombian']),
+    'PE': ('Peru', ['Peru', 'Peruvian']),
+    'EC': ('Ecuador', ['Ecuador', 'Ecuadorian']),
+}
+DEFAULT_COUNTRY = "PH"
+
+def _country_expr(words):
+    """OpenAlex search text for 'mentions this country': (Philippines OR Philippine OR \"United States\" ...)."""
+    return "(" + " OR ".join(f'"{w}"' if " " in w else w for w in words) + ")"
 
 @tools_bp.route("/api/topics/local")
 @login_required
 def topics_local():
-    """Local check: how many papers on this topic mention the Philippines or have authors at Philippine institutions.
-    Uses OpenAlex only (it is the one source that can filter by author country)."""
+    """Local check: how many papers on this topic mention a country (default: the Philippines) or have authors at institutions there.
+    Param country = an ISO code from _COUNTRIES (for example PH, US, IN). Uses OpenAlex only (the one source that can filter by author country)."""
     subject = request.args.get("subject", "").strip()[:200]
     focus   = request.args.get("focus", "").strip()[:200]
     kw      = request.args.get("kw", "").strip()[:200]
+    code    = (request.args.get("country") or DEFAULT_COUNTRY).strip().upper()
     if not subject:
         return jsonify({"error": "Enter a subject first"}), 400
+    if code not in _COUNTRIES:
+        return jsonify({"error": "That country is not on the list."}), 400
+    cname, cwords = _COUNTRIES[code]
+    cexpr = _country_expr(cwords)
     try:
         f = read_filters(request.args.get)
         subj_terms = _dedupe_terms(_specific(_safe_terms(subject)) or _safe_terms(subject))[:6]
         terms = _dedupe_terms(subj_terms + _specific(_safe_terms(focus)) + _specific(_safe_terms(kw)))[:10]
         expr, subj_expr = " AND ".join(terms), " AND ".join(subj_terms)
         jobs = {
-            "mentions": (_oa_filter(f, f"{expr} AND {_PH}"), 5, "cited_by_count:desc"),
-            "authors":  (_oa_filter(f, expr, "authorships.countries:PH"), 3, "cited_by_count:desc"),
+            "mentions": (_oa_filter(f, f"{expr} AND {cexpr}"), 5, "cited_by_count:desc"),
+            "authors":  (_oa_filter(f, expr, f"authorships.countries:{code}"), 3, "cited_by_count:desc"),
             "topic":    (_oa_filter(f, expr), 1, None),
         }
         if terms != subj_terms:
-            jobs["subject_mentions"] = (_oa_filter(f, f"{subj_expr} AND {_PH}"), 1, None)
+            jobs["subject_mentions"] = (_oa_filter(f, f"{subj_expr} AND {cexpr}"), 1, None)
         with ThreadPoolExecutor(max_workers=len(jobs)) as ex:
             futs = {k: ex.submit(_oa_query, *v) for k, v in jobs.items()}
             res = {k: fu.result() for k, fu in futs.items()}
@@ -231,6 +312,7 @@ def topics_local():
         if mentions is None and authors is None:
             return jsonify({"error": "Could not reach OpenAlex for the local check. Try again."}), 502
         return jsonify({
+            "country": {"code": code, "name": cname},
             "terms": terms, "topic_total": res["topic"][0],
             "mentions": mentions, "authors": authors,
             "subject_mentions": (res.get("subject_mentions") or (None, []))[0],

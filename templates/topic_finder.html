@@ -235,6 +235,8 @@ select.form-input{cursor:pointer}
 .meter.lv-huge .seg.on{background:var(--orange)}
 .meter.lv-good{border-color:rgba(62,207,142,.3)}
 .toolbar{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.country-sel{background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:.8rem;padding:0 10px;max-width:200px;min-height:38px}
+.country-sel:focus{border-color:var(--accent);outline:none}
 .local-box{background:rgba(79,141,232,.05);border:1px solid rgba(79,141,232,.2);border-radius:var(--r);padding:12px 14px;margin:0 0 12px;font-size:.8rem;color:var(--muted);line-height:1.6}
 .local-box b{color:var(--text)}
 .local-box p{margin:6px 0}
@@ -823,6 +825,28 @@ function dict(a, b){ return Object.assign({}, a, b); }
 /* ── trail, topic size, gaps (fast first), local check, save, brief ── */
 let _methodSel = null, _gapType = null, _trail = [], _pendingTrail = null, _runId = 0, _gaps = [], _gapLoading = false, _local = null, _saved = new Set();
 
+/* Country for the local check: the choice is remembered; first visit uses the browser's region when it is on the list */
+const COUNTRIES = [["PH","Philippines"],["DZ","Algeria"],["AR","Argentina"],["AU","Australia"],["AT","Austria"],["BD","Bangladesh"],["BE","Belgium"],["BR","Brazil"],["KH","Cambodia"],["CA","Canada"],["CL","Chile"],["CN","China"],["CO","Colombia"],["CZ","Czechia"],["DK","Denmark"],["EC","Ecuador"],["EG","Egypt"],["ET","Ethiopia"],["FI","Finland"],["FR","France"],["DE","Germany"],["GH","Ghana"],["GR","Greece"],["HK","Hong Kong"],["HU","Hungary"],["IN","India"],["ID","Indonesia"],["IR","Iran"],["IQ","Iraq"],["IE","Ireland"],["IL","Israel"],["IT","Italy"],["JP","Japan"],["KE","Kenya"],["MY","Malaysia"],["MX","Mexico"],["MA","Morocco"],["MM","Myanmar"],["NP","Nepal"],["NL","Netherlands"],["NZ","New Zealand"],["NG","Nigeria"],["NO","Norway"],["PK","Pakistan"],["PE","Peru"],["PL","Poland"],["PT","Portugal"],["QA","Qatar"],["RO","Romania"],["RU","Russia"],["SA","Saudi Arabia"],["SG","Singapore"],["ZA","South Africa"],["KR","South Korea"],["ES","Spain"],["LK","Sri Lanka"],["SE","Sweden"],["CH","Switzerland"],["TW","Taiwan"],["TZ","Tanzania"],["TH","Thailand"],["TN","Tunisia"],["TR","Turkey"],["UG","Uganda"],["UA","Ukraine"],["AE","United Arab Emirates"],["GB","United Kingdom"],["US","United States"],["VN","Vietnam"],["ZW","Zimbabwe"]];
+const _THE = new Set(['Philippines', 'United States', 'United Kingdom', 'Netherlands', 'United Arab Emirates']);
+function flagOf(c){ return String.fromCodePoint(...[...c].map(ch => 127397 + ch.charCodeAt(0))); }
+function countryName(c){ const x = COUNTRIES.find(k => k[0] === c); return x ? x[1] : c; }
+function theName(n){ return _THE.has(n) ? 'the ' + n : n; }
+function pickCountry(){
+  try { const s = localStorage.getItem('sturch_country'); if (s && COUNTRIES.some(k => k[0] === s)) return s; } catch (e) {}
+  try { const m = (navigator.language || '').match(/-([A-Za-z]{2})$/); if (m && COUNTRIES.some(k => k[0] === m[1].toUpperCase())) return m[1].toUpperCase(); } catch (e) {}
+  return 'PH';
+}
+let _country = pickCountry();
+function localBtnLabel(){ return flagOf(_country) + ' Check local research'; }
+function countryOptions(){ return COUNTRIES.map(k => `<option value="${k[0]}"${k[0] === _country ? ' selected' : ''}>${flagOf(k[0])} ${k[1]}</option>`).join(''); }
+function setCountry(c){
+  if (!COUNTRIES.some(k => k[0] === c)) return;
+  _country = c;
+  try { localStorage.setItem('sturch_country', c); } catch (e) {}
+  const b = document.querySelector('[data-act="local"]'); if (b) b.textContent = localBtnLabel();
+  if (_local && _local !== 'loading') checkLocal();                    // a result is on screen: redo it for the new country
+}
+
 function pid(p){ return String(p.openalex_id || p.doi || (p.title || '').slice(0, 60)).trim(); }
 function stateKey(s){ return [s.field, s.focus, s.keywords].map(x => (x || '').trim().toLowerCase()).join('|'); }
 function nf(n){ return (n == null) ? '?' : Number(n).toLocaleString(); }
@@ -864,32 +888,33 @@ function sizeHtml(sz){
     <p>${esc(sz.advice)}</p></div>`;
 }
 
-/* 3. Local check (Philippines) */
+/* 3. Local check (any country from the list) */
 function localHtml(){
   if (!_local) return '';
   if (_local === 'loading') return '<div class="local-box"><div class="fx-note" style="margin:0">⏳ Checking local research…</div></div>';
   if (_local.error) return `<div class="local-box"><p>${esc(_local.error)}</p></div>`;
   const L = _local, words = esc((L.terms || []).join(' '));
+  const cc = (L.country && L.country.code) || _country, cn = (L.country && L.country.name) || countryName(cc), the = theName(cn);
   const m = L.mentions, a = L.authors;
   let msg;
   if (m === 0 && (L.subject_mentions || 0) > 0)
-    msg = `No paper on all your words mentions the Philippines, but <b>${nf(L.subject_mentions)}</b> papers on “${esc(_topicMeta.field)}” alone do. Studying your exact angle locally could be original.`;
+    msg = `No paper on all your words mentions ${the}, but <b>${nf(L.subject_mentions)}</b> papers on “${esc(_topicMeta.field)}” alone do. Studying your exact angle locally could be original.`;
   else if (m === 0)
-    msg = 'No paper mentions the Philippines for these words. This could be a local gap, or Philippine studies may use other wording (try a city or province name).';
+    msg = `No paper mentions ${the} for these words. This could be a local gap, or studies from ${the} may use other wording (try a city or region name).`;
   else
-    msg = `<b>${nf(m)}</b> paper${m === 1 ? '' : 's'} mention the Philippines in the title or abstract.`;
+    msg = `<b>${nf(m)}</b> paper${m === 1 ? '' : 's'} mention ${the} in the title or abstract.`;
   const ex = (L.examples || []).map(p => { const d = safeUrl(p.doi); return `<li>${d ? `<a href="${esc(d)}" target="_blank" rel="noopener noreferrer">${esc(p.title || 'Untitled')}</a>` : esc(p.title || 'Untitled')} <span class="n">${esc(p.year || '')}</span></li>`; }).join('');
-  return `<div class="local-box"><b>🇵🇭 Local check for “${words}”</b>
-    <p>${msg}${a != null ? ` <b>${nf(a)}</b> have authors at Philippine institutions.` : ''}${L.filtered ? ' <span class="n">(your year / OA filters apply)</span>' : ''}</p>
+  return `<div class="local-box"><b>${flagOf(cc)} Local check for “${words}” in ${esc(cn)}</b>
+    <p>${msg}${a != null ? ` <b>${nf(a)}</b> have authors at institutions in ${the}.` : ''}${L.filtered ? ' <span class="n">(your year / OA filters apply)</span>' : ''}</p>
     ${ex ? `<ul class="local-list">${ex}</ul>` : ''}
-    <button class="btn xs" data-act="localadd">➕ Add “Philippines” to my keywords and search</button>
+    <button class="btn xs" data-act="localadd" data-cn="${esc(cn)}">➕ Add “${esc(cn)}” to my keywords and search</button>
     <p class="sub-note" style="margin:8px 0 0">Counts come from OpenAlex only, the one source that can filter by author country.</p></div>`;
 }
 async function checkLocal(){
   const m = _topicMeta; if (!m || !m.field) return;
   _local = 'loading'; refreshLocal();
   try {
-    const r = await fetch(`/api/topics/local?subject=${encodeURIComponent(m.field)}&focus=${encodeURIComponent(m.focus || '')}&kw=${encodeURIComponent(m.keywords || '')}${fQS()}`);
+    const r = await fetch(`/api/topics/local?country=${encodeURIComponent(_country)}&subject=${encodeURIComponent(m.field)}&focus=${encodeURIComponent(m.focus || '')}&kw=${encodeURIComponent(m.keywords || '')}${fQS()}`);
     const d = await r.json().catch(() => ({}));
     _local = r.ok ? d : {error: d.error || 'The local check failed. Try again.'};
   } catch (e) { _local = {error: 'Connection error. Try again.'}; }
@@ -983,7 +1008,7 @@ function briefText(){
   const fs = fSummaryText(); if (fs) L.push('Filters: ' + fs);
   if (_trail.length > 1) L.push('Narrowing steps: ' + _trail.map(t => t.label + (t.count != null ? ' (' + nf(t.count) + ')' : '')).join(' > '));
   if (d.size) L.push('', 'Topic size: ' + d.size.label + ' (about ' + nf(d.size.count) + ' papers contain all the words, OpenAlex)', d.size.advice);
-  if (_local && typeof _local === 'object' && !_local.error) L.push('', 'Local check (Philippines): ' + nf(_local.mentions) + ' paper(s) mention the Philippines' + (_local.authors != null ? '; ' + nf(_local.authors) + ' with Philippine-based authors' : '') + '.');
+  if (_local && typeof _local === 'object' && !_local.error) { const _cn = (_local.country && _local.country.name) || countryName(_country), _t = theName(_cn); L.push('', 'Local check (' + _cn + '): ' + nf(_local.mentions) + ' paper(s) mention ' + _t + (_local.authors != null ? '; ' + nf(_local.authors) + ' with authors at institutions in ' + _t : '') + '.'); }
   const ideas = (d.ideas || []).slice(0, 8);
   const ms = (d.methods || []).slice(0, 6);
   if (ms.length) L.push('', 'METHODS SEEN: ' + ms.map(x => x.name + ' (' + x.papers + ')').join('; '));
@@ -1133,7 +1158,8 @@ function renderTopics() {
       <div class="toolbar">
         <button class="btn xs" data-act="brief">📋 Copy topic brief</button>
         <button class="btn xs" data-act="brieftxt">⬇ Download .txt</button>
-        <button class="btn xs" data-act="local">🇵🇭 Check local research</button>
+        <select id="countrySel" class="country-sel" aria-label="Country for the local check" onchange="setCountry(this.value)">${countryOptions()}</select>
+        <button class="btn xs" data-act="local">${localBtnLabel()}</button>
       </div>
       <div id="localBox">${localHtml()}</div>
       ${_topicLocal ? `<div class="local-note"><span>Showing <b>${_topicPapers.length}</b> of the ${_topicAll.length} loaded papers that fit your filters. Sub-topics and gaps below were built from all ${_topicAll.length}.</span><button class="btn xs" onclick="findTopics()">↻ Update them</button></div>` : ''}
@@ -1186,9 +1212,9 @@ document.getElementById('results').addEventListener('click', e => {
     else if (a === 'brieftxt') downloadBrief();
     else if (a === 'local') checkLocal();
     else if (a === 'localadd') {
-      const kwEl = document.getElementById('keywordsInput'), cur = kwEl.value.trim();
-      if (!/philippine/i.test(cur)) kwEl.value = cur ? cur + ' Philippines' : 'Philippines';
-      _pendingTrail = 'Philippines'; findTopics(); window.scrollTo({top: 0, behavior: 'smooth'});
+      const kwEl = document.getElementById('keywordsInput'), cur = kwEl.value.trim(), cn = ac.dataset.cn || countryName(_country);
+      if (!cur.toLowerCase().includes(cn.toLowerCase())) kwEl.value = cur ? cur + ' ' + cn : cn;
+      _pendingTrail = cn; findTopics(); window.scrollTo({top: 0, behavior: 'smooth'});
     }
     return;
   }
