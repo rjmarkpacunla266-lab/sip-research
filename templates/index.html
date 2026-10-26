@@ -489,6 +489,8 @@ body.simple .toolbar{margin-top:16px}
 }
 @media(max-width:640px){.stats-bar{display:flex!important;grid-template-columns:none}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.pc-missing{font-size:.78rem;color:var(--muted,#777);margin-top:4px}.pc-missing s{opacity:.85;margin-right:4px}
+.relaxed-note{font-size:.8rem;color:var(--muted,#777);margin:0 0 10px}
 </style>
 <style>
 /* Phone fixes shared by all Sturch pages (loaded after each page's own styles). */
@@ -591,11 +593,10 @@ body.simple .toolbar{margin-top:16px}
     <input type="text" id="searchInput" placeholder="Search papers" autocomplete="off" aria-label="Search papers"/>
     <button class="sbtn" id="searchBtn" onclick="mainBtn()" aria-label="Search">
       <svg class="s-ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <span class="s-lbl">Add keyword</span>
+      <span class="s-lbl">Search</span>
     </button>
   </div>
-  <div class="tags-wrap adv-only" id="tagsWrap"></div>
-  <div class="hint adv-only">Each keyword is combined (AND). Press Enter to add one, then press Search.</div>
+  <div class="hint adv-only">Type your search and press Enter. Papers that contain every word come first; ones missing a word are shown after, marked “Missing”.</div>
   <div class="tour adv-only" id="tourBubble" hidden>
     <span aria-hidden="true">💡</span>
     <div><b>New to Advanced mode?</b><br/><button type="button" class="s-link" onclick="openTour()">Take a quick tour</button></div>
@@ -742,7 +743,7 @@ body.simple .toolbar{margin-top:16px}
       <div class="icon">🔍</div>
       <div class="txt">
         <strong>How to search</strong>
-        <span>Type a keyword → press Enter to add it as a tag → press Search. Add multiple tags for better results.</span>
+        <span>Type your search and press Enter. Papers missing some of your words are shown after the full matches, with the missing words crossed out.</span>
       </div>
     </div>
     <div class="t-step">
@@ -809,7 +810,6 @@ function filterQS() {
   if (yt) qs += `&year_to=${yt}`;
   if (oaOnly) qs += '&oa=1';
   if (sort) qs += `&sort=${sort}`;
-  if (searchTags.length) qs += `&tg=${encodeURIComponent(searchTags.join('|'))}`;   // for history only
   if (field && field !== 'both') qs += `&field=${field}`;
   if (src.length) qs += `&sources=${src.join(',')}`;
   return qs;
@@ -825,6 +825,8 @@ function applyView() {
   const dkey = p => p.date || (p.year ? String(p.year).padStart(4,'0') + '-00-00' : '');
   if (sort === 'recent') r.sort((a,b) => dkey(b).localeCompare(dkey(a)) || (b.citations||0)-(a.citations||0));
   else                   r.sort((a,b) => (b.citations||0)-(a.citations||0));
+  const part = p => (p.missing && p.missing.length) ? 1 : 0;
+  r = r.map((p,i)=>[p,i]).sort((a,b)=>part(a[0])-part(b[0])||a[1]-b[1]).map(x=>x[0]);   // full matches first
   currentResults = r;
   if (!r.length) {
     document.getElementById('results').innerHTML = '<div class="state"><div class="big">🔍</div><h3>No results match these filters</h3></div>';
@@ -857,25 +859,10 @@ document.addEventListener('click', () => { const m = document.getElementById('me
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { const m = document.getElementById('meMenu'); if (m) m.classList.remove('open'); } });
 try { document.getElementById('yr').textContent = new Date().getFullYear(); } catch (e) {}
 
-// The big round button: Simple = search; Advanced = add the typed keyword (or search if the box is empty)
-function mainBtn() {
-  if (isSimple()) { doSearch(); return; }
-  const v = document.getElementById('searchInput').value.trim();
-  if (v) addTag(v); else doSearch();
-}
-// Advanced: the round button says "Add keyword" while there is text in the box, and "Search" once keywords are ready
-function syncMainBtn() {
-  const l = document.querySelector('#searchBtn .s-lbl'); if (!l) return;
-  const has = document.getElementById('searchInput').value.trim().length > 0;
-  l.textContent = (!has && searchTags.length) ? 'Search' : 'Add keyword';
-}
-document.getElementById('searchInput').addEventListener('input', syncMainBtn);
-// The Search button inside the Advanced filter panel: add any typed keyword, then search
-function runAdv() {
-  const v = document.getElementById('searchInput').value.trim();
-  if (v) addTag(v);
-  doSearch();
-}
+// The big round button and the Advanced panel button both just search the box
+function mainBtn() { doSearch(); }
+function syncMainBtn() {}
+function runAdv() { doSearch(); }
 
 // ── Simple / Advanced mode ─────────────────────
 // Simple (default): one search box and three filters. Advanced: the full page (tags, sources, field, every filter).
@@ -922,9 +909,6 @@ function setMode(adv, init) {
   try { localStorage.setItem('sturch_mode', adv ? 'adv' : 'simple'); } catch (e) {}
   let cleared = false;
   if (adv) {
-    const v = input.value.trim();
-    if (v && v.toLowerCase() !== searchTags.join(' ')) addTag(v); else input.value = '';
-    renderTags();
     input.placeholder = 'Search papers or topics…';
     if (!init) checkTutorial();
   } else {
@@ -1088,34 +1072,18 @@ function applyRerunFromURL() {
   return true;
 }
 
-// ── Tag System ─────────────────────────────────
+// ── Search box (traditional) ───────────────────
+// searchTags keeps the last query as a one-item list so history / saved results still work
 let searchTags = [];
-function addTag(val) {
-  val = val.trim().toLowerCase();
-  if (!val) return;
-  if (searchTags.includes(val)) { toast('⚠️ Tag already added'); return; }
-  searchTags.push(val);
-  renderTags();
-  document.getElementById('searchInput').value = '';
-  syncMainBtn();
-}
-function removeTag(idx) { searchTags.splice(idx, 1); renderTags(); }
 function renderTags() {
-  setTimeout(syncMainBtn, 0);
-  if (isSimple() && searchTags.length) document.getElementById('searchInput').value = searchTags.join(' ');   // the box shows the search
-  document.getElementById('tagsWrap').innerHTML = searchTags.map((t, i) =>
-    `<span class="tag-chip">${esc(t)}<span class="tag-x" onclick="removeTag(${i})">×</span></span>`
-  ).join('');
+  if (searchTags.length) document.getElementById('searchInput').value = searchTags.join(' ');
+  const w = document.getElementById('tagsWrap'); if (w) w.innerHTML = '';
 }
 document.getElementById('searchInput').addEventListener('keydown', e => {
-  const val = document.getElementById('searchInput').value.trim();
   if (e.key === 'Enter') {
-    if (isSimple()) { e.preventDefault(); if (val) doSearch(); else toast('⚠️ Type something to search for'); return; }
-    if (val) { e.preventDefault(); addTag(val); }
-    else if (searchTags.length) doSearch();
-    else toast('⚠️ Type a keyword first');
+    e.preventDefault();
+    if (document.getElementById('searchInput').value.trim()) doSearch(); else toast('⚠️ Type something to search for');
   }
-  if (e.key === ',' && !isSimple()) { e.preventDefault(); if (val) addTag(val); }
 });
 
 // ── Load User Info ─────────────────────────────
@@ -1146,10 +1114,9 @@ function getPaperId(item) {
 // ── Search ─────────────────────────────────────
 async function doSearch(page = 1) {
   const inputVal = document.getElementById('searchInput').value.trim();
-  if (inputVal && isSimple()) { searchTags = [inputVal.toLowerCase()]; }       // Simple mode: the box is the whole query, no tags
-  else if (inputVal) { addTag(inputVal); return; }
+  if (inputVal) searchTags = [inputVal.toLowerCase()];       // the box is the whole query
   const query = searchTags.join(' ');
-  if (!query) { toast('⚠️ Please add at least one keyword'); return; }
+  if (!query) { toast('⚠️ Type something to search for'); return; }
 
   currentQuery = query;
   currentPage  = page;
@@ -1332,6 +1299,7 @@ function paperCard(item, i, adv) {
       </div>
       <div class="pc-meta">${meta}</div>
       ${snip ? `<div class="pc-snip">${esc(snip)}</div>` : ''}
+      ${item.missing && item.missing.length ? `<div class="pc-missing">Missing: ${item.missing.map(w => `<s>${esc(w)}</s>`).join(' ')}</div>` : ''}
       ${cites ? `<div class="pc-cites">↗ ${cites.toLocaleString()} citations</div>` : ''}
       <div class="pc-actions">
         <button class="act primary" onclick="openPaperPage(${i},event)">📄 Read</button>
@@ -1356,9 +1324,11 @@ function paperCard(item, i, adv) {
 }
 function buildSimpleCard(item, i) { return paperCard(item, i, false); }
 function countHtml(fetched, shown, sources) {
-  return isSimple()
+  const nPart = (currentResults || []).filter(p => p.missing && p.missing.length).length;
+  const tail = nPart ? ` · ${nPart} partial match${nPart > 1 ? 'es' : ''}` : '';
+  return ( isSimple()
     ? `About <strong>${(totalResults || fetched).toLocaleString()}</strong> results · showing ${shown}`
-    : (shown >= fetched ? `<strong>${fetched}</strong> fetched · showing ${shown}` : `<strong>${fetched}</strong> fetched · showing first ${shown} · ${(sources || ['OpenAlex']).join(', ')}`);
+    : (shown >= fetched ? `<strong>${fetched}</strong> fetched · showing ${shown}` : `<strong>${fetched}</strong> fetched · showing first ${shown} · ${(sources || ['OpenAlex']).join(', ')}`)) + tail;
 }
 function buildCard(item, i) { return paperCard(item, i, !isSimple()); }
 

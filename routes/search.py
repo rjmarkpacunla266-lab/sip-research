@@ -8,7 +8,8 @@ from flask import Blueprint, render_template, request, session, jsonify
 from core import (login_required, get_user, OPENALEX_URL, format_paper, reconstruct_abstract,
                   sb_post, sb_get, sb_patch, sb_try, _all_citations)
 from engine import (ALL_SOURCES, SOURCE_LABELS, to_int as _to_int, read_filters, merge_dedupe,
-                    apply_filters_and_sort, search_sources)
+                    apply_filters_and_sort, search_sources, term_in)
+from core import _safe_terms
 from bs4 import BeautifulSoup as BS
 
 search_bp = Blueprint("search", __name__)
@@ -45,13 +46,51 @@ def _log_search(user, query, count, f, tags_raw):
         row.pop("filters")
         sb_try("POST", "search_logs", data=row)
 
+def _hit(p, term, field):
+    t, a = p.get("title") or "", p.get("abstract") or ""
+    if field == "title":    return term_in(t, term)
+    if field == "abstract": return term_in(a, term)
+    return term_in(t, term) or term_in(a, term)
+
+def _partial_matches(query, page, f, have_keys):
+    """Google-style fallback: papers that contain SOME of the words, each tagged with
+    the words it is missing. Rule-based only."""
+    terms = _safe_terms(query)
+    if len(terms) < 2:
+        return []
+    f2 = dict(f); f2["field"] = "both"      # let the filters pass; we check the field ourselves
+    raw, _ = search_sources(query, page, f, loose=True)
+    out = []
+    for p in apply_filters_and_sort(merge_dedupe(raw), f2, query):
+        key = (p.get("doi") or p.get("title") or "").lower()
+        if key in have_keys:
+            continue
+        miss = [t for t in terms if not _hit(p, t, f["field"])]
+        if not miss or len(miss) == len(terms):
+            continue
+        p["missing"] = miss
+        out.append(p)
+    out.sort(key=lambda x: (len(x["missing"]), -(x.get("citations") or 0)))
+    return out
+
 def _run_search(query, page, user, log=True):
     f = read_filters(request.args.get)
     raw, total = search_sources(query, page, f)
     results = apply_filters_and_sort(merge_dedupe(raw), f, query)
+    relaxed = False
+    if page == 1 and len(results) < 10:
+        try:
+            keys = {(p.get("doi") or p.get("title") or "").lower() for p in results}
+            extra = _partial_matches(query, page, f, keys)[:20 - len(results)]
+            if extra:
+                results = results + extra
+                relaxed = True
+        except Exception:
+            pass
     if log:
         _log_search(user, query, len(results), f, request.args.get("tg", ""))
-    return {"results": results, "total": total or len(results), "query": query, "page": page,
+    return {"results": results, "total": (total or len(results)) if not relaxed else len(results),
+            "query": query, "page": page, "relaxed": relaxed,
             "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
             "ref_disclaimer": "References auto-generated — verify before academic use"}
 
