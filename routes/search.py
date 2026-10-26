@@ -287,16 +287,7 @@ def fetch_paper():
         if not text:
             text = _fetch_oa_url(oa_url)
 
-    if not text and openalex_id and openalex_id.startswith("pmid:"):
-        pmid = openalex_id.replace("pmid:", "")
-        try:
-            resp = requests.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
-                                params={"db": "pubmed", "id": pmid, "retmode": "text", "rettype": "abstract"},
-                                timeout=15)
-            if resp.ok and resp.text.strip():
-                text = resp.text.strip()[:6000]
-        except Exception:
-            pass
+    # PubMed abstracts are not fetched: they can be publisher-copyrighted (NLM gives no commercial-use cover)
 
     # Fallback: use abstract from search results if full text unavailable
     if not text and abstract:
