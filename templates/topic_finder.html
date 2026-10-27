@@ -522,9 +522,7 @@ select.form-input{appearance:auto}
     <div class="fx-src"><span class="lbl">Sources:</span>
       <span class="fx-chip active" data-src="openalex" onclick="fChip(this)">OpenAlex</span>
       <span class="fx-chip active" data-src="arxiv" onclick="fChip(this)">arXiv</span>
-      <span class="fx-chip active" data-src="pubmed" onclick="fChip(this)">PubMed</span>
       <span class="fx-chip active" data-src="crossref" onclick="fChip(this)">Crossref</span>
-      <span class="fx-chip active" data-src="europepmc" onclick="fChip(this)">Europe PMC</span>
     </div>
     <div class="fx-help">Numbers in brackets show how many of the loaded papers fit. “Reviews” are recognised from the title, so a few may be missed.</div>
     <button type="button" class="fx-btn sm" onclick="fReset()">↺ Reset filters</button>
@@ -579,7 +577,7 @@ const F_TYPE_NAMES = {review: 'reviews', original: 'original studies'};
 function fEl(id){ return document.getElementById(id); }
 function fGet(){
   const on = [...document.querySelectorAll('.fx-chip[data-src].active')].map(c => c.dataset.src);
-  const o = {sources: on.length === 5 ? [] : on, year_from: fEl('fYf').value.trim(), year_to: fEl('fYt').value.trim(), oa: fOA, sort: fEl('fSort').value};
+  const o = {sources: on.length === 3 ? [] : on, year_from: fEl('fYf').value.trim(), year_to: fEl('fYt').value.trim(), oa: fOA, sort: fEl('fSort').value};
   o.field = fEl('fField') ? fEl('fField').value : 'both';
   o.ptype = fEl('fType') ? fEl('fType').value : 'all';
   return o;
@@ -667,7 +665,7 @@ function fRelaxList(){
   if (o.ptype !== 'all')  out.push(['type', 'Allow all paper types (not only ' + F_TYPE_NAMES[o.ptype] + ')']);
   if (o.oa)               out.push(['oa', 'Include papers that are not Open Access']);
   if (o.year_from || o.year_to) out.push(['years', 'Any publication year']);
-  if (o.sources.length)   out.push(['src', 'Use all 5 sources']);
+  if (o.sources.length)   out.push(['src', 'Use all 3 sources']);
   return out;
 }
 function fRelax(key){

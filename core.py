@@ -4,6 +4,8 @@ All blueprints import from here.
 """
 import os
 import re
+import threading
+import time
 import html as _html
 import hashlib
 import secrets
@@ -448,9 +450,10 @@ def format_paper(paper):
     last_page  = (biblio.get("last_page") or "")
     pages      = f"{first_page}\u2013{last_page}" if first_page and last_page else (str(first_page or ""))
     missing    = [l for l, v in [("volume", volume), ("issue", issue), ("page range", pages), ("DOI", doi)] if not v]
+    lic = str(((paper.get("best_oa_location") or {}).get("license") or loc.get("license") or "")).lower()
     return {
         "title": title, "date": paper.get("publication_date") or "", "authors": authors, "year": year, "journal": journal,
-        "abstract": abstract, "citations": paper.get("cited_by_count", 0),
+        "license": lic, "abstract": abstract, "citations": paper.get("cited_by_count", 0),
         "is_oa": oa.get("is_oa", False), "oa_url": oa.get("oa_url", ""),
         "doi": doi, "concepts": concepts, "openalex_id": paper.get("id", ""),
         "volume": volume, "issue": issue, "pages": pages,
@@ -458,6 +461,28 @@ def format_paper(paper):
         "apa_missing": missing, "data_source": "OpenAlex (openalex.org)",
         "ref_warning": "Auto-generated — verify before academic use",
     }
+
+# ─── ABSTRACT POLICY ─────────────────────────────────────────────────
+# Abstracts are shown (and used by the tools) only when the source allows it:
+#   arXiv: its terms put descriptive metadata, abstracts included, under CC0.
+#   OpenAlex: only when the paper itself carries an open licence that allows reuse.
+# Every other abstract is blanked after searching and filtering, and flagged so the page can say so.
+_OPEN_LICENSES = {"cc0", "cc-by", "cc-by-sa", "public-domain", "pd"}
+
+def abstract_allowed(p):
+    src = (p.get("data_source") or "").lower()
+    if "arxiv" in src:
+        return True
+    if "openalex" in src:
+        return (p.get("license") or "").lower() in _OPEN_LICENSES
+    return False
+
+def hide_restricted_abstracts(papers):
+    for p in papers:
+        if p.get("abstract") and not abstract_allowed(p):
+            p["abstract"] = ""
+            p["abstract_hidden"] = True
+    return papers
 
 # ─── SEARCH HELPERS ──────────────────────────────────────────────────
 _JUNK_MARKERS = ("share add to", "export ris", "exportris", "get e-alerts", "return to issue",
@@ -578,6 +603,22 @@ def search_semantic_scholar(query, page=1, per_page=RESULTS_PER_SOURCE):
         return []
 
 # ─── ARXIV ───────────────────────────────────────────────────────────
+# ─── arXiv: polite use ───────────────────────────────────────────────
+# arXiv's terms: no more than one request every 3 seconds, one connection. Repeated searches are cached for 10 minutes.
+_AX_CACHE, _AX_TTL = {}, 600
+_AX_LOCK, _AX_NEXT = threading.Lock(), [0.0]
+
+def _arxiv_wait():
+    with _AX_LOCK:
+        now = time.time()
+        slot = max(now, _AX_NEXT[0])
+        if slot - now > 6:
+            return False
+        _AX_NEXT[0] = slot + 3.0
+    if slot > now:
+        time.sleep(slot - now)
+    return True
+
 def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE,
                  year_from=None, year_to=None, oa_only=False, sort="cited", field="both", loose=False):
     start = (page - 1) * per_page
@@ -595,6 +636,12 @@ def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE,
     params = {"search_query": q, "start": start, "max_results": per_page,
               "sortBy": "submittedDate" if sort == "recent" else "relevance",
               "sortOrder": "descending"}
+    ckey = tuple(sorted((k, str(v)) for k, v in params.items()))
+    hit = _AX_CACHE.get(ckey)
+    if hit and time.time() - hit[0] < _AX_TTL:
+        return [dict(p) for p in hit[1]]
+    if not _arxiv_wait():
+        return []                                   # arXiv asks for one request every 3 seconds; skip rather than queue for long
     try:
         resp = requests.get("https://export.arxiv.org/api/query", params=params, timeout=15)
         if not resp.ok:
@@ -622,6 +669,9 @@ def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE,
                 "data_source": "arXiv (arxiv.org)",
                 "ref_warning": "Auto-generated — verify before academic use",
             })
+        if len(_AX_CACHE) > 300:
+            _AX_CACHE.clear()
+        _AX_CACHE[ckey] = (time.time(), [dict(p) for p in results])
         return results
     except Exception:
         return []

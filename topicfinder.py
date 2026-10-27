@@ -420,6 +420,7 @@ def parse_jats(xml_bytes):
 def get_oa_fulltext(doi, timeout=10):
     """Open-access full text for a DOI via Europe PMC, or None. Cached in memory.
     -> {"pmcid", "license", "sections": {"Introduction": "...", "Results": "...", "Discussion": "..."}}"""
+    return None   # Europe PMC full text is paused (publisher copyright)
     doi = re.sub(r"^https?://(?:dx\.)?doi\.org/", "", (doi or "").strip().lower())
     if not doi:
         return None

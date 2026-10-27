@@ -9,7 +9,7 @@ from core import (login_required, get_user, OPENALEX_URL, format_paper, reconstr
                   sb_post, sb_get, sb_patch, sb_try, _all_citations)
 from engine import (ALL_SOURCES, SOURCE_LABELS, to_int as _to_int, read_filters, merge_dedupe,
                     apply_filters_and_sort, search_sources, term_in)
-from core import _safe_terms
+from core import _safe_terms, hide_restricted_abstracts
 from bs4 import BeautifulSoup as BS
 
 search_bp = Blueprint("search", __name__)
@@ -87,6 +87,7 @@ def _run_search(query, page, user, log=True):
                 relaxed = True
         except Exception:
             pass
+    hide_restricted_abstracts(results)
     if log:
         _log_search(user, query, len(results), f, request.args.get("tg", ""))
     return {"results": results, "total": (total or len(results)) if not relaxed else len(results),

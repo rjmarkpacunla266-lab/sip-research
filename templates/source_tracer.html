@@ -8,7 +8,7 @@
        SEO — searchability & visibility
   ═══════════════════════════════════════════════════ -->
   <title>Source Tracer — Find the Origin of a Quote | Sturch</title>
-  <meta name="description"  content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses similarity scoring across 5 academic databases."/>
+  <meta name="description"  content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses similarity scoring across 3 academic databases."/>
   <meta name="keywords"     content="source tracer, find quote source, academic fact checker, trace research quote, verify citation, plagiarism checker academic"/>
   <meta name="author"       content="Sturch"/>
   <meta name="theme-color"  content="#2f5bea"/>
@@ -18,7 +18,7 @@
   <meta property="og:type"        content="website"/>
   <meta property="og:site_name"   content="Sturch"/>
   <meta property="og:title"       content="Source Tracer — Find the Origin of a Quote | Sturch"/>
-  <meta property="og:description" content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses similarity scoring across 5 academic databases."/>
+  <meta property="og:description" content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses similarity scoring across 3 academic databases."/>
   <meta property="og:url"         content="{{ site_url }}/source-tracer"/>
   <meta property="og:image"       content="{{ site_url }}/static/og-image.png"/>
   <meta property="og:image:width"  content="1200"/>
@@ -29,7 +29,7 @@
   <meta name="twitter:card"        content="summary_large_image"/>
   <meta name="twitter:site"        content="@sturch_app"/>
   <meta name="twitter:title"       content="Source Tracer — Find the Origin of a Quote | Sturch"/>
-  <meta name="twitter:description" content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses similarity scoring across 5 academic databases."/>
+  <meta name="twitter:description" content="Paste any academic quote or claim and Sturch will trace it back to its original source paper. Uses similarity scoring across 3 academic databases."/>
   <meta name="twitter:image"       content="{{ site_url }}/static/og-image.png"/>
 
   <!-- ═══════════════════════════════════════════════ -->
@@ -398,9 +398,7 @@ textarea{border-radius:12px;background:var(--surf);font-size:1rem;line-height:1.
     <div class="fx-src"><span class="lbl">Sources:</span>
       <span class="fx-chip active" data-src="openalex" onclick="fChip(this)">OpenAlex</span>
       <span class="fx-chip active" data-src="arxiv" onclick="fChip(this)">arXiv</span>
-      <span class="fx-chip active" data-src="pubmed" onclick="fChip(this)">PubMed</span>
       <span class="fx-chip active" data-src="crossref" onclick="fChip(this)">Crossref</span>
-      <span class="fx-chip active" data-src="europepmc" onclick="fChip(this)">Europe PMC</span>
     </div>
     <button type="button" class="fx-btn sm" onclick="fReset()">↺ Reset filters</button>
   </div>
@@ -418,7 +416,7 @@ textarea{border-radius:12px;background:var(--surf);font-size:1rem;line-height:1.
 <div id="results"><div class="empty-state" id="emptyState">
   <div class="es-ic" aria-hidden="true"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M14 3v5h5"/><circle cx="16" cy="16" r="3.5"/><path d="M18.6 18.6L21 21"/></svg></div>
   <h2>Find the source of a quote</h2>
-  <p>Paste a sentence or quote above and Sturch will search academic papers across 5 databases to find where it came from.</p>
+  <p>Paste a sentence or quote above and Sturch will search academic papers across 3 databases to find where it came from.</p>
   <div class="es-ex">
     <div class="es-lbl">Try these examples</div>
     <button type="button" class="es-q" onclick="exQuote('Climate change is the defining challenge of our time.')"><span>Climate change quote</span><i>›</i></button>
@@ -460,7 +458,7 @@ const F_SORT_NAMES = {match: 'Best match', cited: 'Most cited', recent: 'Most re
 function fEl(id){ return document.getElementById(id); }
 function fGet(){
   const on = [...document.querySelectorAll('.fx-chip.active')].map(c => c.dataset.src);
-  const o = {sources: on.length === 5 ? [] : on, year_from: fEl('fYf').value.trim(), year_to: fEl('fYt').value.trim(), oa: fOA, sort: fEl('fSort').value};
+  const o = {sources: on.length === 3 ? [] : on, year_from: fEl('fYf').value.trim(), year_to: fEl('fYt').value.trim(), oa: fOA, sort: fEl('fSort').value};
   o.field = fEl('fField') ? fEl('fField').value : 'both';
   return o;
 }
@@ -691,7 +689,7 @@ function renderResults(data, opt) {
       <h3>⚠️ Source not found in indexed databases</h3>
       <p>Possible reasons:</p>
       <ul>
-        <li>The source may not be indexed in OpenAlex, arXiv, PubMed, Crossref or Europe PMC</li>
+        <li>The source may not be indexed in OpenAlex, arXiv or Crossref</li>
         <li>The quote may be paraphrased or slightly altered</li>
         <li>There may be a typo in the quote</li>
         <li>The source may be a book, website, or non-academic publication</li>

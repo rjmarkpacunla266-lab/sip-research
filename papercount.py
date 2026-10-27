@@ -96,8 +96,6 @@ def _arxiv():
 SOURCES = [
     ("openalex", "OpenAlex", _openalex),
     ("crossref", "Crossref", _crossref),
-    ("pubmed", "PubMed", _pubmed),
-    ("europepmc", "Europe PMC", _europepmc),
     ("arxiv", "arXiv", _arxiv),
 ]
 

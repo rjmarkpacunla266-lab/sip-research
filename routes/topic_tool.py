@@ -470,12 +470,12 @@ def topics():
                 c["from"] = "abstract"
                 cands.append(c)
         ft_used = 0
-        want_ft = request.args.get("fulltext", "1") != "0"
+        want_ft = False   # full-text reading is paused together with Europe PMC
         if want_ft:
             ft_cands, ft_used = topicfinder.fulltext_gaps(papers, subj_terms, forms)
             cands += ft_cands
         # when the page asks for the fast version it fetches the full-text gaps in a second step (/api/topics/gaps)
-        ft_pending = (not want_ft) and any(p.get("is_oa") and p.get("doi") for p in papers)
+        ft_pending = False
         gaps = topicfinder.pick_gaps(cands, 8)
 
         msg = ""

@@ -224,7 +224,7 @@ footer{border-top:1px solid var(--border);margin-top:48px;padding:26px 0 40px;te
   <div class="eyebrow">Choose</div>
   <h2><span class="ic">🧭</span> Which tool should I use?</h2>
   <p class="lead">Start from what you want to do.</p>
-  <a class="pick" href="#search"><span class="ic">🔍</span><div><b>I want to find papers about a topic</b><span>Search Papers · searches 5 databases at once</span></div></a>
+  <a class="pick" href="#search"><span class="ic">🔍</span><div><b>I want to find papers about a topic</b><span>Search Papers · searches 3 databases at once</span></div></a>
   <a class="pick" href="#answer"><span class="ic">💡</span><div><b>I have a question and want a quick, sourced answer</b><span>Answer Finder · sentences from real papers, each linked to its source</span></div></a>
   <a class="pick" href="#tracer"><span class="ic">🧾</span><div><b>I have a quote or sentence and need to know where it came from</b><span>Source Tracer · finds the paper behind the text</span></div></a>
   <a class="pick" href="#topic"><span class="ic">🧠</span><div><b>I need a research topic or question for my project</b><span>Topic Finder · topic size, sub-topics, methods and research gaps</span></div></a>
@@ -235,7 +235,7 @@ footer{border-top:1px solid var(--border);margin-top:48px;padding:26px 0 40px;te
 <section id="search">
   <div class="eyebrow">Tool 1</div>
   <h2><span class="ic">🔍</span> Search Papers</h2>
-  <p class="lead">Searches OpenAlex, arXiv, PubMed, Crossref and Europe PMC at the same time, so you do not have to visit each one.</p>
+  <p class="lead">Searches OpenAlex, arXiv and Crossref at the same time, so you do not have to visit each one.</p>
   <div class="row-btns"><a href="/search" class="btn primary sm">Open Search Papers</a></div>
 
   <h3>Simple mode (the default)</h3>
@@ -254,7 +254,7 @@ footer{border-top:1px solid var(--border);margin-top:48px;padding:26px 0 40px;te
     <tr><th>Button</th><th>What it does</th></tr>
     <tr><td><b>Cite</b></td><td>Opens APA, MLA, Chicago and Harvard references you can copy.</td></tr>
     <tr><td><b>🔖 Save</b></td><td>Keeps the paper in your Saved list.</td></tr>
-    <tr><td><b>Read</b></td><td>Opens the paper in Sturch's reader (see <a href="#reader">Reading &amp; citing</a>).</td></tr>
+    <tr><td><b>Open article</b></td><td>Opens the original page of the paper (the publisher or source) in a new tab.</td></tr>
     <tr><td><b>Full text</b></td><td>Goes to the free full version, when one exists.</td></tr>
     <tr><td><b>DOI</b></td><td>Goes to the publisher's page for the paper.</td></tr>
   </table></div>
@@ -263,12 +263,12 @@ footer{border-top:1px solid var(--border);margin-top:48px;padding:26px 0 40px;te
   <h3>Advanced mode</h3>
   <p>Switch on <b>Advanced mode</b> in the top corner when you need more control. Sturch remembers your choice, and your search stays when you switch.</p>
   <ul class="dots">
-    <li><b>Tags:</b> type a keyword and press <kbd>Enter</kbd> to add it as a tag. Add several tags for a sharper search, and tap the × on a tag to remove it.</li>
+    <li><b>Search box:</b> works the same as in Simple mode. Type your search and press <kbd>Enter</kbd>. Papers that contain every word come first. Papers that miss a word are shown after them, with the missing word crossed out.</li>
     <li><b>From year / To year:</b> only papers published in that range.</li>
     <li><b>Sort by:</b> Most cited or Most recent.</li>
     <li><b>Word in:</b> look for your words in the title and abstract (the default here), the title only, or the abstract only. Use this when you also want papers that mention your topic only in the abstract.</li>
     <li><b>Open access only:</b> same as "Free to read only" in Simple mode.</li>
-    <li><b>Sources:</b> turn databases on or off. For example, keep only PubMed for medicine topics, or only arXiv for computer science and physics.</li>
+    <li><b>Sources:</b> turn databases on or off. For example, keep only arXiv for computer science and physics. More sources are coming soon.</li>
     <li><b>Expand All / Collapse All / Copy All APA:</b> open every card, close them, or copy every reference at once.</li>
     <li><b>Add to collection (📚+), Share (🔗) and Export:</b> organize, share, or download your results.</li>
   </ul>
@@ -286,14 +286,13 @@ footer{border-top:1px solid var(--border);margin-top:48px;padding:26px 0 40px;te
 <!-- ───────────── READER ───────────── -->
 <section id="reader">
   <div class="eyebrow">Tool 2</div>
-  <h2><span class="ic">📄</span> Reading a paper and citing it</h2>
-  <p class="lead">Tap <b>Read</b> or a title in your results to open the paper reader.</p>
+  <h2><span class="ic">📄</span> Opening a paper and citing it</h2>
+  <p class="lead">Tap <b>Open article</b> or a title in your results to go to the original page of the paper.</p>
   <ul class="dots">
-    <li><b>Full text or abstract:</b> Sturch loads the full paper when a free copy is available, and the abstract when it is not. A note above the text tells you which one you are reading.</li>
-    <li><b>Find in paper:</b> type a word in the bar at the top (or press <kbd>Ctrl</kbd> + <kbd>F</kbd>). Matches are highlighted, and the arrows jump between them.</li>
-    <li><b>Citation styles:</b> choose APA, MLA, Chicago or Harvard, then tap <b>Copy</b>.</li>
-    <li><b>Related papers:</b> finds more papers on the same topic.</li>
-    <li><b>Save, Share, Print, or Download as note:</b> keep the paper, send a link, or download a short text note with the reference and abstract.</li>
+    <li><b>Abstracts:</b> Sturch shows an abstract only for arXiv papers and for papers with an open license. For the rest, the card says the abstract is not shown, and <b>Open article</b> takes you to it.</li>
+    <li><b>Citation styles:</b> tap <b>Cite</b>, choose APA, MLA, Chicago or Harvard, then tap <b>Copy</b>.</li>
+    <li><b>Save and Collect:</b> keep the paper in your Saved list or add it to a collection.</li>
+    <li><b>Share:</b> copy a link to the paper.</li>
     <li><b>Dark or light mode:</b> tap the 🌙 button at the top.</li>
   </ul>
   <div class="warn"><b>Always check references.</b> Citations are made automatically from the paper's data. Some may be missing a volume, issue or page number. A warning appears when Sturch knows something is missing. Compare with the original paper before you hand in your work.</div>
@@ -384,7 +383,7 @@ footer{border-top:1px solid var(--border);margin-top:48px;padding:26px 0 40px;te
   <h2><span class="ic">✅</span> Good habits for school work</h2>
   <ul class="dots">
     <li><b>Check every citation</b> against the paper before you submit.</li>
-    <li><b>Read more than the abstract.</b> Use the full text when it is free.</li>
+    <li><b>Read more than the abstract.</b> Open the original article and read the paper itself when you can.</li>
     <li><b>Use several papers</b>, not just the first result. Newer and well-cited papers are usually good places to start.</li>
     <li><b>Quote carefully.</b> Use "Show context" in the Answer Finder so you do not change what the author meant.</li>
     <li><b>Write in your own words</b> and always credit the source.</li>
@@ -399,8 +398,8 @@ footer{border-top:1px solid var(--border);margin-top:48px;padding:26px 0 40px;te
   <details><summary>Is Sturch really free?</summary><div class="in"><p>Yes. Searching, the tools, and saving papers are free for students. If you like it, you can support it from the Donate page.</p></div></details>
   <details><summary>Does Sturch use AI to write the answers?</summary><div class="in"><p>No. The Answer Finder and Topic Finder find and show sentences that already exist in published papers, using fixed rules. Every answer links to the paper it came from.</p></div></details>
   <details><summary>I got no results. What can I do?</summary><div class="in"><p>Try fewer or simpler words, remove the date or "Free to read only" filter, or switch to Advanced mode and make sure all sources are on. Simple mode only looks at titles, so if your words appear only in abstracts, use Advanced mode and set <b>Word in</b> to title and abstract.</p></div></details>
-  <details><summary>Why can't I read the full paper?</summary><div class="in"><p>Many papers are behind a paywall. Sturch only shows the full text when a free copy exists. You can turn on "Free to read only" to see just those papers, or ask your school library for access.</p></div></details>
-  <details><summary>The search or a tool is slow.</summary><div class="in"><p>Sturch searches several databases at once, so a search can take a few seconds. Tools that read full papers, like the full Source Tracer, can take around a minute and a half. Keep the page open and wait for it to finish.</p></div></details>
+  <details><summary>Why can't I read the full paper?</summary><div class="in"><p>Many papers are behind a paywall. Sturch links to the original page of each paper, and a free copy exists only for some of them. You can turn on "Free to read only" to see just those papers, or ask your school library for access.</p></div></details>
+  <details><summary>The search or a tool is slow.</summary><div class="in"><p>Sturch searches several databases at once, so a search can take a few seconds. Keep the page open and wait for it to finish.</p></div></details>
   <details><summary>How many papers can Sturch search?</summary><div class="in"><p>See the live count on the <a href="/#numbers">home page</a>. It is taken from each database and shows a range, because the same paper can appear in more than one database.</p></div></details>
   <details><summary>How does Sturch list authors in a reference?</summary><div class="in"><p>Each style has its own rule. <b>APA</b> lists every author up to 20 (with &amp; before the last one). <b>MLA</b> uses the first author and "et al." for three or more. <b>Chicago</b> lists up to 10 authors, then the first seven and "et al." <b>Harvard</b> lists up to three, then the first author and "et al." <b>BibTeX</b> keeps every author. Some schools use slightly different rules, so check what your teacher asks for.</p></div></details>
   <details><summary>I forgot my password.</summary><div class="in"><p>Use the recovery code you were given when you signed up, on the login page's reset option. Keep that code somewhere safe.</p></div></details>

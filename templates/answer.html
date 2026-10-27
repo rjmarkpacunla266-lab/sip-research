@@ -8,7 +8,7 @@
        SEO — searchability & visibility
   ═══════════════════════════════════════════════════ -->
   <title>Answer Finder — Get Research-Backed Answers | Sturch</title>
-  <meta name="description"  content="Ask research questions and get answers sourced directly from academic papers. Powered by OpenAlex, arXiv, PubMed and more. Try: What is, How does, What causes."/>
+  <meta name="description"  content="Ask research questions and get answers sourced directly from academic papers. Powered by OpenAlex, arXiv, Crossref and more. Try: What is, How does, What causes."/>
   <meta name="keywords"     content="research answer finder, academic question answering, find research answers, what is research tool, evidence-based answers"/>
   <meta name="author"       content="Sturch"/>
   <meta name="theme-color"  content="#2f5bea"/>
@@ -18,7 +18,7 @@
   <meta property="og:type"        content="website"/>
   <meta property="og:site_name"   content="Sturch"/>
   <meta property="og:title"       content="Answer Finder — Get Research-Backed Answers | Sturch"/>
-  <meta property="og:description" content="Ask research questions and get answers sourced directly from academic papers. Powered by OpenAlex, arXiv, PubMed and more. Try: What is, How does, What causes."/>
+  <meta property="og:description" content="Ask research questions and get answers sourced directly from academic papers. Powered by OpenAlex, arXiv, Crossref and more. Try: What is, How does, What causes."/>
   <meta property="og:url"         content="{{ site_url }}/answer"/>
   <meta property="og:image"       content="{{ site_url }}/static/og-image.png"/>
   <meta property="og:image:width"  content="1200"/>
@@ -29,7 +29,7 @@
   <meta name="twitter:card"        content="summary_large_image"/>
   <meta name="twitter:site"        content="@sturch_app"/>
   <meta name="twitter:title"       content="Answer Finder — Get Research-Backed Answers | Sturch"/>
-  <meta name="twitter:description" content="Ask research questions and get answers sourced directly from academic papers. Powered by OpenAlex, arXiv, PubMed and more. Try: What is, How does, What causes."/>
+  <meta name="twitter:description" content="Ask research questions and get answers sourced directly from academic papers. Powered by OpenAlex, arXiv, Crossref and more. Try: What is, How does, What causes."/>
   <meta name="twitter:image"       content="{{ site_url }}/static/og-image.png"/>
 
   <!-- ═══════════════════════════════════════════════ -->
@@ -440,9 +440,7 @@ header.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:
     <div class="fx-src"><span class="lbl">Sources:</span>
       <span class="fx-chip active" data-src="openalex" onclick="fChip(this)">OpenAlex</span>
       <span class="fx-chip active" data-src="arxiv" onclick="fChip(this)">arXiv</span>
-      <span class="fx-chip active" data-src="pubmed" onclick="fChip(this)">PubMed</span>
       <span class="fx-chip active" data-src="crossref" onclick="fChip(this)">Crossref</span>
-      <span class="fx-chip active" data-src="europepmc" onclick="fChip(this)">Europe PMC</span>
     </div>
     <button type="button" class="fx-btn sm" onclick="fReset()">↺ Reset filters</button>
   </div>
@@ -479,7 +477,7 @@ const F_SORT_NAMES = {match: 'Best match', cited: 'Most cited', recent: 'Most re
 function fEl(id){ return document.getElementById(id); }
 function fGet(){
   const on = [...document.querySelectorAll('.fx-chip.active')].map(c => c.dataset.src);
-  const o = {sources: on.length === 5 ? [] : on, year_from: fEl('fYf').value.trim(), year_to: fEl('fYt').value.trim(), oa: fOA, sort: fEl('fSort').value};
+  const o = {sources: on.length === 3 ? [] : on, year_from: fEl('fYf').value.trim(), year_to: fEl('fYt').value.trim(), oa: fOA, sort: fEl('fSort').value};
   o.field = fEl('fField') ? fEl('fField').value : 'both';
   return o;
 }

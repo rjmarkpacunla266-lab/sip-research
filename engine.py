@@ -4,12 +4,12 @@ filters (sources, years, Open Access, sort, word-in) behave the same everywhere.
 import re
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from core import (RESULTS_PER_SOURCE, search_arxiv, search_pubmed, search_crossref,
-                  search_europe_pmc, search_openalex, _safe_terms)
+from core import (RESULTS_PER_SOURCE, search_arxiv, search_crossref,
+                  search_openalex, _safe_terms, hide_restricted_abstracts)
 
-ALL_SOURCES = ["openalex", "arxiv", "pubmed", "crossref", "europepmc"]
-SOURCE_LABELS = {"openalex": "OpenAlex", "arxiv": "arXiv", "pubmed": "PubMed",
-                 "crossref": "Crossref", "europepmc": "Europe PMC"}
+# PubMed and Europe PMC are paused: their abstracts and articles are publisher-copyrighted.
+ALL_SOURCES = ["openalex", "arxiv", "crossref"]
+SOURCE_LABELS = {"openalex": "OpenAlex", "arxiv": "arXiv", "crossref": "Crossref"}
 
 def to_int(v):
     try:
@@ -142,8 +142,7 @@ def search_sources(query, page, f, per_source=RESULTS_PER_SOURCE, loose=False):
     """Ask every selected source in parallel. Returns (raw_papers, openalex_total)."""
     kw = dict(year_from=f["year_from"], year_to=f["year_to"], oa_only=f["oa_only"],
               sort=f["sort"], field=f["field"], loose=loose)
-    fns = {"openalex": search_openalex, "arxiv": search_arxiv, "pubmed": search_pubmed,
-           "crossref": search_crossref, "europepmc": search_europe_pmc}
+    fns = {"openalex": search_openalex, "arxiv": search_arxiv, "crossref": search_crossref}
     raw, total = [], 0
     with ThreadPoolExecutor(max_workers=5) as ex:
         jobs = {ex.submit(fns[s], query, page, per_source, **kw): s for s in f["sources"] if s in fns}
@@ -163,4 +162,4 @@ def search_sources(query, page, f, per_source=RESULTS_PER_SOURCE, loose=False):
 def search_papers(query, page, f, per_source=RESULTS_PER_SOURCE, loose=False):
     """Search + merge duplicates + apply filters + sort. Returns (papers, openalex_total)."""
     raw, total = search_sources(query, page, f, per_source, loose)
-    return apply_filters_and_sort(merge_dedupe(raw), f, query), total
+    return hide_restricted_abstracts(apply_filters_and_sort(merge_dedupe(raw), f, query)), total

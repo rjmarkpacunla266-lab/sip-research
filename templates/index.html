@@ -8,8 +8,8 @@
        SEO — searchability & visibility
   ═══════════════════════════════════════════════════ -->
   <title>Search Academic Papers — Sturch</title>
-  <meta name="description"  content="Search millions of academic papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC. Filter by year, sort by citations, export references."/>
-  <meta name="keywords"     content="search research papers, academic paper search, find scientific articles, arxiv papers, pubmed search, openalex, crossref, europe pmc"/>
+  <meta name="description"  content="Search millions of academic papers from OpenAlex, arXiv and Crossref. Filter by year, sort by citations, export references."/>
+  <meta name="keywords"     content="search research papers, academic paper search, find scientific articles, arxiv papers, openalex, crossref"/>
   <meta name="author"       content="Sturch"/>
   <meta name="theme-color"  content="#2f5bea"/>
   <link rel="canonical"     href="{{ site_url }}/search"/>
@@ -18,7 +18,7 @@
   <meta property="og:type"        content="website"/>
   <meta property="og:site_name"   content="Sturch"/>
   <meta property="og:title"       content="Search Academic Papers — Sturch"/>
-  <meta property="og:description" content="Search millions of academic papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC. Filter by year, sort by citations, export references."/>
+  <meta property="og:description" content="Search millions of academic papers from OpenAlex, arXiv and Crossref. Filter by year, sort by citations, export references."/>
   <meta property="og:url"         content="{{ site_url }}/search"/>
   <meta property="og:image"       content="{{ site_url }}/static/og-image.png"/>
   <meta property="og:image:width"  content="1200"/>
@@ -29,7 +29,7 @@
   <meta name="twitter:card"        content="summary_large_image"/>
   <meta name="twitter:site"        content="@sturch_app"/>
   <meta name="twitter:title"       content="Search Academic Papers — Sturch"/>
-  <meta name="twitter:description" content="Search millions of academic papers from OpenAlex, arXiv, PubMed, Crossref and Europe PMC. Filter by year, sort by citations, export references."/>
+  <meta name="twitter:description" content="Search millions of academic papers from OpenAlex, arXiv and Crossref. Filter by year, sort by citations, export references."/>
   <meta name="twitter:image"       content="{{ site_url }}/static/og-image.png"/>
 
   <!-- ═══════════════════════════════════════════════ -->
@@ -582,7 +582,7 @@ body.simple .toolbar{margin-top:16px}
 <!-- Notice -->
 <div class="notice adv-only" id="noticeBanner">
   <span>⚠️</span>
-  <div><strong>Reference Notice:</strong> Results from OpenAlex, arXiv, PubMed, Crossref &amp; Europe PMC. References are <strong>auto-generated</strong>, so always verify them before you submit.</div>
+  <div><strong>Reference Notice:</strong> Results from OpenAlex, arXiv &amp; Crossref. References are <strong>auto-generated</strong>, so always verify them before you submit.</div>
   <button class="notice-x" onclick="this.closest('.notice').remove()" aria-label="Close notice">✕</button>
 </div>
 
@@ -609,8 +609,6 @@ body.simple .toolbar{margin-top:16px}
     <div class="src-row" id="srcRow">
       <span class="src-chip active" data-src="openalex"  onclick="toggleSource(this)" role="button" tabindex="0">OpenAlex</span>
       <span class="src-chip active" data-src="crossref"  onclick="toggleSource(this)" role="button" tabindex="0">Crossref</span>
-      <span class="src-chip active" data-src="pubmed"    onclick="toggleSource(this)" role="button" tabindex="0">PubMed</span>
-      <span class="src-chip active" data-src="europepmc" onclick="toggleSource(this)" role="button" tabindex="0">Europe PMC</span>
       <span class="src-chip active" data-src="arxiv"     onclick="toggleSource(this)" role="button" tabindex="0">arXiv</span>
     </div>
   </div>
@@ -681,7 +679,7 @@ body.simple .toolbar{margin-top:16px}
     <div class="stats-bar adv-only hidden" id="statsBar">
       <span><strong id="s_total">—</strong> results</span><span class="dot">·</span>
       <span>showing <strong id="s_shown">—</strong></span><span class="dot">·</span>
-      <span>from <strong id="s_sources">5</strong> sources</span>
+      <span>from <strong id="s_sources">3</strong> sources</span>
     </div>
 
     <!-- Toolbar -->
@@ -736,7 +734,7 @@ body.simple .toolbar{margin-top:16px}
       <div class="icon">💎</div>
       <div class="txt">
         <strong>Sturch is completely free</strong>
-        <span>Search millions of papers across 5 databases. Load more anytime. All free.</span>
+        <span>Search millions of papers across 3 databases. Load more anytime. All free.</span>
       </div>
     </div>
     <div class="t-step">
@@ -791,7 +789,7 @@ let rawResults     = [];   // everything the server returned (unfiltered view so
 let lastYf = null, lastYt = null, lastSources = [];
 function selectedSources() {
   const on = [...document.querySelectorAll('.src-chip.active')].map(c => c.dataset.src);
-  return on.length === 5 ? [] : on;   // empty = all (server default)
+  return on.length === 3 ? [] : on;   // empty = all (server default)
 }
 function toggleSource(el) {
   const active = document.querySelectorAll('.src-chip.active');
@@ -913,7 +911,7 @@ function setMode(adv, init) {
     if (!init) checkTutorial();
   } else {
     // Simple mode has no sources / end year / field options, so they go back to their defaults
-    cleared = !!document.getElementById('yearTo').value.trim() || document.getElementById('fieldBy').value !== 'both' || document.querySelectorAll('.src-chip.active').length < 5;
+    cleared = !!document.getElementById('yearTo').value.trim() || document.getElementById('fieldBy').value !== 'both' || document.querySelectorAll('.src-chip.active').length < 3;
     document.getElementById('yearTo').value = '';
     document.getElementById('fieldBy').value = 'both';
     document.querySelectorAll('.src-chip').forEach(c => c.classList.add('active'));
@@ -986,7 +984,7 @@ function fxSummary() {
   const parts = [];
   if (yf && yt) parts.push(yf + '–' + yt); else if (yf) parts.push('from ' + yf); else if (yt) parts.push('until ' + yt);
   if (oaOnly) parts.push('Open access');
-  if (on < 5) parts.push(on + ' source' + (on === 1 ? '' : 's'));
+  if (on < 3) parts.push(on + ' source' + (on === 1 ? '' : 's'));
   if (document.getElementById('sortBy').value === 'recent') parts.push('Most recent');
   const f = document.getElementById('fieldBy').value;
   if (f === 'title') parts.push('Title only'); else if (f === 'abstract') parts.push('Abstract only');
@@ -1298,7 +1296,7 @@ function paperCard(item, i, adv) {
         <span class="pc-badges">${oaBadgeHtml(item)}${adv ? sourceBadge(item.data_source) : ''}</span>
       </div>
       <div class="pc-meta">${meta}</div>
-      ${snip ? `<div class="pc-snip">${esc(snip)}</div>` : ''}
+      ${snip ? `<div class="pc-snip">${esc(snip)}</div>` : (item.abstract_hidden ? '<div class="pc-snip" style="font-style:italic">Abstract not shown here. Open the article to read it.</div>' : '')}
       ${item.missing && item.missing.length ? `<div class="pc-missing">Missing: ${item.missing.map(w => `<s>${esc(w)}</s>`).join(' ')}</div>` : ''}
       ${cites ? `<div class="pc-cites">↗ ${cites.toLocaleString()} citations</div>` : ''}
       <div class="pc-actions">
@@ -1568,7 +1566,7 @@ function doExport(fmt) {
   const data = currentResults;
   let content='',filename='',mime='text/plain';
   if (fmt==='json') {
-    content=JSON.stringify({meta:{query:currentQuery,generated:new Date().toISOString(),sources:'OpenAlex,arXiv,PubMed,Crossref,Europe PMC',warning:'References auto-generated — verify before use'},results:data},null,2);
+    content=JSON.stringify({meta:{query:currentQuery,generated:new Date().toISOString(),sources:'OpenAlex,arXiv,Crossref',warning:'References auto-generated — verify before use'},results:data},null,2);
     filename='sturch_export.json';mime='application/json';
   } else if (fmt==='csv') {
     const fields=['title','authors','year','journal','citations','is_oa','data_source','apa_reference','doi','oa_url'];
@@ -1594,7 +1592,7 @@ function doExport(fmt) {
 
 // ── Loading / Error states ─────────────────────
 function showLoading() {
-  document.getElementById('results').innerHTML=`<div class="state"><div class="spinner"></div><h3>Searching…</h3><p style="margin-top:5px;font-size:.8rem">${isSimple() ? 'Looking through millions of papers' : 'OpenAlex · arXiv · PubMed · Crossref · Europe PMC'}</p></div>`;
+  document.getElementById('results').innerHTML=`<div class="state"><div class="spinner"></div><h3>Searching…</h3><p style="margin-top:5px;font-size:.8rem">${isSimple() ? 'Looking through millions of papers' : 'OpenAlex · arXiv · Crossref'}</p></div>`;
   ['statsBar','toolbar','loadMoreBar'].forEach(id=>document.getElementById(id).classList.add('hidden'));
 }
 function showError(msg) {

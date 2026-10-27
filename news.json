@@ -1,5 +1,19 @@
 [
   {
+    "date": "2026-10-27",
+    "tag": "Update",
+    "title": "Sources update and a simpler search",
+    "summary": "Search Papers is simpler, and papers now open on their original page.",
+    "points": [
+      "Advanced mode now uses one search box, like Simple mode. When a paper is missing one of your words, it is still shown with the missing word crossed out.",
+      "Open article takes you straight to the original page of the paper.",
+      "Sturch now searches OpenAlex, arXiv and Crossref. PubMed and Europe PMC are paused for now, and more sources are coming soon.",
+      "Abstracts are shown only for arXiv papers and papers with an open license. For the rest, open the article to read it."
+    ],
+    "link": "/guide",
+    "link_text": "Read the guide"
+  },
+  {
     "date": "2026-10-23",
     "tag": "Update",
     "title": "Sturch 1.0 is here",

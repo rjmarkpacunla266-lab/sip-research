@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, wait
 import requests
 import xml.etree.ElementTree as ET
 from flask import render_template, request, jsonify
-from core import login_required, _safe_terms, OPENALEX_URL, format_paper
+from core import login_required, _safe_terms, OPENALEX_URL, format_paper, hide_restricted_abstracts
 from engine import (read_filters, search_papers, apply_filters_and_sort, term_in, relevance,
                     sort_date, SOURCE_LABELS, search_sources, merge_dedupe, to_int)
 import topicfinder
@@ -119,7 +119,7 @@ def _trace_pool(quote, keywords, f):
             i = pos.get(src, 0); pos[src] = i + 1
             rank[k] = rank.get(k, 0.0) + 1.0 / (1 + i)   # 1st result of a source = 1, 2nd = 0.5, 3rd = 0.33 ...
         allraw.extend(raw)
-    papers = apply_filters_and_sort(merge_dedupe(allraw), dict(f, sort="cited"), " ".join(keywords))
+    papers = hide_restricted_abstracts(apply_filters_and_sort(merge_dedupe(allraw), dict(f, sort="cited"), " ".join(keywords)))
     return papers, {k: min(1.0, v / 1.5) for k, v in rank.items()}
 
 def _title_overlap(title, quote):
@@ -190,6 +190,7 @@ def _ft_best_match(ft, quote, keywords):
 def _full_text_pass(scored, quote, keywords, budget=8.0):
     """Re-score the best open-access candidates using their full text. Changes rows in place; -> (tried, read).
     Never raises: if anything goes wrong the abstract-based result is simply kept."""
+    return 0, 0   # full-text reading is paused together with Europe PMC
     try:
         pool = [r for r in scored if r.get("doi") and r.get("is_oa")][:TRACE_FT_MAX]
         if not pool or budget < 2:

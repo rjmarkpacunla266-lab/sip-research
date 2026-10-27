@@ -40,6 +40,7 @@ def _clean_abstract(text):
 def _pubmed_abstracts(papers):
     """PubMed search results carry no abstract, so they could never give an answer sentence.
     Fetch the missing abstracts in ONE request and fill them in. Any failure is ignored (those papers just stay empty)."""
+    return   # PubMed is paused (its abstracts are publisher-copyrighted), so nothing is fetched
     need = {}
     for p in papers:
         oid = str(p.get("openalex_id") or "")
