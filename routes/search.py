@@ -265,37 +265,7 @@ def _fetch_oa_url(oa_url):
         return None
 
 @search_bp.route("/paper")
-@login_required
-def paper():
-    return render_template("paper.html")
-
-@search_bp.route("/api/fetch-paper")
-@login_required
-def fetch_paper():
-    oa_url      = request.args.get("oa_url", "").strip()
-    openalex_id = request.args.get("openalex_id", "").strip()
-    abstract    = request.args.get("abstract", "").strip()
-    if not oa_url and not openalex_id and not abstract:
-        return jsonify({"error": "oa_url or openalex_id required"}), 400
-
-    text         = None
-    image_notice = False
-
-    if oa_url:
-        if "arxiv.org" in oa_url:
-            text = _fetch_arxiv_full(oa_url)
-        if not text:
-            text = _fetch_oa_url(oa_url)
-
-    # PubMed abstracts are not fetched: they can be publisher-copyrighted (NLM gives no commercial-use cover)
-
-    # Fallback: use abstract from search results if full text unavailable
-    if not text and abstract:
-        text = abstract
-        image_notice = True
-
-    if not text:
-        return jsonify({"error": "Could not fetch full text for this paper.", "available": False})
-
-    return jsonify({"text": text, "available": True, "image_notice": image_notice,
-                    "abstract_only": image_notice})
+def paper_page():
+    # The in-site reader was removed: papers now open on the original publisher / source page.
+    from flask import redirect
+    return redirect("/search")

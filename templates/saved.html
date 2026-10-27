@@ -336,7 +336,17 @@ function srcBadge(ds){const s=String(ds||'').toLowerCase();
 function safeUrl(u){u=String(u||'').trim();return /^https?:\/\//i.test(u)?u:'';}
 function authorsLine(p){const a=(p.authors||[]);return a.slice(0,3).join(', ')+(a.length>3?' et al.':'');}
 // The reader page reads the paper from sessionStorage (same as the search page does)
-function readPaper(p){try{sessionStorage.setItem('sturch_paper',JSON.stringify(p));}catch(e){}location.href='/paper';}
+function paperLink(p){
+  p = p || {};
+  var d = String(p.doi || '').trim();
+  if (d) return /^https?:/i.test(d) ? d : 'https://doi.org/' + d.replace(/^doi:\s*/i, '');
+  if (p.oa_url) return p.oa_url;
+  var id = String(p.openalex_id || '');
+  if (/^https?:/i.test(id)) return id;
+  if (id.indexOf('pmid:') === 0) return 'https://pubmed.ncbi.nlm.nih.gov/' + id.slice(5) + '/';
+  return 'https://scholar.google.com/scholar?q=' + encodeURIComponent(p.title || '');
+}
+function readPaper(p){ window.open(paperLink(p), '_blank', 'noopener,noreferrer'); }
 function copyText(t,msg){(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast(msg||'Copied')).catch(()=>toast('Could not copy'));}
 async function api(url,opt){const r=await fetch(url,opt);let d={};try{d=await r.json();}catch(e){}if(r.status===401){location.href='/login';}return {ok:r.ok,status:r.status,d};}
 
@@ -364,7 +374,7 @@ function render(){
       <div class="pc-meta">${esc(authorsLine(p))}${p.journal?' · '+esc(p.journal):''}${p.year?' · '+esc(p.year):''}${p.citations?' · '+Number(p.citations).toLocaleString()+' citations':''}</div>
       ${ab?`<div class="pc-snip">${esc(ab)}</div>`:''}
       <div class="acts">
-        <button class="act primary" onclick="readIt(${i})">📄 Read</button>
+        <button class="act primary" onclick="readIt(${i})">↗ Open article</button>
         <button class="act" onclick="citeIt(${i})">❝ Cite</button>
         <button class="act" onclick="addTo(${i})">📚 Add to collection</button>
         <button class="act danger" id="rm${i}" onclick="removeIt(${i})">🗑 Remove</button>

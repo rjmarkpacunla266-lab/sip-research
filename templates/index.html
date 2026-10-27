@@ -1294,7 +1294,7 @@ function paperCard(item, i, adv) {
     <div class="pc-ic" aria-hidden="true">${DOC_IC}</div>
     <div class="pc-main">
       <div class="pc-top">
-        <a class="pc-title" href="#" onclick="openPaperPage(${i},event);return false">${esc(stripTags(item.title || 'Untitled'))}</a>
+        <a class="pc-title" href="#" onclick="openPaperPage(${i},event);return false" rel="noopener">${esc(stripTags(item.title || 'Untitled'))}</a>
         <span class="pc-badges">${oaBadgeHtml(item)}${adv ? sourceBadge(item.data_source) : ''}</span>
       </div>
       <div class="pc-meta">${meta}</div>
@@ -1302,7 +1302,7 @@ function paperCard(item, i, adv) {
       ${item.missing && item.missing.length ? `<div class="pc-missing">Missing: ${item.missing.map(w => `<s>${esc(w)}</s>`).join(' ')}</div>` : ''}
       ${cites ? `<div class="pc-cites">↗ ${cites.toLocaleString()} citations</div>` : ''}
       <div class="pc-actions">
-        <button class="act primary" onclick="openPaperPage(${i},event)">📄 Read</button>
+        <button class="act primary" onclick="openPaperPage(${i},event)">↗ Open article</button>
         <button class="act ${isBookmark ? 'gold' : ''}" id="bk-${n}" onclick="toggleBookmark(${i},${n},event)">${isBookmark ? '🔖 Saved' : '🔖 Save'}</button>
         <button class="act" onclick="showCitationPicker(${i},${n},event)">❝ Cite</button>
         ${item.oa_url ? `<a class="act" href="${esc(item.oa_url)}" target="_blank" rel="noopener noreferrer">Full text</a>` : ''}
@@ -1344,12 +1344,21 @@ function sourceBadge(ds) {
 }
 
 // ── Open Paper Page ────────────────────────────
+function paperLink(p){
+  p = p || {};
+  var d = String(p.doi || '').trim();
+  if (d) return /^https?:/i.test(d) ? d : 'https://doi.org/' + d.replace(/^doi:\s*/i, '');
+  if (p.oa_url) return p.oa_url;
+  var id = String(p.openalex_id || '');
+  if (/^https?:/i.test(id)) return id;
+  if (id.indexOf('pmid:') === 0) return 'https://pubmed.ncbi.nlm.nih.gov/' + id.slice(5) + '/';
+  return 'https://scholar.google.com/scholar?q=' + encodeURIComponent(p.title || '');
+}
+function readPaper(p){ window.open(paperLink(p), '_blank', 'noopener,noreferrer'); }
 function openPaperPage(idx, e) {
   if (e) e.stopPropagation();
   const item = currentResults[idx];
-  if (!item) return;
-  sessionStorage.setItem('sturch_paper', JSON.stringify(item));
-  window.location.href = '/paper';
+  if (item) readPaper(item);
 }
 
 // ── Card Toggle ────────────────────────────────
