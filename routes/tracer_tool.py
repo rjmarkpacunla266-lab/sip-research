@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, wait
 import requests
 import xml.etree.ElementTree as ET
 from flask import render_template, request, jsonify
-from core import login_required, _safe_terms, OPENALEX_URL, format_paper, hide_restricted_abstracts
+from core import login_required, _safe_terms, OPENALEX_URL, format_paper, hide_restricted_abstracts, hide_restricted_abstracts
 from engine import (read_filters, search_papers, apply_filters_and_sort, term_in, relevance,
                     sort_date, SOURCE_LABELS, search_sources, merge_dedupe, to_int)
 import topicfinder
@@ -190,6 +190,7 @@ def _ft_best_match(ft, quote, keywords):
 def _full_text_pass(scored, quote, keywords, budget=8.0):
     """Re-score the best open-access candidates using their full text. Changes rows in place; -> (tried, read).
     Never raises: if anything goes wrong the abstract-based result is simply kept."""
+    return 0, 0   # full-text reading is paused together with Europe PMC
     return 0, 0   # full-text reading is paused together with Europe PMC
     try:
         pool = [r for r in scored if r.get("doi") and r.get("is_oa")][:TRACE_FT_MAX]

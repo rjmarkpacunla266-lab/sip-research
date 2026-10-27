@@ -52,32 +52,6 @@ def _crossref():
     return {"total": _int((d.get("message") or {}).get("total-results")), "oa": None}
 
 
-def _pubmed():
-    url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
-
-    def count(term):
-        d = _get(url, {"db": "pubmed", "term": term, "retmode": "json", "rettype": "count"}).json()
-        return _int((d.get("esearchresult") or {}).get("count"))
-    return {"total": count("all[sb]"), "oa": count("free full text[sb]")}
-
-
-def _europepmc():
-    url = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
-
-    def count(query):
-        d = _get(url, {"query": query, "format": "json", "pageSize": 1, "resultType": "lite"}).json()
-        return _int(d.get("hitCount"))
-    total = None
-    for q in ("*", "SRC:MED OR SRC:PMC OR SRC:PPR OR SRC:AGR OR SRC:CBA OR SRC:HIR OR SRC:PAT"):
-        try:
-            total = count(q)
-        except Exception:
-            total = None
-        if total:
-            break
-    return {"total": total, "oa": count("OPEN_ACCESS:y")}
-
-
 def _arxiv():
     # everything on arXiv is free to read, so its open-access number is its total
     total = None

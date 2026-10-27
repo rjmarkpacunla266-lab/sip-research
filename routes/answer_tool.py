@@ -668,6 +668,7 @@ _DEF_TYPES = ("what_is", "what_are", "define", "how_does", "why_is")
 def _ft_pool(papers, n=FT_MAX_PAPERS):
     """Open-access papers with a DOI, best candidates first (PubMed / Europe PMC records most often have full text)."""
     return []   # full-text reading is paused together with Europe PMC
+    return []   # full-text reading is paused together with Europe PMC
     seen, out = set(), []
     for p in papers:
         doi = (p.get("doi") or "").strip().lower()

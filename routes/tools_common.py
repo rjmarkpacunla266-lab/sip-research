@@ -38,29 +38,8 @@ def _clean_abstract(text):
 
 
 def _pubmed_abstracts(papers):
-    """PubMed search results carry no abstract, so they could never give an answer sentence.
-    Fetch the missing abstracts in ONE request and fill them in. Any failure is ignored (those papers just stay empty)."""
-    return   # PubMed is paused (its abstracts are publisher-copyrighted), so nothing is fetched
-    need = {}
-    for p in papers:
-        oid = str(p.get("openalex_id") or "")
-        if not p.get("abstract") and oid.startswith("pmid:") and oid[5:].isdigit():
-            need[oid[5:]] = p
-    ids = list(need)[:60]
-    if not ids:
-        return
-    try:
-        r = requests.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi", timeout=12,
-                         params={"db": "pubmed", "id": ",".join(ids), "retmode": "xml"})
-        if not r.ok:
-            return
-        for art in ET.fromstring(r.content).iter("PubmedArticle"):
-            pmid = (art.findtext("MedlineCitation/PMID") or "").strip()
-            text = " ".join(t for t in ("".join(a.itertext()).strip() for a in art.iter("AbstractText")) if t)
-            if pmid in need and text:
-                need[pmid]["abstract"] = text
-    except Exception:
-        return
+    """PubMed is not used any more; kept so the tools keep working unchanged."""
+    return
 
 
 _DOI_OK = _re.compile(r"^10\.\d{4,9}/[^\s\"<>]+$")

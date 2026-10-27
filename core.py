@@ -484,6 +484,28 @@ def hide_restricted_abstracts(papers):
             p["abstract_hidden"] = True
     return papers
 
+# ─── ABSTRACT POLICY ─────────────────────────────────────────────────
+# Abstracts are shown (and used by the tools) only when the source allows it:
+#   arXiv: its terms put descriptive metadata, abstracts included, under CC0.
+#   OpenAlex: only when the paper itself carries an open licence that allows reuse.
+# Every other abstract is blanked after searching and filtering, and flagged so the page can say so.
+_OPEN_LICENSES = {"cc0", "cc-by", "cc-by-sa", "public-domain", "pd"}
+
+def abstract_allowed(p):
+    src = (p.get("data_source") or "").lower()
+    if "arxiv" in src:
+        return True
+    if "openalex" in src:
+        return (p.get("license") or "").lower() in _OPEN_LICENSES
+    return False
+
+def hide_restricted_abstracts(papers):
+    for p in papers:
+        if p.get("abstract") and not abstract_allowed(p):
+            p["abstract"] = ""
+            p["abstract_hidden"] = True
+    return papers
+
 # ─── SEARCH HELPERS ──────────────────────────────────────────────────
 _JUNK_MARKERS = ("share add to", "export ris", "exportris", "get e-alerts", "return to issue",
                  "view author information", "add full text with reference", "add description")
@@ -566,43 +588,23 @@ def search_openalex(query, page=1, per_page=RESULTS_PER_SOURCE,
     return [], 0
 
 # ─── SEMANTIC SCHOLAR ────────────────────────────────────────────────
-def search_semantic_scholar(query, page=1, per_page=RESULTS_PER_SOURCE):
-    offset = (page - 1) * per_page
-    params = {
-        "query": query, "limit": per_page, "offset": offset,
-        "fields": "title,authors,year,abstract,citationCount,externalIds,journal,isOpenAccess,openAccessPdf",
-    }
-    try:
-        resp = requests.get("https://api.semanticscholar.org/graph/v1/paper/search",
-                            params=params, timeout=15,
-                            headers={"User-Agent": "Sturch/2.0 (academic research tool)"})
-        if not resp.ok:
-            return []
-        results = []
-        for p in resp.json().get("data", []):
-            authors   = [a.get("name", "") for a in p.get("authors", [])]
-            year      = p.get("year")
-            title     = p.get("title", "")
-            doi       = (p.get("externalIds") or {}).get("DOI", "")
-            journal   = (p.get("journal") or {}).get("name", "") or "Semantic Scholar"
-            missing   = (["DOI"] if not doi else []) + ["volume", "issue", "page range"]
-            results.append({
-                "title": title, "authors": authors, "year": year, "journal": journal,
-                "abstract": p.get("abstract", "") or "", "citations": p.get("citationCount", 0) or 0,
-                "is_oa": p.get("isOpenAccess", False),
-                "oa_url": (p.get("openAccessPdf") or {}).get("url", ""),
-                "doi": f"https://doi.org/{doi}" if doi else "",
-                "concepts": [], "openalex_id": p.get("paperId", ""),
-                "volume": "", "issue": "", "pages": "",
-                "apa_reference": _build_apa(authors, year, title, journal, "", "", "", doi),
-                "apa_missing": missing, "data_source": "Semantic Scholar (semanticscholar.org)",
-                "ref_warning": "Auto-generated — verify before academic use",
-            })
-        return results
-    except Exception:
-        return []
-
 # ─── ARXIV ───────────────────────────────────────────────────────────
+# ─── arXiv: polite use ───────────────────────────────────────────────
+# arXiv's terms: no more than one request every 3 seconds, one connection. Repeated searches are cached for 10 minutes.
+_AX_CACHE, _AX_TTL = {}, 600
+_AX_LOCK, _AX_NEXT = threading.Lock(), [0.0]
+
+def _arxiv_wait():
+    with _AX_LOCK:
+        now = time.time()
+        slot = max(now, _AX_NEXT[0])
+        if slot - now > 6:
+            return False
+        _AX_NEXT[0] = slot + 3.0
+    if slot > now:
+        time.sleep(slot - now)
+    return True
+
 # ─── arXiv: polite use ───────────────────────────────────────────────
 # arXiv's terms: no more than one request every 3 seconds, one connection. Repeated searches are cached for 10 minutes.
 _AX_CACHE, _AX_TTL = {}, 600
@@ -636,6 +638,12 @@ def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE,
     params = {"search_query": q, "start": start, "max_results": per_page,
               "sortBy": "submittedDate" if sort == "recent" else "relevance",
               "sortOrder": "descending"}
+    ckey = tuple(sorted((k, str(v)) for k, v in params.items()))
+    hit = _AX_CACHE.get(ckey)
+    if hit and time.time() - hit[0] < _AX_TTL:
+        return [dict(p) for p in hit[1]]
+    if not _arxiv_wait():
+        return []                                   # arXiv asks for one request every 3 seconds; skip rather than queue for long
     ckey = tuple(sorted((k, str(v)) for k, v in params.items()))
     hit = _AX_CACHE.get(ckey)
     if hit and time.time() - hit[0] < _AX_TTL:
@@ -677,72 +685,6 @@ def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE,
         return []
 
 # ─── PUBMED ──────────────────────────────────────────────────────────
-def search_pubmed(query, page=1, per_page=RESULTS_PER_SOURCE,
-                  year_from=None, year_to=None, oa_only=False, sort="cited", field="both", loose=False):
-    retstart = (page - 1) * per_page
-    def _pm(t):
-        if field == "title":    return f"{t}[Title]"
-        if field == "abstract": return f"({t}[Title/Abstract] NOT {t}[Title])"
-        return f"{t}[Title/Abstract]"
-    term = (" OR " if loose else " AND ").join(_pm(t) for t in _safe_terms(query)) or query
-    if oa_only:
-        term = f"({term}) AND free full text[sb]"
-    es_params = {"db": "pubmed", "term": term, "retmax": per_page, "retstart": retstart,
-                 "retmode": "json", "sort": "pub_date" if sort == "recent" else "relevance"}
-    if year_from or year_to:
-        es_params.update({"datetype": "pdat",
-                          "mindate": str(year_from or 1800), "maxdate": str(year_to or 2100)})
-    try:
-        search_resp = requests.get(
-            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
-            params=es_params,
-            timeout=15, headers={"User-Agent": "Sturch/2.0 (academic research tool)"})
-        if not search_resp.ok:
-            return []
-        ids = search_resp.json().get("esearchresult", {}).get("idlist", [])
-        if not ids:
-            return []
-    except Exception:
-        return []
-    try:
-        summary_resp = requests.get(
-            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
-            params={"db": "pubmed", "id": ",".join(ids), "retmode": "json"},
-            timeout=15, headers={"User-Agent": "Sturch/2.0 (academic research tool)"})
-        if not summary_resp.ok:
-            return []
-        summary_data = summary_resp.json().get("result", {})
-        results = []
-        for pmid in ids:
-            p = summary_data.get(pmid, {})
-            if not p or not isinstance(p, dict):
-                continue
-            title   = clean_text(p.get("title", ""))
-            authors = [a.get("name", "") for a in p.get("authors", [])]
-            journal = p.get("fulljournalname", "") or p.get("source", "")
-            volume  = p.get("volume", "")
-            issue   = p.get("issue", "")
-            pages   = p.get("pages", "")
-            pubdate = p.get("pubdate", "")
-            year    = int(pubdate[:4]) if pubdate and pubdate[:4].isdigit() else None
-            doi = next((a.get("value", "") for a in p.get("articleids", []) if a.get("idtype") == "doi"), "")
-            missing = [l for l, v in [("volume", volume), ("issue", issue), ("page range", pages), ("DOI", doi)] if not v]
-            results.append({
-                "title": title, "date": (p.get("sortpubdate", "") or "")[:10].replace("/", "-"), "authors": authors, "year": year, "journal": journal,
-                "abstract": "", "citations": 0, "is_oa": bool(oa_only),
-                "oa_url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
-                "doi": f"https://doi.org/{doi}" if doi else "",
-                "concepts": [], "openalex_id": f"pmid:{pmid}",
-                "volume": volume, "issue": issue, "pages": pages,
-                "apa_reference": _build_apa(authors, year, title, journal, volume, issue, pages, doi),
-                "apa_missing": missing, "data_source": "PubMed (pubmed.ncbi.nlm.nih.gov)",
-                "ref_warning": "Auto-generated — verify before academic use",
-            })
-        return results
-    except Exception:
-        return []
-
-
 # ─── CROSSREF ────────────────────────────────────────────────────────
 def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE,
                     year_from=None, year_to=None, oa_only=False, sort="cited", field="both", loose=False):
@@ -793,75 +735,6 @@ def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE,
         return []
 
 # ─── EUROPE PMC ──────────────────────────────────────────────────────
-def _epmc_query(query, year_from, year_to, oa_only, strict, field="both", loose=False):
-    if strict:
-        def _ep(t):
-            if field == "title":    return f'TITLE:"{t}"'
-            if field == "abstract": return f'ABSTRACT:"{t}"'
-            return f'(TITLE:"{t}" OR ABSTRACT:"{t}")'
-        parts = [_ep(t) for t in _safe_terms(query)]
-        q = " AND ".join(parts) or query
-    elif loose:
-        q = "(" + (" OR ".join(_safe_terms(query)) or query) + ")"
-    else:
-        q = f"({query})"
-    if year_from or year_to:
-        q += f" AND (PUB_YEAR:[{year_from or 1800} TO {year_to or 2100}])"
-    if oa_only:
-        q += " AND OPEN_ACCESS:y"
-    return q
-
-def search_europe_pmc(query, page=1, per_page=RESULTS_PER_SOURCE,
-                      year_from=None, year_to=None, oa_only=False, sort="cited", field="both", loose=False):
-    sort_by = "P_PDATE_D desc" if sort == "recent" else "CITED desc"
-    def _call(strict):
-        params = {"query": _epmc_query(query, year_from, year_to, oa_only, strict and not loose, field, loose),
-                  "pageSize": per_page, "page": page, "format": "json",
-                  "resultType": "core", "sort": sort_by}
-        if loose:
-            params.pop("sort")                  # relevance order
-        return requests.get(
-            "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
-            params=params,
-            timeout=15, headers={"User-Agent": "Sturch/3.0 (academic research tool)"})
-    try:
-        resp  = _call(True)           # title/abstract matches only (no full-text noise)
-        items = resp.json().get("resultList", {}).get("result", []) if resp.ok else []
-        if not items:                 # safety net: plain query + same filters
-            resp  = _call(False)
-            items = resp.json().get("resultList", {}).get("result", []) if resp.ok else []
-        results = []
-        for p in items:
-            title   = clean_text(p.get("title", ""))
-            authors = [a.get("fullName", "") for a in p.get("authorList", {}).get("author", [])]
-            year    = p.get("pubYear")
-            journal = p.get("journalTitle", "") or "Europe PMC"
-            doi     = p.get("doi", "")
-            abstract = clean_abstract(p.get("abstractText", "") or "")
-            cites   = p.get("citedByCount", 0) or 0
-            is_oa   = p.get("isOpenAccess", "N") == "Y"
-            oa_url  = f"https://europepmc.org/article/{p.get('source','')}/{p.get('id','')}" if p.get("id") else ""
-            missing = [l for l, v in [("volume", p.get("journalVolume","")),
-                                       ("issue", p.get("issue","")),
-                                       ("page range", p.get("pageInfo",""))] if not v]
-            results.append({
-                "title": title, "date": p.get("firstPublicationDate") or "", "authors": authors, "year": year, "journal": journal,
-                "abstract": abstract, "citations": cites,
-                "is_oa": is_oa, "oa_url": oa_url,
-                "doi": f"https://doi.org/{doi}" if doi else "",
-                "concepts": [], "openalex_id": p.get("id", ""),
-                "volume": p.get("journalVolume",""), "issue": p.get("issue",""),
-                "pages": p.get("pageInfo",""),
-                "apa_reference": _build_apa(authors, year, title, journal,
-                                            p.get("journalVolume",""), p.get("issue",""),
-                                            p.get("pageInfo",""), doi),
-                "apa_missing": missing, "data_source": "Europe PMC (europepmc.org)",
-                "ref_warning": "Auto-generated — verify before academic use",
-            })
-        return results
-    except Exception:
-        return []
-
 # ─── EMAIL ───────────────────────────────────────────────────────────
 def send_email(to_email, subject, html_body):
     if not RESEND_API_KEY:

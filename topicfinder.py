@@ -16,7 +16,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 import xml.etree.ElementTree as ET
 
-EPMC = "https://www.ebi.ac.uk/europepmc/webservices/rest"
 
 # ───────────────────────── words ─────────────────────────
 STOP = set("""a about above after again against all also am an and any are as at be because been before being below between both
@@ -345,16 +344,6 @@ def _doi(p):
     d = (p.get("doi") or "").strip().lower()
     return re.sub(r"^https?://(?:dx\.)?doi\.org/", "", d)
 
-def _epmc_pmcid(doi, timeout=8):
-    r = requests.get(f"{EPMC}/search", timeout=timeout,
-                     params={"query": f'DOI:"{doi}"', "format": "json", "resultType": "lite", "pageSize": 1})
-    if not r.ok:
-        return None
-    hits = (r.json().get("resultList") or {}).get("result") or []
-    if hits and hits[0].get("pmcid") and hits[0].get("isOpenAccess") == "Y":
-        return hits[0]["pmcid"]
-    return None
-
 def _text_of(el):
     return re.sub(r"\s+", " ", "".join(el.itertext())).strip()
 
@@ -420,6 +409,7 @@ def parse_jats(xml_bytes):
 def get_oa_fulltext(doi, timeout=10):
     """Open-access full text for a DOI via Europe PMC, or None. Cached in memory.
     -> {"pmcid", "license", "sections": {"Introduction": "...", "Results": "...", "Discussion": "..."}}"""
+    return None   # Europe PMC full text is paused (publisher copyright)
     return None   # Europe PMC full text is paused (publisher copyright)
     doi = re.sub(r"^https?://(?:dx\.)?doi\.org/", "", (doi or "").strip().lower())
     if not doi:
