@@ -1,5 +1,17 @@
 [
   {
+    "date": "2026-10-28",
+    "tag": "Update",
+    "title": "Source Tracer is now Quote Finder",
+    "summary": "The tool has a clearer name. It works the same way.",
+    "points": [
+      "Paste a quote and Quote Finder looks for the paper it came from.",
+      "The old address still works, so your bookmarks keep working."
+    ],
+    "link": "/source-tracer",
+    "link_text": "Open Quote Finder"
+  },
+  {
     "date": "2026-10-27",
     "tag": "Update",
     "title": "Sources update and a simpler search",
@@ -35,7 +47,7 @@
       "Search Papers: Simple mode (like Google Scholar) and Advanced mode, filters, tags and result buttons.",
       "The paper reader: find words inside a paper and copy citations in APA, MLA, Chicago or Harvard.",
       "Answer Finder: question types, the \"I read this as\" line, quotes with context, and Continue searching.",
-      "Source Tracer (Quick Trace and full trace) and Topic Finder (topic size, narrowing trail, papers per year, methods and gap types).",
+      "Quote Finder (Quick Trace and full trace) and Topic Finder (topic size, narrowing trail, papers per year, methods and gap types).",
       "Your library: Saved papers, Collections, History and Export, plus good research habits and a short FAQ."
     ],
     "link": "/guide",
@@ -117,8 +129,8 @@
   },
   {
     "date": "2026-10-18",
-    "tag": "Source Tracer",
-    "title": "Quick Trace added to Source Tracer",
+    "tag": "Quote Finder",
+    "title": "Quick Trace added to Quote Finder",
     "summary": "Find where a quote came from, faster and more often.",
     "points": [
       "New Quick Trace button: a fast first answer from open-access papers, clearly labelled as less reliable.",
@@ -127,7 +139,7 @@
       "Better matching for long quotes."
     ],
     "link": "/source-tracer",
-    "link_text": "Open Source Tracer"
+    "link_text": "Open Quote Finder"
   },
   {
     "date": "2026-10-18",
