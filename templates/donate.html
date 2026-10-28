@@ -218,10 +218,46 @@ header.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:
 {% endif %}
 <div class="dcard">
   <div class="heart" aria-hidden="true">&#128153;</div>
-  <h2>Thank you for clicking this button.</h2>
-  <p class="p">Sorry, Sturch cannot accept donations. Sturch shows information that belongs to the owners of the articles and data sources, and to respect their rights and avoid legal problems, I am not able to receive money for it.</p>
-  <div class="note">Sturch stays free to use. You do not need to pay for any part of it.</div>
-  <p class="thanks">Thank you for caring about a student project. &#128153;</p>
+  <h2>Sturch is free, and it will stay free.</h2>
+  <p class="p">Sturch is a school project built by a student. Support is voluntary and helps keep it running and improving.</p>
+  <div class="gc">
+    <span class="gl">GCash</span>
+    <small>GCash number</small>
+    <div class="num" id="gnum">0955 204 2072</div>
+    <button class="cbtn" id="cb" type="button" onclick="copyNum()">&#10697; Copy number</button>
+  </div>
+  <div class="where" id="shopBox" hidden>
+    <h3>Shop to support</h3>
+    <div id="shopList"></div>
+    <div class="note" id="shopNote">These links are sponsored or affiliate links. If you buy through them, Sturch may earn a small commission, at no extra cost to you.</div>
+  </div>
+  <div class="note">Donating is optional. You do not need to pay to use any part of Sturch.</div>
+  <div class="where">
+    <h3>Where it goes</h3>
+    <div class="wr"><i>&#127760;</i><span>Keeping the site online</span></div>
+    <div class="wr"><i>&#128736;</i><span>Fixing bugs and adding features</span></div>
+    <div class="wr"><i>&#128190;</i><span>Covering data and service costs</span></div>
+  </div>
+  <p class="thanks">Thank you for supporting a student project. &#128153;</p>
+  <script>
+  /* SHOPS: add your shop (or another shop's affiliate link) here. Leave the list empty to hide the section.
+     Example:  {name: "My ebook shop", url: "https://example.com/my-shop", note: "Study guides and templates"}  */
+  var SHOPS = [];
+  (function () {
+    if (!SHOPS.length) return;
+    var box = document.getElementById("shopBox"), list = document.getElementById("shopList");
+    SHOPS.forEach(function (s) {
+      if (!/^https:\/\//i.test(s.url || "")) return;
+      var a = document.createElement("a");
+      a.className = "cbtn"; a.href = s.url; a.target = "_blank"; a.rel = "noopener noreferrer sponsored";
+      a.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;text-decoration:none;margin-top:10px;padding:10px 14px;min-height:50px";
+      a.textContent = s.name || "Visit shop";
+      if (s.note) { var n = document.createElement("small"); n.style.cssText = "font-weight:400;opacity:.9"; n.textContent = s.note; a.appendChild(n); }
+      list.appendChild(a);
+    });
+    if (list.children.length) box.hidden = false;
+  })();
+  </script>
 </div>
 </div>
 
