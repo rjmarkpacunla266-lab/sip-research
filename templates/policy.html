@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Data Sources and Legal Use — Sturch</title>
+<meta name="description" content="How Sturch uses papers and data: what it takes from OpenAlex, arXiv and Crossref, what it does not do, and the terms of each source."/>
+<meta name="author" content="Sturch"/>
+<meta name="theme-color" content="#2f5bea"/>
+<link rel="canonical" href="{{ site_url }}/policy"/>
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="Sturch"/>
+<meta property="og:title" content="Support Sturch"/>
+<meta property="og:description" content="How Sturch uses papers and data: what it takes from OpenAlex, arXiv and Crossref, what it does not do, and the terms of each source."/>
+<meta property="og:url" content="{{ site_url }}/policy"/>
+<meta property="og:image" content="{{ site_url }}/static/og-image.png"/>
+<script>
+(function(){try{var t=localStorage.getItem('sturch_theme');
+ if(t!=='dark'&&t!=='light')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+ document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();
+</script>
+<style>
+:root,[data-theme="light"]{
+  --bg:#f5f8ff;--surf:#ffffff;--surf2:#f1f5fd;--surf3:#e4ebfb;
+  --border:#dfe6f5;--accent:#2f5bea;--accent-h:#2449c4;--accent-soft:#e6edff;--accent2:#6b4de0;
+  --gold:#a86a00;--green:#12805c;--green-bg:#dcf5ea;--red:#c93a3a;--orange:#b8560f;--orange-bg:#fdeede;
+  --text:#14203d;--muted:#5d6b8c;--shadow:0 1px 2px rgba(25,45,100,.06),0 6px 18px rgba(25,45,100,.06);
+  --mono:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--serif:var(--mono);--sans:var(--mono);--r:12px;
+}
+[data-theme="dark"]{
+  --bg:#0a1020;--surf:#111a30;--surf2:#17223d;--surf3:#1f2c4d;
+  --border:#25314f;--accent:#4d7bff;--accent-h:#6a90ff;--accent-soft:#1a2850;--accent2:#9d86ff;
+  --gold:#f0c35a;--green:#4fd6a0;--green-bg:#123a2d;--red:#f27a7a;--orange:#f0914b;--orange-bg:#3a2713;
+  --text:#e8eeff;--muted:#9aa8c9;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+
+/* ═════════ Sturch redesign (matches home, search, answer) ═════════ */
+body{font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+a:hover{text-decoration:none}
+.btn{border-radius:10px;min-height:40px;padding:0 16px;font-weight:600;background:var(--surf)}
+.btn:hover{border-color:var(--accent);color:var(--accent);background:var(--surf)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{background:var(--accent-h);color:#fff}
+.btn.sm{min-height:40px;padding:0 14px}
+.btn.xs{min-height:38px;padding:0 13px;font-size:.8rem}
+header.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:8px;height:60px;margin:0 -16px;padding:0 16px;background:color-mix(in srgb,var(--surf) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);flex-wrap:nowrap}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.3rem;letter-spacing:-.01em;color:var(--text)}
+.sp{flex:1}
+.icon-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);background:var(--surf);display:grid;place-items:center;font-size:1.02rem;cursor:pointer;color:var(--text)}
+.icon-btn:hover{border-color:var(--accent)}
+.me{position:relative}
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#3e92fc,#9357fc);color:#fff;font:700 1rem var(--sans);display:grid;place-items:center;border:0;cursor:pointer}
+.menu{position:absolute;right:0;top:46px;min-width:210px;background:var(--surf);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:6px;display:none;z-index:40}
+.menu.open{display:block}
+.menu a{display:flex;gap:9px;align-items:center;padding:0 12px;min-height:44px;border-radius:9px;font-size:.92rem;color:var(--text)}
+.menu a:hover{background:var(--surf2)}
+.menu hr{border:0;border-top:1px solid var(--border);margin:4px 0}
+.menu-who{padding:8px 12px;font-size:.78rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px}
+.pagehead{display:flex;align-items:center;gap:10px;margin:16px 0 0}
+.pagehead h1{font-size:1.4rem;font-weight:800;letter-spacing:-.01em}
+.back{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;color:var(--text);font-size:1.2rem}
+.back:hover{background:var(--surf2)}
+.subtitle{color:var(--muted);font-size:.92rem;margin:2px 0 14px 2px}
+#app{max-width:860px;margin:0 auto;padding:0 16px 40px}
+
+/* filters */
+.fx-bar{margin:0 0 14px}
+.fx-btn{min-height:44px;border-radius:12px;background:var(--surf);padding:0 14px;font-weight:600;font-size:.88rem;width:100%;justify-content:space-between;color:var(--text)}
+.fx-sum{font-weight:500;font-family:var(--sans)}
+.fx-panel{border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+.fx-g label{font-size:.72rem;font-weight:600;letter-spacing:.03em;text-transform:none}
+.fx-g input,.fx-g select{min-height:42px;border-radius:10px;font-family:var(--sans);font-size:.9rem;background:var(--surf);color:var(--text)}
+.fx-g input{width:90px}
+.fx-toggle{min-height:42px;border-radius:10px;font-weight:600;background:var(--surf)}
+.fx-toggle.on{color:var(--green);border-color:var(--green);background:var(--green-bg)}
+.fx-chip{min-height:40px;display:inline-flex;align-items:center;padding:0 14px;font-size:.84rem;background:var(--surf)}
+.fx-chip.active{background:var(--accent-soft)}
+.fx-btn.sm{width:auto;min-height:40px;justify-content:flex-start}
+.fx-note{font-size:.88rem;color:var(--muted);margin:10px 2px}
+.fx-note b{color:var(--text)}
+.tagrow{gap:6px}
+.oa-b{font-size:.72rem;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--green-bg);border:0;color:var(--green)}
+.pw-b{font-size:.72rem;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--surf2);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+.src-b{font-size:.72rem;font-weight:600;padding:2px 9px}
+.fx-empty,.no-result{padding:34px 16px}
+.spinner{margin:40px auto}
+#toast{background:var(--surf);color:var(--text);box-shadow:var(--shadow)}
+.foot{margin:30px -16px 0;border-top:1px solid var(--border);padding:12px 16px 30px;font-size:.82rem;color:var(--muted);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 18px}
+.foot nav{display:flex;flex-wrap:wrap}
+.foot nav a{color:var(--muted);min-height:44px;display:inline-flex;align-items:center;padding:0 10px 0 0;margin-right:8px}
+.foot nav a:hover{color:var(--accent)}
+.empty-state{text-align:center;padding:26px 16px 10px}
+.es-ic{color:var(--accent);margin-bottom:8px}
+.empty-state h2{font-size:1.25rem;font-weight:800;margin-bottom:6px}
+.empty-state p{color:var(--muted);font-size:.92rem;max-width:460px;margin:0 auto}
+.es-ex{max-width:520px;margin:22px auto 0;text-align:left}
+.es-lbl{font-size:.82rem;font-weight:600;color:var(--muted);margin-bottom:8px}
+.es-q{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:52px;padding:0 16px;margin-bottom:8px;background:var(--surf);border:1px solid var(--border);border-radius:12px;font:500 .95rem var(--sans);color:var(--text);cursor:pointer;text-align:left}
+.es-q:hover{border-color:var(--accent);color:var(--accent)}
+.es-q i{font-style:normal;color:var(--muted);font-size:1.3rem}
+@media(max-width:480px){header.top{gap:6px}.brand{font-size:1.15rem;gap:6px}.icon-btn{width:38px;height:38px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.subtitle{display:block}
+.foot{margin:30px auto 0;max-width:860px;padding:12px 16px 30px}
+
+#app{max-width:560px}
+.dcard{background:var(--surf);border:1px solid var(--border);border-radius:20px;padding:24px 20px;box-shadow:var(--shadow);text-align:center;margin-top:14px}
+.heart{width:76px;height:76px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;margin:0 auto 14px;font-size:2rem}
+.dcard h2{font-size:1.3rem;font-weight:800;line-height:1.25}
+.dcard .p{color:var(--muted);margin:8px 0 18px;font-size:.95rem}
+.gc{border:1.5px solid var(--border);background:var(--surf2);border-radius:16px;padding:16px;text-align:left}
+.gl{display:inline-block;background:#007cff;color:#fff;font-weight:800;font-size:.8rem;padding:3px 10px;border-radius:8px}
+.gc small{display:block;color:var(--muted);margin-top:10px;font-size:.84rem}
+.num{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.7rem;font-weight:800;letter-spacing:.06em;margin:2px 0 12px;user-select:all;word-break:break-all}
+.cbtn{width:100%;min-height:50px;border-radius:999px;border:0;background:var(--accent);color:#fff;font:700 1rem var(--sans);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.cbtn:hover{background:var(--accent-h)}
+.note{font-size:.84rem;color:var(--muted);margin-top:12px}
+.where{text-align:left;margin-top:22px}
+.where h3{font-size:1rem;font-weight:800;margin-bottom:10px}
+.wr{display:flex;gap:12px;align-items:center;border:1px solid var(--border);background:var(--surf);border-radius:14px;padding:10px 14px;margin-bottom:8px;font-size:.92rem}
+.wr i{flex:none;width:38px;height:38px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;font-style:normal}
+.thanks{margin-top:18px;color:var(--muted);font-size:.9rem}
+#toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,60px);background:var(--text);color:var(--bg);border-radius:999px;padding:10px 18px;font-size:.88rem;z-index:300;opacity:0;transition:all .3s;pointer-events:none}
+#toast.show{transform:translate(-50%,0);opacity:1}
+</style>
+<style>
+/* Phone fixes shared by all Sturch pages (loaded after each page's own styles). */
+@media(max-width:600px){
+  /* header: one row, never wraps (it used to push the avatar onto the page below) */
+  header.top{flex-wrap:nowrap!important;gap:6px!important;padding-left:12px!important;padding-right:12px!important;overflow:visible}
+  header.top .brand{font-size:1.12rem;gap:6px;min-width:0;flex:none}
+  header.top .brand svg{width:26px;height:24px}
+  header.top .seg{flex:none}
+  header.top .seg button{padding:0 9px!important;font-size:.76rem!important;min-height:30px!important}
+  header.top .icon-btn{width:38px;height:38px;flex:none}
+  header.top .me{flex:none}
+  header.top .avatar{width:36px;height:36px;flex:none}
+  header.top .gchip{flex:none;min-height:32px;padding:0 9px;font-size:.72rem}
+  /* account menu: always opens inside the screen, right-aligned */
+  .menu{right:0!important;left:auto!important;width:min(250px,calc(100vw - 24px));min-width:0!important}
+  .menu a{white-space:nowrap}
+  /* search results: "169,992 results · showing 10 · from 5 sources" in one wrapping line */
+  .stats-bar{flex-direction:row!important;flex-wrap:wrap!important;justify-content:flex-start!important;text-align:left!important;gap:2px 8px!important;display:flex!important;grid-template-columns:none!important}
+  .stats-bar>*{display:inline!important}
+  .stats-bar .dot{display:inline!important}
+  .stats-bar .stat{padding:0!important;background:none!important;border:0!important}
+  /* open card: the "auto-generated" label sits above the reference, not beside it */
+  .card-foot{display:block!important}
+  .card-foot .ref-warn{display:inline-block;margin-bottom:6px;white-space:normal}
+  .card-foot .apa-text{display:block!important;width:100%!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;word-break:break-word;overflow-wrap:anywhere;font-size:.8rem}
+  /* answer finder: source paper uses the full width, buttons wrap underneath */
+  .source-card{flex-wrap:wrap!important}
+  .source-info{flex:1 1 100%!important;min-width:0}
+  .source-btns{flex:1 1 100%;flex-wrap:wrap}
+  /* paper reader */
+  .pagehead .pact.print{display:none}
+  .pagehead{flex-wrap:nowrap;gap:6px}
+  .pagehead h1{font-size:1.25rem}
+  .pactions{flex-wrap:nowrap;gap:6px}
+  .find-bar{gap:5px!important;padding:8px 12px!important}
+  .find-wrap{flex:1 1 auto;min-width:0}
+  .find-wrap input{font-size:.9rem;padding-right:8px}
+  .find-nav{display:flex;align-items:center;gap:4px;flex:none}
+  .nav-btn{width:34px!important;height:38px!important}
+  .find-count{min-width:36px!important;font-size:.7rem!important;text-align:center}
+  .find-bar .btn.sm{font-size:0!important;width:38px;min-width:38px;padding:0!important}
+  .find-bar .btn.sm::before{content:'\2715';font-size:.9rem}
+  .empty-state{padding:14px 8px 6px}
+  .empty-state h2{font-size:1.1rem}
+  .empty-state p{font-size:.86rem}
+  .empty-state .es-ic svg{width:44px;height:44px}
+}
+</style>
+<link rel="icon" href="/static/favicon.svg?v=2" type="image/svg+xml"/>
+<link rel="icon" href="/static/favicon-32.png?v=2" sizes="32x32" type="image/png"/>
+<link rel="icon" href="/static/favicon-192.png?v=2" sizes="192x192" type="image/png"/>
+<link rel="shortcut icon" href="/static/favicon.ico?v=2"/>
+<link rel="apple-touch-icon" href="/static/favicon-192.png?v=2"/>
+<meta name="robots" content="index, follow"/>
+</head>
+<body>
+<div id="app">
+{% if session.get('user_id') %}<header class="top">
+  <a href="/" class="brand" aria-label="Sturch home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 342" width="30" height="27" role="img" aria-label="Sturch"><defs><linearGradient id="hg" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="338"><stop offset="0" stop-color="#3e92fc"/><stop offset="1" stop-color="#9357fc"/></linearGradient></defs><path fill="url(#hg)" fill-rule="evenodd" d="M29.48 61.71L29.48 8.32C29.48 5.6 34.93 4.71 36.72 4.56C45.18 3.88 53.73 3.82 62.19 4.54C95.77 7.36 129.77 16.99 158.68 34.65C148.44 47.42 138.58 51.55 129.94 68.82C115.88 96.9 129.21 132.49 157.8 145.67L204.03 166.98C211.02 170.2 217.74 176 222.88 181.65C227.19 186.39 230.6 191.62 233.15 197.5C243.31 220.85 233.98 245.25 217.53 262.89C211.61 269.24 204.61 274.46 198.98 281.1C195.16 285.61 192.9 290.84 189.65 295.61C183.87 288.91 178.45 282.05 171.76 276.18C145.47 253.11 108.67 243.37 74.17 244.78C59.79 245.36 42.79 246.92 30.15 254.41L84.48 263.55C113.81 268.49 153.59 281.05 175.97 301.08C181.53 306.06 185.11 312.39 190.08 317.74C194.28 311.18 198.75 305.24 204.67 300.11C227.72 280.16 268.88 266.94 298.79 262.39L348.54 254.83C348.92 254.77 349.3 254.71 349.68 254.65C346.44 251.84 341.75 250.64 337.64 249.4C317.76 243.34 296.54 243.24 276.5 248.6C269.52 250.46 263.12 254.6 256.32 256.35C260.27 246.34 264.74 237.01 266.72 226.29C273.42 189.99 255.38 153.27 222.01 136.85L175.86 114.14C170.48 111.49 165.25 106.34 161.95 101.41C149.94 83.46 159.19 66.9 174.25 54.84C206.47 29 258.3 12.17 298.83 6.4C311.87 4.54 325.05 3.65 338.21 4.28C340.73 4.4 350.3 4.45 350.3 8.5L350.3 61.83C357.39 61.1 368.72 56.67 373.99 63.08C374.26 63.41 375.45 64.88 375.45 65.22L375.4 122.15L375.4 273.12C375.4 276.41 370.96 281.24 367.71 281.59L309.11 287.88C281.07 290.89 250.9 298.62 225.92 311.82C213.91 318.16 198.4 336.89 190.1 337.04C180.24 337.21 173.05 325.68 166.21 320.08C161.84 316.49 156.92 313.54 151.89 310.98C125.04 297.33 93.34 290.34 63.51 287.14L11.88 281.59C8.95 281.27 4.43 276.45 4.43 273.47L4.43 65.55C4.43 56.25 24.53 61.54 29.18 61.71Z"/></svg><span>Sturch</span></a>
+  <div class="sp"></div>
+  <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Switch light or dark" aria-label="Switch light or dark theme">🌙</button>
+  <div class="me">
+    <button class="avatar" id="meBtn" type="button" aria-label="Account menu" aria-haspopup="true" aria-expanded="false" onclick="toggleMeMenu(event)">S</button>
+    <div class="menu" id="meMenu" role="menu">
+      <div class="menu-who" id="userEmail">…</div>
+      <a href="/search" role="menuitem">🔎 Search papers</a>
+      <a href="/saved" role="menuitem">🔖 Saved papers</a>
+      <a href="/collections" role="menuitem">📚 Collections</a>
+      <a href="/history" role="menuitem">🕐 History</a>
+      <a href="/guide" role="menuitem">📖 Guide</a>
+      <hr/>
+      <a href="/logout" role="menuitem">↩ Log out</a>
+    </div>
+  </div>
+</header>
+
+<div class="pagehead"><a href="/" class="back" aria-label="Back to home">←</a><h1>Data &amp; legal</h1></div>
+<p class="subtitle"></p>
+{% else %}<header class="top">
+  <a href="/" class="brand" aria-label="Sturch home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 342" width="30" height="27" role="img" aria-label="Sturch"><defs><linearGradient id="hg" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="338"><stop offset="0" stop-color="#3e92fc"/><stop offset="1" stop-color="#9357fc"/></linearGradient></defs><path fill="url(#hg)" fill-rule="evenodd" d="M29.48 61.71L29.48 8.32C29.48 5.6 34.93 4.71 36.72 4.56C45.18 3.88 53.73 3.82 62.19 4.54C95.77 7.36 129.77 16.99 158.68 34.65C148.44 47.42 138.58 51.55 129.94 68.82C115.88 96.9 129.21 132.49 157.8 145.67L204.03 166.98C211.02 170.2 217.74 176 222.88 181.65C227.19 186.39 230.6 191.62 233.15 197.5C243.31 220.85 233.98 245.25 217.53 262.89C211.61 269.24 204.61 274.46 198.98 281.1C195.16 285.61 192.9 290.84 189.65 295.61C183.87 288.91 178.45 282.05 171.76 276.18C145.47 253.11 108.67 243.37 74.17 244.78C59.79 245.36 42.79 246.92 30.15 254.41L84.48 263.55C113.81 268.49 153.59 281.05 175.97 301.08C181.53 306.06 185.11 312.39 190.08 317.74C194.28 311.18 198.75 305.24 204.67 300.11C227.72 280.16 268.88 266.94 298.79 262.39L348.54 254.83C348.92 254.77 349.3 254.71 349.68 254.65C346.44 251.84 341.75 250.64 337.64 249.4C317.76 243.34 296.54 243.24 276.5 248.6C269.52 250.46 263.12 254.6 256.32 256.35C260.27 246.34 264.74 237.01 266.72 226.29C273.42 189.99 255.38 153.27 222.01 136.85L175.86 114.14C170.48 111.49 165.25 106.34 161.95 101.41C149.94 83.46 159.19 66.9 174.25 54.84C206.47 29 258.3 12.17 298.83 6.4C311.87 4.54 325.05 3.65 338.21 4.28C340.73 4.4 350.3 4.45 350.3 8.5L350.3 61.83C357.39 61.1 368.72 56.67 373.99 63.08C374.26 63.41 375.45 64.88 375.45 65.22L375.4 122.15L375.4 273.12C375.4 276.41 370.96 281.24 367.71 281.59L309.11 287.88C281.07 290.89 250.9 298.62 225.92 311.82C213.91 318.16 198.4 336.89 190.1 337.04C180.24 337.21 173.05 325.68 166.21 320.08C161.84 316.49 156.92 313.54 151.89 310.98C125.04 297.33 93.34 290.34 63.51 287.14L11.88 281.59C8.95 281.27 4.43 276.45 4.43 273.47L4.43 65.55C4.43 56.25 24.53 61.54 29.18 61.71Z"/></svg><span>Sturch</span></a>
+  <div class="sp"></div>
+  <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Switch light or dark" aria-label="Switch light or dark theme">🌙</button>
+  <a class="btn sm" href="/login">Log in</a>
+</header>
+
+<div class="pagehead"><a href="/" class="back" aria-label="Back to home">←</a><h1>Data &amp; legal</h1></div>
+<p class="subtitle"></p>
+{% endif %}
+<div class="pol">
+  <h2 class="pol-h">How Sturch uses papers and data</h2>
+  <p class="pol-lead">Sturch is a search tool made by a student. It helps people find papers and sends them to the original page. This page explains what it takes from each source, what it does not do, and where the proof is.</p>
+
+  <section class="pol-box">
+    <h3>What Sturch does</h3>
+    <ul>
+      <li>Shows titles, authors, journal, year and a link to the original article.</li>
+      <li>Shows an abstract only for arXiv papers and for OpenAlex papers with an open license. For every other paper the abstract is hidden.</li>
+      <li>Builds references (APA, MLA, Chicago, Harvard) from the paper's own details. They are generated automatically, so check them before you hand in work.</li>
+      <li>Credits its data sources and links back to them.</li>
+    </ul>
+    <h3>What Sturch does not do</h3>
+    <ul>
+      <li>It does not host, copy, sell or reprint full papers. "Open article" always goes to the original page.</li>
+      <li>It does not use AI to write answers. Its tools follow fixed rules on text that is allowed to be shown.</li>
+      <li>It does not claim that any source, publisher or author supports or endorses Sturch.</li>
+    </ul>
+  </section>
+
+  <h2 class="pol-h">Sources and evidence</h2>
+  <p class="pol-lead">Each source has a box for a screenshot of its own terms, so anyone can check what the source allows.</p>
+  <section class="pol-src">
+    <h2>OpenAlex <span class="st on">In use</span></h2>
+    <p><b>What Sturch uses:</b> titles, authors, year, journal, citation counts, open-access links and, only when the paper carries an open license (CC0, CC BY or CC BY-SA), its abstract.</p>
+    <p><b>Terms:</b> OpenAlex publishes its data under CC0, which is a public-domain dedication, so it can be reused, including commercially. <a href="https://help.openalex.org/" target="_blank" rel="noopener noreferrer">OpenAlex help center</a></p>
+    <figure class="ev" data-key="openalex">
+      <img src="/static/evidence/openalex.png" alt="Evidence screenshot: OpenAlex" loading="lazy" onerror="evErr(this)"/>
+      <div class="ev-empty"><b>Evidence: OpenAlex</b><span>Screenshot goes here. Save the image as <code>static/evidence/openalex.png</code></span></div>
+    </figure>
+  </section>
+  <section class="pol-src">
+    <h2>arXiv <span class="st on">In use</span></h2>
+    <p><b>What Sturch uses:</b> descriptive metadata: title, authors, date, link and abstract.</p>
+    <p><b>Terms:</b> arXiv's API terms say descriptive metadata, abstracts included, is free to use under CC0. Sturch does not store or serve arXiv PDFs, does not suggest that arXiv endorses Sturch, and keeps to arXiv's limit of one request every three seconds. <a href="https://info.arxiv.org/help/api/tou.html" target="_blank" rel="noopener noreferrer">Terms of Use for arXiv APIs</a></p>
+    <figure class="ev" data-key="arxiv">
+      <img src="/static/evidence/arxiv.png" alt="Evidence screenshot: arXiv" loading="lazy" onerror="evErr(this)"/>
+      <div class="ev-empty"><b>Evidence: arXiv</b><span>Screenshot goes here. Save the image as <code>static/evidence/arxiv.png</code></span></div>
+    </figure>
+  </section>
+  <section class="pol-src">
+    <h2>Crossref <span class="st on">In use</span></h2>
+    <p><b>What Sturch uses:</b> bibliographic metadata only: title, authors, journal, year, DOI and citation counts. Crossref abstracts are not shown.</p>
+    <p><b>Terms:</b> Crossref states that almost none of its metadata is subject to copyright and that it may be used for any purpose. It notes that some abstracts may be copyrighted by publishers or authors, which is why Sturch hides them. <a href="https://www.crossref.org/documentation/retrieve-metadata/rest-api/rest-api-metadata-license-information" target="_blank" rel="noopener noreferrer">Crossref metadata license information</a></p>
+    <figure class="ev" data-key="crossref">
+      <img src="/static/evidence/crossref.png" alt="Evidence screenshot: Crossref" loading="lazy" onerror="evErr(this)"/>
+      <div class="ev-empty"><b>Evidence: Crossref</b><span>Screenshot goes here. Save the image as <code>static/evidence/crossref.png</code></span></div>
+    </figure>
+  </section>
+  <section class="pol-src">
+    <h2>PubMed <span class="st off">Paused</span></h2>
+    <p><b>What Sturch uses:</b> nothing for now. PubMed was removed from search.</p>
+    <p><b>Terms:</b> The National Library of Medicine says abstracts in its data may be protected by copyright and that it takes no responsibility for transmitting, reproducing, redistributing or commercial use of them. Because Sturch also earns support, PubMed is paused until its use is clearly allowed. <a href="https://www.nlm.nih.gov/databases/download.html" target="_blank" rel="noopener noreferrer">NLM copyright information</a></p>
+    <figure class="ev" data-key="pubmed">
+      <img src="/static/evidence/pubmed.png" alt="Evidence screenshot: PubMed" loading="lazy" onerror="evErr(this)"/>
+      <div class="ev-empty"><b>Evidence: PubMed</b><span>Screenshot goes here. Save the image as <code>static/evidence/pubmed.png</code></span></div>
+    </figure>
+  </section>
+  <section class="pol-src">
+    <h2>Europe PMC <span class="st off">Paused</span></h2>
+    <p><b>What Sturch uses:</b> nothing for now. Europe PMC was removed from search and from full-text reading.</p>
+    <p><b>Terms:</b> Europe PMC says almost all of its material is protected by copyright and that reuse beyond fair use needs the permission of the copyright holder, or depends on each article's license. Sturch paused it for that reason. <a href="https://europepmc.org/Copyright" target="_blank" rel="noopener noreferrer">Europe PMC copyright page</a></p>
+    <figure class="ev" data-key="europepmc">
+      <img src="/static/evidence/europepmc.png" alt="Evidence screenshot: Europe PMC" loading="lazy" onerror="evErr(this)"/>
+      <div class="ev-empty"><b>Evidence: Europe PMC</b><span>Screenshot goes here. Save the image as <code>static/evidence/europepmc.png</code></span></div>
+    </figure>
+  </section>
+
+  <section class="pol-box">
+    <h3>A concern about something on Sturch?</h3>
+    <p>If you are an author, publisher or rights holder and want something removed or changed, write to <b>yourname@example.com</b> with the link to the page. It will be looked at and handled quickly.</p>
+    <p class="pol-small">This page explains how Sturch works. It is not legal advice, and the terms of each source can change, so always check the source's own pages.</p>
+  </section>
+</div>
+<style>
+  #app{max-width:760px}
+  .pol{text-align:left;margin-top:14px}
+  .pol-h{font-size:1.25rem;font-weight:800;margin:22px 0 6px}
+  .pol-lead{color:var(--muted);font-size:.95rem;margin:0 0 12px}
+  .pol-box,.pol-src{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:16px 16px 14px;margin:12px 0;box-shadow:var(--shadow)}
+  .pol-box h3{font-size:1rem;margin:4px 0 6px}
+  .pol ul{margin:0 0 8px 1.1rem;padding:0} .pol li{margin:4px 0}
+  .pol-src h2{font-size:1.1rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+  .pol-src p{margin:6px 0;font-size:.93rem}
+  .st{font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:999px;border:1px solid var(--border)}
+  .st.on{color:#1f9d63;border-color:#1f9d63} .st.off{color:var(--muted)}
+  .ev{margin:12px 0 2px} .ev img{display:block;width:100%;height:auto;border:1px solid var(--border);border-radius:12px}
+  .ev .ev-empty{display:none;flex-direction:column;gap:6px;align-items:center;justify-content:center;text-align:center;min-height:150px;padding:14px;border:2px dashed var(--border);border-radius:12px;background:var(--surf2);color:var(--muted);font-size:.86rem}
+  .ev.empty .ev-empty{display:flex} .ev code{font-size:.8rem;word-break:break-all}
+  .pol-small{color:var(--muted);font-size:.82rem}
+</style>
+<script>
+function evErr(img) {
+  var fig = img.parentNode;
+  if (/\.png$/.test(img.src) && !fig.dataset.tried) { fig.dataset.tried = "1"; img.src = img.src.replace(/\.png$/, ".jpg"); return; }
+  img.remove(); fig.classList.add("empty");
+}
+</script>
+</div>
+
+<footer class="foot">
+  <nav aria-label="Footer"><a href="/policy">Data &amp; legal</a><a href="/donate">Support Sturch</a><a href="/guide">Guide</a><a href="/#faq">FAQ</a><a href="/#disclaimer">Disclaimer</a></nav>
+  <span>© <span id="yr">2026</span> Sturch. All rights reserved.</span>
+</footer>
+<div id="toast" role="status"></div>
+<script>
+function toggleTheme() {
+  const html = document.documentElement, isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark'); paintTheme();
+  try { localStorage.setItem('sturch_theme', isDark ? 'light' : 'dark'); } catch (e) {}
+}
+function paintTheme() { const b = document.getElementById('themeBtn'); if (b) b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'; }
+function toggleMeMenu(e) {
+  if (e) e.stopPropagation();
+  const m = document.getElementById('meMenu'), btn = document.getElementById('meBtn');
+  const o = m.classList.toggle('open'); btn.setAttribute('aria-expanded', String(o));
+}
+document.addEventListener('click', () => { const m = document.getElementById('meMenu'); if (m) { m.classList.remove('open'); document.getElementById('meBtn').setAttribute('aria-expanded', 'false'); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { const m = document.getElementById('meMenu'); if (m) m.classList.remove('open'); } });
+paintTheme();
+try { document.getElementById('yr').textContent = new Date().getFullYear(); } catch (e) {}
+fetch('/api/me').then(r => r.ok ? r.json() : null).then(u => { if (u && u.email) { document.getElementById('userEmail').textContent = u.email; document.getElementById('meBtn').textContent = u.email.trim().charAt(0).toUpperCase(); } }).catch(() => {});
+
+function copyNum(){
+  var n=document.getElementById('gnum').textContent.replace(/\s+/g,''),b=document.getElementById('cb');
+  function ok(){b.textContent='Copied \u2713';var t=document.getElementById('toast');t.textContent='GCash number copied';t.classList.add('show');setTimeout(function(){t.classList.remove('show');b.textContent='\u29c9 Copy number';},2200);}
+  (navigator.clipboard?navigator.clipboard.writeText(n):Promise.reject()).then(ok).catch(function(){
+    try{var r=document.createRange();r.selectNodeContents(document.getElementById('gnum'));var s=getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');ok();}catch(e){b.textContent='Press and hold the number to copy';}});
+}
+</script>
+<script>
+/* Guest notice: a slim banner under the header, and a small "Guest" chip once it is closed.
+   Only shows for guest accounts (from /api/me). Safe to load on any page. */
+(function(){
+  var KEY='sturch_guest_note';
+  function get(){try{return localStorage.getItem(KEY)}catch(e){return null}}
+  function set(v){try{v?localStorage.setItem(KEY,v):localStorage.removeItem(KEY)}catch(e){}}
+  fetch('/api/me').then(function(r){return r.ok?r.json():null}).then(function(u){
+    if(!u||!u.is_guest)return;
+    var days=u.guest_days||30,hd=document.querySelector('header.top')||document.querySelector('header');
+    if(!hd)return;
+    var st=document.createElement('style');
+    st.textContent='.gn{display:flex;align-items:center;gap:10px;margin:10px 0 0;padding:10px 12px;border-radius:14px;border:1px solid var(--orange,#e0852f);background:var(--orange-bg,rgba(240,145,75,.16));color:var(--text);font-size:.86rem;line-height:1.4}'
+      +'.gn span.t{flex:1;min-width:0}.gn a.gb{flex:none;display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:999px;background:var(--accent,#2f5bea);color:#fff!important;font-weight:700;font-size:.82rem;text-decoration:none}'
+      +'.gn button{flex:none;width:40px;height:40px;border:0;background:none;color:var(--muted,#7a86a8);font-size:1.05rem;cursor:pointer}'
+      +'.gchip{flex:none;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--orange,#e0852f);background:var(--orange-bg,rgba(240,145,75,.16));color:var(--text);font:700 .78rem system-ui,sans-serif;cursor:pointer}'
+      +'@media(max-width:520px){.gn{flex-wrap:wrap}.gn span.t{flex:1 1 100%}}';
+    document.head.appendChild(st);
+    var msg="You're using a guest account. Your saved papers stay on this browser for "+days+" days.";
+    var bar=null,chip=null;
+    function showBar(){
+      if(bar)return;set(null);if(chip){chip.remove();chip=null}
+      bar=document.createElement('div');bar.className='gn';bar.setAttribute('role','note');
+      bar.innerHTML='<span aria-hidden="true">ⓘ</span><span class="t"></span><a class="gb" href="/signup">Create account</a><button type="button" aria-label="Close">✕</button>';
+      bar.querySelector('.t').textContent=msg;
+      bar.querySelector('button').onclick=function(){bar.remove();bar=null;set('closed');showChip()};
+      hd.insertAdjacentElement('afterend',bar);
+    }
+    function showChip(){
+      if(chip)return;var me=hd.querySelector('.me');if(!me)return;
+      chip=document.createElement('button');chip.type='button';chip.className='gchip';chip.textContent='Guest';chip.setAttribute('aria-label','Guest account info');
+      chip.onclick=showBar;me.parentNode.insertBefore(chip,me);
+      /* no room in the header (small phones): drop the chip and use a menu item instead */
+      if(hd.scrollWidth>hd.clientWidth+1||(me.offsetTop-hd.offsetTop)>20){chip.remove();chip=null;var m=hd.querySelector('.menu');if(m&&!m.querySelector('.gmi')){var a=document.createElement('a');a.className='gmi';a.href='#';a.setAttribute('role','menuitem');a.textContent='\u24d8 Guest account';a.onclick=function(e){e.preventDefault();showBar();window.scrollTo(0,0)};var w=m.querySelector('.menu-who');w?w.after(a):m.prepend(a);}}
+    }
+    if(get()==='closed')showChip();else showBar();
+  }).catch(function(){});
+})();
+</script>
+</body>
+</html>

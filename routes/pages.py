@@ -103,6 +103,11 @@ def shop():
     return render_template("shop.html")
 
 
+@pages_bp.route("/policy")
+def policy():
+    return render_template("policy.html")
+
+
 @pages_bp.route("/health")
 def health():
     return jsonify({"status": "ok", "app": "Sturch", "version": "3.0-blueprints"})
