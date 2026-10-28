@@ -98,6 +98,11 @@ def donate():
     return render_template("donate.html")
 
 
+@pages_bp.route("/shop")
+def shop():
+    return render_template("shop.html")
+
+
 @pages_bp.route("/health")
 def health():
     return jsonify({"status": "ok", "app": "Sturch", "version": "3.0-blueprints"})
