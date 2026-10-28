@@ -5,8 +5,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <!-- ═══ SEO — URLs come from SITE_URL in app.py, so a new domain needs no edits here ═══ -->
-  <title>Sturch — Free Paper Search &amp; Google Scholar Alternative</title>
-  <meta name="description"  content="Free Google Scholar alternative for students: search papers from 3 databases at once, get APA, MLA, Chicago and Harvard citations, and find answers."/>
+  <title>Sturch: Free Research Article Multi-Tool &amp; Google Scholar Alternative</title>
+  <meta name="description"  content="Free research article multi-tool and Google Scholar alternative: find papers, make APA, MLA, Chicago and Harvard citations, and find quotes. No AI."/>
   <meta name="keywords"     content="google scholar alternative, free google scholar alternative, academic search engine, academic paper search, free research papers, find research papers, student research tool, APA citation generator, ask a question, quote finder, research topic ideas, arxiv search, pubmed search, literature review, free academic database"/>
   <meta name="author"       content="Sturch"/>
   <meta name="robots"       content="index, follow, max-image-preview:large"/>
@@ -15,8 +15,8 @@
   <!-- Open Graph — social sharing preview -->
   <meta property="og:type"        content="website"/>
   <meta property="og:site_name"   content="Sturch"/>
-  <meta property="og:title"       content="Sturch — Free Paper Search &amp; Google Scholar Alternative"/>
-  <meta property="og:description" content="Free Google Scholar alternative for students: search papers from 3 databases at once, get APA, MLA, Chicago and Harvard citations, and find answers."/>
+  <meta property="og:title"       content="Sturch: Free Research Article Multi-Tool &amp; Google Scholar Alternative"/>
+  <meta property="og:description" content="Free research article multi-tool and Google Scholar alternative: find papers, make APA, MLA, Chicago and Harvard citations, and find quotes. No AI."/>
   <meta property="og:url"         content="{{ site_url }}/"/>
   <meta property="og:image"       content="{{ site_url }}/static/og-image.png"/>
   <meta property="og:image:width"  content="1200"/>
@@ -27,8 +27,8 @@
   <!-- Twitter Card -->
   <meta name="twitter:card"        content="summary_large_image"/>
   <meta name="twitter:site"        content="@sturch_app"/>
-  <meta name="twitter:title"       content="Sturch — Free Paper Search &amp; Google Scholar Alternative"/>
-  <meta name="twitter:description" content="Free Google Scholar alternative for students: search papers from 3 databases at once, get APA, MLA, Chicago and Harvard citations, and find answers."/>
+  <meta name="twitter:title"       content="Sturch: Free Research Article Multi-Tool &amp; Google Scholar Alternative"/>
+  <meta name="twitter:description" content="Free research article multi-tool and Google Scholar alternative: find papers, make APA, MLA, Chicago and Harvard citations, and find quotes. No AI."/>
   <meta name="twitter:image"       content="{{ site_url }}/static/og-image.png"/>
   <meta name="twitter:image:alt"   content="Sturch — free academic paper search for students"/>
 
@@ -40,9 +40,9 @@
         "@type": "WebApplication",
         "@id": "{{ site_url }}/#webapp",
         "name": "Sturch",
-        "alternateName": "Sturch Free Paper Search",
+        "alternateName": "Sturch Free Research Article Multi-Tool",
         "url": "{{ site_url }}/",
-        "description": "Free academic paper search for students, a Google Scholar alternative. Search millions of papers from OpenAlex, arXiv and Crossref, find answers in real papers, trace quotes to their source and generate citations.",
+        "description": "Free research article multi-tool for students and researchers, and a Google Scholar alternative. Search papers from OpenAlex, arXiv and Crossref, make citations, find the paper behind a quote and get topic ideas. No AI.",
         "applicationCategory": "EducationalApplication",
         "operatingSystem": "Web",
         "inLanguage": "en",
@@ -214,9 +214,9 @@ header.top .wrap{flex-wrap:nowrap} .btn,.loglink,.brand{white-space:nowrap}
 <div class="bn"><img class="bn-light" src="/static/landing-banner-light.webp" width="1200" height="630" alt="Sturch: free academic paper search for students" fetchpriority="high"/><img class="bn-dark" src="/static/landing-banner-dark.webp" width="1200" height="630" alt="Sturch: free academic paper search for students" fetchpriority="high"/></div>
 <div class="hero">
   <div>
-    <span class="pill">Real papers, real sources, no AI.</span>
+    <span class="pill">Free research article multi-tool</span>
     <h1>Find research papers you can actually read and <em>cite.</em></h1>
-    <p class="lead">Search millions of papers from trusted sources, see which ones are open access, and copy the citation in one tap.</p>
+    <p class="lead">Search millions of papers from trusted sources, see which ones are open access, and copy the citation in one tap. Real papers, real sources, no AI.</p>
     <form class="sbox" id="hs" role="search" onsubmit="return go(event)">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <input id="hq" type="search" placeholder="Try: sleep and grades" aria-label="Search papers" autocomplete="off"/>
@@ -242,13 +242,14 @@ header.top .wrap{flex-wrap:nowrap} .btn,.loglink,.brand{white-space:nowrap}
     <a class="card" href="/signup"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></div><h3>Topic Ideas</h3><p>Not sure what to research? Find topics and gaps in a field.</p></a>
   </div>
   <a class="card wide" href="/signup"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><div><h3>Your library</h3><p>Save papers, group them in collections, and revisit your search history.</p></div></a>
+<p class="sub" style="margin-top:14px">New here? Read how to <a href="/guide#search">search papers</a>, <a href="/guide#answer">ask a question</a>, <a href="/guide#tracer">find the paper behind a quote</a> and <a href="/guide#topic">get topic ideas</a>.</p>
 </section>
 
 <section class="s">
   <h2>How it works</h2>
   <div class="steps">
     <div class="step"><div class="num">1</div><div><h3>Search or ask</h3><p>Type keywords or a question.</p></div></div>
-    <div class="step"><div class="num">2</div><div><h3>Check the evidence</h3><p>Open access papers can be read right here, with highlights.</p></div></div>
+    <div class="step"><div class="num">2</div><div><h3>Check the evidence</h3><p>Open the original article, and see which papers are free to read.</p></div></div>
     <div class="step"><div class="num">3</div><div><h3>Cite and save</h3><p>Copy APA, MLA, Chicago or Harvard, then save it to a collection.</p></div></div>
   </div>
   <div class="note"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>References are auto-generated. Always check them before you submit.</span></div>
