@@ -2,6 +2,19 @@
   {
     "date": "2026-10-28",
     "tag": "Update",
+    "title": "New names for two tools",
+    "summary": "Clearer names, the same tools.",
+    "points": [
+      "Answer Finder is now Ask a Question: type a question and get sentences from real papers.",
+      "Topic Finder is now Topic Ideas: find a research topic and see what has been studied.",
+      "Sturch still uses fixed rules, not AI. The old web addresses still work."
+    ],
+    "link": "/guide",
+    "link_text": "Read the guide"
+  },
+  {
+    "date": "2026-10-28",
+    "tag": "Update",
     "title": "Source Tracer is now Quote Finder",
     "summary": "The tool has a clearer name. It works the same way.",
     "points": [
@@ -46,8 +59,8 @@
     "points": [
       "Search Papers: Simple mode (like Google Scholar) and Advanced mode, filters, tags and result buttons.",
       "The paper reader: find words inside a paper and copy citations in APA, MLA, Chicago or Harvard.",
-      "Answer Finder: question types, the \"I read this as\" line, quotes with context, and Continue searching.",
-      "Quote Finder (Quick Trace and full trace) and Topic Finder (topic size, narrowing trail, papers per year, methods and gap types).",
+      "Ask a Question: question types, the \"I read this as\" line, quotes with context, and Continue searching.",
+      "Quote Finder (Quick Trace and full trace) and Topic Ideas (topic size, narrowing trail, papers per year, methods and gap types).",
       "Your library: Saved papers, Collections, History and Export, plus good research habits and a short FAQ."
     ],
     "link": "/guide",
@@ -55,8 +68,8 @@
   },
   {
     "date": "2026-10-20",
-    "tag": "Answer Finder",
-    "title": "Answer Finder: keep searching for more answers",
+    "tag": "Ask a Question",
+    "title": "Ask a Question: keep searching for more answers",
     "summary": "Not happy with the answers? Let Sturch read deeper.",
     "points": [
       "A new Continue searching button reads for up to 1 more minute, going past the papers already read.",
@@ -65,7 +78,7 @@
       "You can press it again and again, or stop a round at any time."
     ],
     "link": "/answer",
-    "link_text": "Open Answer Finder"
+    "link_text": "Open Ask a Question"
   },
   {
     "date": "2026-10-19",
@@ -96,8 +109,8 @@
   },
   {
     "date": "2026-10-19",
-    "tag": "Answer Finder",
-    "title": "Answer Finder: more questions, quotes and citations",
+    "tag": "Ask a Question",
+    "title": "Ask a Question: more questions, quotes and citations",
     "summary": "Ask more kinds of questions and use the answers in your paper.",
     "points": [
       "New question types: Benefits of, Risks of, Examples of, How to, and Is … safe/effective.",
@@ -106,12 +119,12 @@
       "Show the sentences around an answer, copy it with an APA citation, or save its paper to your library."
     ],
     "link": "/answer",
-    "link_text": "Open Answer Finder"
+    "link_text": "Open Ask a Question"
   },
   {
     "date": "2026-10-19",
-    "tag": "Topic Finder",
-    "title": "Topic Finder: topic size, narrowing trail and local check",
+    "tag": "Topic Ideas",
+    "title": "Topic Ideas: topic size, narrowing trail and local check",
     "summary": "Pick a topic that is not too big and not too small.",
     "points": [
       "Topic size meter: shows how many papers contain all your words, from too narrow to too broad.",
@@ -125,7 +138,7 @@
       "Gap types: filter research gaps by unclear, understudied or needs more research."
     ],
     "link": "/topic-generator",
-    "link_text": "Open Topic Finder"
+    "link_text": "Open Topic Ideas"
   },
   {
     "date": "2026-10-18",
@@ -143,8 +156,8 @@
   },
   {
     "date": "2026-10-18",
-    "tag": "Topic Finder",
-    "title": "Smarter filters in the Topic Finder",
+    "tag": "Topic Ideas",
+    "title": "Smarter filters in Topic Ideas",
     "summary": "Less scrolling, more useful papers.",
     "points": [
       "Pick your level (High School, College, Graduate) and the filters are set for you.",
@@ -156,7 +169,7 @@
       "Cleaner sub-topics and research gaps."
     ],
     "link": "/topic-generator",
-    "link_text": "Open Topic Finder"
+    "link_text": "Open Topic Ideas"
   },
   {
     "date": "2026-10-17",
@@ -172,12 +185,12 @@
   },
   {
     "date": "2026-10-15",
-    "tag": "Answer Finder",
-    "title": "More accurate answers in the Answer Finder",
+    "tag": "Ask a Question",
+    "title": "More accurate answers in Ask a Question",
     "points": [
       "Stricter sentence checks, so fewer off-topic or half-finished sentences appear as answers."
     ],
     "link": "/answer",
-    "link_text": "Open Answer Finder"
+    "link_text": "Open Ask a Question"
   }
 ]

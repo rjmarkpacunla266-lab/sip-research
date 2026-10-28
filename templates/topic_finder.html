@@ -7,9 +7,9 @@
   <!-- ═══════════════════════════════════════════════════
        SEO — searchability & visibility
   ═══════════════════════════════════════════════════ -->
-  <title>Topic Finder — Research Topic Generator | Sturch</title>
+  <title>Topic Ideas — Research Topic Generator | Sturch</title>
   <meta name="description"  content="Generate research paper topic ideas for your field of study. Sturch shows real published research for your subject area and level to help you build an original topic."/>
-  <meta name="keywords"     content="research topic generator, research paper ideas, thesis topic finder, academic topic suggestions, dissertation topics, research question generator"/>
+  <meta name="keywords"     content="research topic generator, research paper ideas, thesis topic ideas, academic topic suggestions, dissertation topics, research question generator"/>
   <meta name="author"       content="Sturch"/>
   <meta name="theme-color"  content="#2f5bea"/>
   <link rel="canonical"     href="{{ site_url }}/topic-generator"/>
@@ -17,7 +17,7 @@
   <!-- Open Graph — social sharing preview -->
   <meta property="og:type"        content="website"/>
   <meta property="og:site_name"   content="Sturch"/>
-  <meta property="og:title"       content="Topic Finder — Research Topic Generator | Sturch"/>
+  <meta property="og:title"       content="Topic Ideas — Research Topic Generator | Sturch"/>
   <meta property="og:description" content="Generate research paper topic ideas for your field of study. Sturch shows real published research for your subject area and level to help you build an original topic."/>
   <meta property="og:url"         content="{{ site_url }}/topic-generator"/>
   <meta property="og:image"       content="{{ site_url }}/static/og-image.png"/>
@@ -28,7 +28,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card"        content="summary_large_image"/>
   <meta name="twitter:site"        content="@sturch_app"/>
-  <meta name="twitter:title"       content="Topic Finder — Research Topic Generator | Sturch"/>
+  <meta name="twitter:title"       content="Topic Ideas — Research Topic Generator | Sturch"/>
   <meta name="twitter:description" content="Generate research paper topic ideas for your field of study. Sturch shows real published research for your subject area and level to help you build an original topic."/>
   <meta name="twitter:image"       content="{{ site_url }}/static/og-image.png"/>
 
@@ -443,7 +443,7 @@ select.form-input{appearance:auto}
   </div>
 </header>
 
-<div class="pagehead"><a href="/" class="back" aria-label="Back to home">←</a><h1>Topic Finder</h1></div>
+<div class="pagehead"><a href="/" class="back" aria-label="Back to home">←</a><h1>Topic Ideas</h1></div>
 <p class="subtitle">Explore real research to help you visualize and develop your own original topic.</p>
 
 <!-- Disclaimer -->
@@ -1000,7 +1000,7 @@ function apaOf(p){
 function briefText(){
   const m = _topicMeta, d = m.data || {}, L = [];
   const date = new Date().toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'});
-  L.push('TOPIC BRIEF (Sturch Topic Finder, ' + date + ')', '', 'Subject: ' + m.field);
+  L.push('TOPIC BRIEF (Sturch Topic Ideas, ' + date + ')', '', 'Subject: ' + m.field);
   if (m.focus) L.push('Focus: ' + m.focus);
   if (m.keywords) L.push('Keywords: ' + m.keywords);
   const fs = fSummaryText(); if (fs) L.push('Filters: ' + fs);
