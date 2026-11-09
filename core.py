@@ -23,7 +23,7 @@ load_dotenv()
 
 # ─── CONFIG ──────────────────────────────────────────────────────────
 RESEND_API_KEY      = os.getenv("RESEND_API_KEY", "")
-GMAIL_USER          = os.getenv("GMAIL_USER", "pacunlarjmark@gmail.com")
+GMAIL_USER          = os.getenv("GMAIL_USER", "sturch.support@gmail.com")
 APP_URL             = os.getenv("APP_URL", "http://localhost:8080")
 SUPABASE_URL        = os.getenv("SUPABASE_URL")
 SUPABASE_KEY        = os.getenv("SUPABASE_SECRET_KEY")
@@ -705,7 +705,7 @@ def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE,
             "https://api.crossref.org/works",
             params=cr_params,
             timeout=15,
-            headers={"User-Agent": "Sturch/3.0 (mailto:pacunlarjmark@gmail.com)"})
+            headers={"User-Agent": "Sturch/3.0 (mailto:sturch.support@gmail.com)"})
         if not resp.ok:
             return []
         results = []

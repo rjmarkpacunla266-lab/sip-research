@@ -7,7 +7,7 @@
   <!-- ═══ SEO — URLs come from SITE_URL in app.py, so a new domain needs no edits here ═══ -->
   <title>Sturch: Free Research Article Multi-Tool &amp; Google Scholar Alternative</title>
   <meta name="description"  content="Free research article multi-tool and Google Scholar alternative: find papers, make APA, MLA, Chicago and Harvard citations, and find quotes. No AI."/>
-  <meta name="keywords"     content="google scholar alternative, free google scholar alternative, academic search engine, academic paper search, free research papers, find research papers, student research tool, APA citation generator, ask a question, quote finder, research topic ideas, arxiv search, pubmed search, literature review, free academic database"/>
+  <meta name="keywords"     content="free research article multi-tool, free research tools for students, research tools for senior high school students, research tools for Filipino students, free research website Philippines, google scholar alternative, free google scholar alternative for students, free academic paper search, research paper finder, free APA 7 citation generator, MLA citation generator, Chicago citation generator, Harvard reference generator, citation tool without email, find the source of a quote, research topic ideas for students, RRL finder, SIP research help, thesis research tools, no AI research tool, no email needed, sturch, stu rch, student research, study research, studies research, student research tool"/>
   <meta name="author"       content="Sturch"/>
   <meta name="robots"       content="index, follow, max-image-preview:large"/>
   <meta name="theme-color"  content="#2f5bea"/>
@@ -40,7 +40,7 @@
         "@type": "WebApplication",
         "@id": "{{ site_url }}/#webapp",
         "name": "Sturch",
-        "alternateName": "Sturch Free Research Article Multi-Tool",
+        "alternateName": ["Sturch Free Research Article Multi-Tool", "Student Research", "Study Research", "Studies Research", "Stu Rch"],
         "url": "{{ site_url }}/",
         "description": "Free research article multi-tool for students and researchers, and a Google Scholar alternative. Search papers from OpenAlex, arXiv and Crossref, make citations, find the paper behind a quote and get topic ideas. No AI.",
         "applicationCategory": "EducationalApplication",
@@ -77,6 +77,78 @@
     ]
   }
   </script>
+<script type="application/ld+json" id="sturch-faq-ld">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What does Sturch mean?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sturch is short for “student research”. People also search for it as study research, studies research or stu rch. It is a free research article multi-tool made by a student in the Philippines."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is Sturch good for senior high school and college research?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Students use it to find papers for a thesis, a practical research subject or a science investigatory project (SIP), then open the original article, copy the citation and save the paper to a collection. It does not write your research for you, and your teacher or adviser decides what sources are accepted."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I find related literature (RRL) for my research?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Search your topic in Search Papers, use the filters to narrow by year or open access, open the original article to read it, and save useful papers to a collection. Sturch finds real papers. You still need to read them and decide which are relevant."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I cite a journal article in APA, MLA, Chicago or Harvard?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Search for the paper, tap its citation button, choose APA, MLA, Chicago or Harvard, and copy the reference. APA follows the 7th edition journal-article format. References are made from paper data and can miss details, so check them against the original article before you submit."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I find the source of a quote?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Paste the quote or sentence into Quote Finder. It looks for the paper it most likely came from and shows the match. If the quote is paraphrased or the paper is not indexed, it may not be found. Check the original article for the full context."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I get research topic ideas?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Topic Ideas shows recent and highly cited papers for your subject and level so you can see what has already been studied. These are ideas, not approved topics. Ask your teacher or adviser before you commit."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need an email to use Sturch?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No email is needed. You can continue as a guest, or sign up with just a username and password. A guest account keeps saved papers on that browser for a limited time, so create a free account if you want to keep them longer."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Sturch use AI?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Sturch uses fixed rules to search papers, match sentences and build citations. Real papers, real sources, no AI."
+      }
+    }
+  ]
+}
+</script>
 <script>
 (function(){try{var t=localStorage.getItem('sturch_theme');
  if(t!=='dark'&&t!=='light')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
@@ -188,6 +260,11 @@ footer p{margin-top:6px;line-height:1.6}
 header.top .wrap{flex-wrap:nowrap} .btn,.loglink,.brand{white-space:nowrap}
 @media(max-width:480px){header.top .wrap{gap:4px}.brand{font-size:1.1rem;gap:6px}.brand svg{width:26px;height:24px}.loglink{padding:0 6px;font-size:.86rem}.btn.sm{padding:0 12px;font-size:.8rem}.icon-btn{width:38px;height:38px}.news-date{display:none}.news-go{display:none}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+/* seo4 */
+.stu-list{margin:12px 0 0 18px;display:grid;gap:6px;font-size:.92rem}
+.stu-list li{color:var(--muted)} .stu-list a{color:var(--accent)}
+.tagrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.tagrow span{padding:6px 12px;border:1px solid var(--border);background:var(--surf);border-radius:999px;font-size:.8rem;color:var(--muted)}
 </style>
 <link rel="icon" href="/static/favicon.svg?v=2" type="image/svg+xml"/>
 <link rel="icon" href="/static/favicon-32.png?v=2" sizes="32x32" type="image/png"/>
@@ -314,6 +391,20 @@ header.top .wrap{flex-wrap:nowrap} .btn,.loglink,.brand{white-space:nowrap}
   </div>
 </section>
 
+<section class="s" id="for-students">
+  <h2>Free research tools for students and teachers</h2>
+  <p class="sub">Sturch (short for student research, also searched as study research, studies research or stu rch) is a free research article multi-tool made by a student in the Philippines. It is built for senior high school and college students, and for teachers who guide them.</p>
+  <ul class="stu-list">
+    <li><a href="/guide#search"><b>Search papers</b></a> from OpenAlex, arXiv and Crossref, then open the original article.</li>
+    <li><a href="/guide#answer"><b>Ask a Question</b></a> and see sentences from real papers that answer it.</li>
+    <li><a href="/guide#tracer"><b>Quote Finder</b></a> looks for the research paper a quote most likely came from.</li>
+    <li><a href="/guide#topic"><b>Topic Ideas</b></a> for thesis, practical research and SIP, based on real papers.</li>
+    <li><b>Citations</b> in APA 7, MLA, Chicago and Harvard, plus saved papers and collections.</li>
+  </ul>
+  <p class="sub" style="margin-top:12px">No email needed: continue as a guest. Real papers, real sources, no AI.</p>
+  <div class="tagrow" aria-label="Topics"><span>Academic Research</span><span>Paper Search</span><span>APA 7</span><span>MLA Citations</span><span>Chicago Style</span><span>Harvard Referencing</span><span>RRL Finder</span><span>SIP Research</span><span>Thesis Help</span><span>Quote Finder</span><span>Research Topics</span><span>Find Papers</span><span>Free Research Tools</span><span>Student Resources</span><span>Saved Papers</span></div>
+</section>
+
 <section class="s faq" id="faq">
   <h2>Frequently asked questions</h2>
   <details>
@@ -355,6 +446,38 @@ header.top .wrap{flex-wrap:nowrap} .btn,.loglink,.brand{white-space:nowrap}
   <details>
     <summary>Will Sturch write my research paper?</summary>
     <p>No. Sturch helps you find, read and cite real papers. It does not write your research for you.</p>
+  </details>
+  <details>
+    <summary>What does Sturch mean?</summary>
+    <p>Sturch is short for “student research”. People also search for it as study research, studies research or stu rch. It is a free research article multi-tool made by a student in the Philippines.</p>
+  </details>
+  <details>
+    <summary>Is Sturch good for senior high school and college research?</summary>
+    <p>Yes. Students use it to find papers for a thesis, a practical research subject or a science investigatory project (SIP), then open the original article, copy the citation and save the paper to a collection. It does not write your research for you, and your teacher or adviser decides what sources are accepted.</p>
+  </details>
+  <details>
+    <summary>How do I find related literature (RRL) for my research?</summary>
+    <p>Search your topic in Search Papers, use the filters to narrow by year or open access, open the original article to read it, and save useful papers to a collection. Sturch finds real papers. You still need to read them and decide which are relevant.</p>
+  </details>
+  <details>
+    <summary>How do I cite a journal article in APA, MLA, Chicago or Harvard?</summary>
+    <p>Search for the paper, tap its citation button, choose APA, MLA, Chicago or Harvard, and copy the reference. APA follows the 7th edition journal-article format. References are made from paper data and can miss details, so check them against the original article before you submit.</p>
+  </details>
+  <details>
+    <summary>How do I find the source of a quote?</summary>
+    <p>Paste the quote or sentence into Quote Finder. It looks for the paper it most likely came from and shows the match. If the quote is paraphrased or the paper is not indexed, it may not be found. Check the original article for the full context.</p>
+  </details>
+  <details>
+    <summary>Can I get research topic ideas?</summary>
+    <p>Yes. Topic Ideas shows recent and highly cited papers for your subject and level so you can see what has already been studied. These are ideas, not approved topics. Ask your teacher or adviser before you commit.</p>
+  </details>
+  <details>
+    <summary>Do I need an email to use Sturch?</summary>
+    <p>No email is needed. You can continue as a guest, or sign up with just a username and password. A guest account keeps saved papers on that browser for a limited time, so create a free account if you want to keep them longer.</p>
+  </details>
+  <details>
+    <summary>Does Sturch use AI?</summary>
+    <p>No. Sturch uses fixed rules to search papers, match sentences and build citations. Real papers, real sources, no AI.</p>
   </details>
 </section>
 
