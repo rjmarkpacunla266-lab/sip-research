@@ -491,6 +491,9 @@ body.simple .toolbar{margin-top:16px}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 .pc-missing{font-size:.78rem;color:var(--muted,#777);margin-top:4px}.pc-missing s{opacity:.85;margin-right:4px}
 .relaxed-note{font-size:.8rem;color:var(--muted,#777);margin:0 0 10px}
+mark.hl{background:rgba(255,213,79,.38);color:inherit;border-radius:3px;padding:0 2px}
+.pc-via{font-size:.78rem;color:var(--muted,#777);margin-top:4px}
+.dym-row{font-size:.85rem;color:var(--muted,#777);margin:0 0 10px}.dym-row a{color:var(--accent,#6c8cff)}
 </style>
 <style>
 /* Phone fixes shared by all Sturch pages (loaded after each page's own styles). */
@@ -616,8 +619,9 @@ body.simple .toolbar{margin-top:16px}
   <!-- Simple filters -->
   <div class="sbar simple-only" id="simpleBar">
     <label>Date <select id="sSince" onchange="simpleChanged()"></select></label>
-    <label>Sort <select id="sSort" onchange="simpleChanged()"><option value="cited">Most cited</option><option value="recent">Most recent</option></select></label>
-    <label class="s-chk"><input type="checkbox" id="sOA" onchange="simpleChanged()"/> <span>Free to read only</span></label>
+    <label>Sort <select id="sSort" onchange="simpleChanged()"><option value="match">Best match</option><option value="cited">Most cited</option><option value="recent">Most recent</option></select></label>
+    <label class="s-chk"><input type="checkbox" id="sOA" onchange="simpleChanged()" checked/> <span>Free to read only</span></label>
+    <label class="s-chk"><input type="checkbox" id="sRecent" onchange="simpleChanged()"/> <span>Prefer newer papers</span></label>
   </div>
   <div class="simple-more simple-only">Need more control? <a href="#" onclick="document.getElementById('modeSwitch').click();return false">Switch to Advanced mode</a></div>
 
@@ -659,12 +663,16 @@ body.simple .toolbar{margin-top:16px}
             <input type="number" id="yearTo" class="filter-input" placeholder="Any" min="1800" max="2026" inputmode="numeric" onchange="onSortChange()"/></div>
           <div class="fx-field wide"><label for="sortBy">Sort by</label>
             <select id="sortBy" class="filter-input" onchange="onSortChange()">
+              <option value="match">Best match</option>
               <option value="cited">Most cited</option>
               <option value="recent">Most recent</option>
             </select></div>
         </div>
-        <div class="fx-oa" id="oaToggle" onclick="toggleOA()" role="switch" aria-checked="false" tabindex="0" title="Open Access only">
+        <div class="fx-oa active" id="oaToggle" onclick="toggleOA()" role="switch" aria-checked="true" tabindex="0" title="Open Access only">
           <span>🔓 Open access only<small>Papers you can read in full, free</small></span><span class="sw"></span>
+        </div>
+        <div class="fx-oa" id="recentToggle" onclick="toggleRecent()" role="switch" aria-checked="false" tabindex="0" title="Prefer newer papers">
+          <span>🆕 Prefer newer papers<small>Gives recent years a boost in Best match</small></span><span class="sw"></span>
         </div>
         <div class="fx-foot">
           <button type="button" class="fx-reset" onclick="resetFilters()">↺ Reset filters</button>
@@ -692,6 +700,7 @@ body.simple .toolbar{margin-top:16px}
     </div>
 
     <!-- Results -->
+    <div id="dym"></div>
     <div id="results">
       <div class="state">
         <div class="big">🔬</div>
@@ -784,7 +793,10 @@ let currentQuery   = '';
 let totalResults   = 0;
 let bookmarkMap    = {};  // paperId → bookmark UUID
 let citeCopiedCount = 0;
-let oaOnly         = false;
+let oaOnly         = true;    // Open access only starts ON (turn it off in the filters)
+let preferRecent   = false;
+let hlTerms        = [];
+let lastSuggest    = '';
 let rawResults     = [];   // everything the server returned (unfiltered view source)
 let lastYf = null, lastYt = null, lastSources = [];
 function selectedSources() {
@@ -807,6 +819,7 @@ function filterQS() {
   if (yf) qs += `&year_from=${yf}`;
   if (yt) qs += `&year_to=${yt}`;
   if (oaOnly) qs += '&oa=1';
+  if (preferRecent) qs += '&recent=1';
   if (sort) qs += `&sort=${sort}`;
   if (field && field !== 'both') qs += `&field=${field}`;
   if (src.length) qs += `&sources=${src.join(',')}`;
@@ -822,6 +835,7 @@ function applyView() {
   const sort = document.getElementById('sortBy').value;
   const dkey = p => p.date || (p.year ? String(p.year).padStart(4,'0') + '-00-00' : '');
   if (sort === 'recent') r.sort((a,b) => dkey(b).localeCompare(dkey(a)) || (b.citations||0)-(a.citations||0));
+  else if (sort === 'match') r.sort((a,b) => (b.score||0)-(a.score||0) || (b.citations||0)-(a.citations||0));
   else                   r.sort((a,b) => (b.citations||0)-(a.citations||0));
   const part = p => (p.missing && p.missing.length) ? 1 : 0;
   r = r.map((p,i)=>[p,i]).sort((a,b)=>part(a[0])-part(b[0])||a[1]-b[1]).map(x=>x[0]);   // full matches first
@@ -875,15 +889,18 @@ function syncSimpleFromFilters() {
   const yf = document.getElementById('yearFrom').value.trim();
   buildSinceOptions(yf);
   document.getElementById('sSince').value = yf;
-  document.getElementById('sSort').value = document.getElementById('sortBy').value || 'cited';
+  document.getElementById('sSort').value = document.getElementById('sortBy').value || 'match';
   document.getElementById('sOA').checked = oaOnly;
+  document.getElementById('sRecent').checked = preferRecent;
 }
 function simpleChanged() {                         // the three simple filters write into the same fields the Advanced panel uses
   document.getElementById('yearFrom').value = document.getElementById('sSince').value;
   document.getElementById('yearTo').value = '';
   document.getElementById('sortBy').value = document.getElementById('sSort').value;
   oaOnly = document.getElementById('sOA').checked;
-  const el = document.getElementById('oaToggle'); el.classList.toggle('active', oaOnly); el.setAttribute('aria-checked', String(oaOnly));
+  preferRecent = document.getElementById('sRecent').checked;
+  if (preferRecent && document.getElementById('sortBy').value === 'cited') { document.getElementById('sortBy').value = 'match'; document.getElementById('sSort').value = 'match'; }
+  paintToggles();
   fxSummary();
   if (currentQuery) doSearch(); else applyView();
 }
@@ -964,12 +981,56 @@ function dismissTutorial() {
 }
 
 // ── OA Toggle ─────────────────────────────────
+function paintToggles() {                          // keep every switch / checkbox showing the same state
+  [['oaToggle', oaOnly], ['recentToggle', preferRecent]].forEach(([id, on]) => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.toggle('active', on); el.setAttribute('aria-checked', String(on)); }
+  });
+  const a = document.getElementById('sOA'), b = document.getElementById('sRecent');
+  if (a) a.checked = oaOnly;
+  if (b) b.checked = preferRecent;
+}
 function toggleOA() {
   oaOnly = !oaOnly;
-  const el = document.getElementById('oaToggle');
-  el.classList.toggle('active', oaOnly); el.setAttribute('aria-checked', String(oaOnly)); fxSummary();
+  paintToggles(); fxSummary();
   toast(oaOnly ? '🔓 Open Access only ON' : '🔓 Open Access filter OFF');
   if (currentQuery) doSearch(); else applyView();   // re-fetch so the result pool matches
+}
+function toggleRecent() {
+  preferRecent = !preferRecent;
+  if (preferRecent && document.getElementById('sortBy').value === 'cited') {   // the boost only works in Best match
+    document.getElementById('sortBy').value = 'match'; document.getElementById('sSort').value = 'match';
+  }
+  paintToggles(); fxSummary();
+  toast(preferRecent ? '🆕 Preferring newer papers' : 'Newer-paper boost OFF');
+  if (currentQuery) doSearch(); else applyView();
+}
+document.addEventListener('DOMContentLoaded', () => { const r = document.getElementById('recentToggle'); if (r) r.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleRecent(); } }); });
+
+// Highlight the words you searched for (and any synonym that matched)
+function hlt(text) {
+  const s = String(text || '');
+  const terms = (hlTerms || []).map(t => String(t).toLowerCase()).filter(t => t.length > 1);
+  if (!terms.length) return esc(s);
+  return s.split(/([A-Za-z0-9\u00C0-\u024F]+)/).map((chunk, i) => {
+    if (i % 2 === 0) return esc(chunk);
+    const w = chunk.toLowerCase();
+    const hit = terms.some(t => w === t || (t.length >= 3 && w.startsWith(t)) || (w.length >= 4 && t.startsWith(w) && t.length - w.length <= 2));
+    return hit ? '<mark class="hl">' + esc(chunk) + '</mark>' : esc(chunk);
+  }).join('');
+}
+// "Did you mean ...?" and the open-access hint, shown above the results
+function showDym() {
+  const box = document.getElementById('dym'); if (!box) return;
+  let h = '';
+  if (lastSuggest) h += `<div class="dym-row">Did you mean <a href="#" onclick="useSuggestion(event)"><b>${esc(lastSuggest)}</b></a>?</div>`;
+  if (oaOnly && rawResults.length < 8) h += '<div class="dym-row">Showing open-access papers only. <a href="#" onclick="toggleOA();return false">Show all papers</a></div>';
+  box.innerHTML = h;
+}
+function useSuggestion(e) {
+  if (e) e.preventDefault();
+  document.getElementById('searchInput').value = lastSuggest;
+  doSearch();
 }
 // ── Filters panel: open/close, summary line, reset ──
 function toggleFilters(force) {
@@ -986,6 +1047,7 @@ function fxSummary() {
   if (oaOnly) parts.push('Open access');
   if (on < 3) parts.push(on + ' source' + (on === 1 ? '' : 's'));
   if (document.getElementById('sortBy').value === 'recent') parts.push('Most recent');
+  if (preferRecent) parts.push('Prefer newer');
   const f = document.getElementById('fieldBy').value;
   if (f === 'title') parts.push('Title only'); else if (f === 'abstract') parts.push('Abstract only');
   document.getElementById('fxCount').textContent = parts.length;
@@ -995,11 +1057,11 @@ function fxSummary() {
 function resetFilters() {
   document.getElementById('yearFrom').value = '';
   document.getElementById('yearTo').value = '';
-  document.getElementById('sortBy').value = 'cited';
+  document.getElementById('sortBy').value = 'match';
   document.getElementById('fieldBy').value = 'both';
   document.querySelectorAll('.src-chip').forEach(c => c.classList.add('active'));
-  oaOnly = false;
-  const oa = document.getElementById('oaToggle'); oa.classList.remove('active'); oa.setAttribute('aria-checked', 'false');
+  oaOnly = true; preferRecent = false;               // the defaults
+  paintToggles();
   fxSummary();
   toast('Filters reset');
   if (currentQuery) doSearch();
@@ -1044,7 +1106,9 @@ function restoreLastSearch() {
     totalResults   = data.total || 0;
     currentQuery   = query;
     lastYf = yf; lastYt = yt; lastSources = data.sources_used || [];
+    hlTerms = data.highlight || []; lastSuggest = data.did_you_mean || '';
     renderResults(data);
+    showDym();
     toast('📋 Results restored');
   } catch(e) { sessionStorage.removeItem('sturch_last_results'); }
 }
@@ -1059,8 +1123,8 @@ function applyRerunFromURL() {
   document.getElementById('yearFrom').value = p.get('yf') || '';
   document.getElementById('yearTo').value   = p.get('yt') || '';
   oaOnly = p.get('oa') === '1';
-  document.getElementById('oaToggle').classList.toggle('active', oaOnly);
-  if (['cited','recent'].includes(p.get('sort')))        document.getElementById('sortBy').value  = p.get('sort');
+  paintToggles();
+  if (['match','cited','recent'].includes(p.get('sort')))        document.getElementById('sortBy').value  = p.get('sort');
   if (['both','title','abstract'].includes(p.get('field'))) document.getElementById('fieldBy').value = p.get('field');
   const src = (p.get('src') || '').split(',').filter(Boolean);
   if (src.length) document.querySelectorAll('.src-chip').forEach(c => c.classList.toggle('active', src.includes(c.dataset.src)));
@@ -1141,6 +1205,8 @@ async function doSearch(page = 1) {
     lastYf = yf; lastYt = yt; lastSources = data.sources_used || [];
     displayedCount = 0;
     currentResults = rawResults.slice();
+    hlTerms = data.highlight || []; lastSuggest = data.did_you_mean || '';
+    showDym();
 
     if (!currentResults.length) {
       document.getElementById('results').innerHTML = `<div class="state"><div class="big">🔍</div><h3>No results found</h3><p style="margin-top:6px;font-size:.83rem">Try different keywords or remove the OA filter</p></div>`;
@@ -1292,12 +1358,13 @@ function paperCard(item, i, adv) {
     <div class="pc-ic" aria-hidden="true">${DOC_IC}</div>
     <div class="pc-main">
       <div class="pc-top">
-        <a class="pc-title" href="#" onclick="openPaperPage(${i},event);return false" rel="noopener">${esc(stripTags(item.title || 'Untitled'))}</a>
+        <a class="pc-title" href="#" onclick="openPaperPage(${i},event);return false" rel="noopener">${hlt(stripTags(item.title || 'Untitled'))}</a>
         <span class="pc-badges">${oaBadgeHtml(item)}${adv ? sourceBadge(item.data_source) : ''}</span>
       </div>
       <div class="pc-meta">${meta}</div>
-      ${snip ? `<div class="pc-snip">${esc(snip)}</div>` : (item.abstract_hidden ? '<div class="pc-snip" style="font-style:italic">Abstract not shown here. Open the article to read it.</div>' : '')}
+      ${snip ? `<div class="pc-snip">${hlt(snip)}</div>` : (item.abstract_hidden ? '<div class="pc-snip" style="font-style:italic">Abstract not shown here. Open the article to read it.</div>' : '')}
       ${item.missing && item.missing.length ? `<div class="pc-missing">Missing: ${item.missing.map(w => `<s>${esc(w)}</s>`).join(' ')}</div>` : ''}
+      ${item.via ? `<div class="pc-via">Also matched: ${esc(item.via)}</div>` : ''}
       ${cites ? `<div class="pc-cites">↗ ${cites.toLocaleString()} citations</div>` : ''}
       <div class="pc-actions">
         <button class="act primary" onclick="openPaperPage(${i},event)">↗ Open article</button>
@@ -1310,7 +1377,7 @@ function paperCard(item, i, adv) {
         <button class="act ghost" onclick="toggleCard(${n})" aria-label="Show details">Details ▾</button>` : ''}
       </div>
       ${adv ? `<div class="card-body hidden">
-        ${ab ? `<div class="abstract-block">${esc(ab)}</div>` : ''}
+        ${ab ? `<div class="abstract-block">${hlt(ab)}</div>` : ''}
         ${concepts ? `<div class="chips" style="margin-top:7px">${concepts}</div>` : ''}
       </div>
       <div class="card-foot hidden">
@@ -1592,6 +1659,7 @@ function doExport(fmt) {
 
 // ── Loading / Error states ─────────────────────
 function showLoading() {
+  const dym = document.getElementById('dym'); if (dym) dym.innerHTML = '';
   document.getElementById('results').innerHTML=`<div class="state"><div class="spinner"></div><h3>Searching…</h3><p style="margin-top:5px;font-size:.8rem">${isSimple() ? 'Looking through millions of papers' : 'OpenAlex · arXiv · Crossref'}</p></div>`;
   ['statsBar','toolbar','loadMoreBar'].forEach(id=>document.getElementById(id).classList.add('hidden'));
 }

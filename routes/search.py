@@ -9,6 +9,7 @@ from core import (login_required, get_user, OPENALEX_URL, format_paper, reconstr
                   sb_post, sb_get, sb_patch, sb_try, _all_citations)
 from engine import (ALL_SOURCES, SOURCE_LABELS, to_int as _to_int, read_filters, merge_dedupe,
                     apply_filters_and_sort, search_sources, term_in)
+from searchhelp import synonym_terms, suggest_query
 from core import _safe_terms, hide_restricted_abstracts
 from bs4 import BeautifulSoup as BS
 
@@ -73,14 +74,58 @@ def _partial_matches(query, page, f, have_keys):
     out.sort(key=lambda x: (len(x["missing"]), -(x.get("citations") or 0)))
     return out
 
+def _key(p):
+    return (p.get("doi") or p.get("title") or "").lower()
+
+def _synonym_matches(query, page, f, have_keys):
+    """Papers that use a synonym instead of one of your words (student -> learner, ...).
+    Each is tagged with the synonym that matched. arXiv is skipped here because it limits
+    us to one request every 3 seconds."""
+    terms = _safe_terms(query)
+    variants = []
+    for t in terms:
+        for s in synonym_terms(t)[:1]:
+            variants.append((s, " ".join(s if x == t else x for x in terms)))
+    f2 = dict(f); f2["sources"] = [s for s in f["sources"] if s != "arxiv"]
+    if not variants or not f2["sources"]:
+        return []
+    out = []
+    for syn, q2 in variants[:2]:
+        raw, _ = search_sources(q2, page, f2)
+        for p in apply_filters_and_sort(merge_dedupe(raw), f2, q2):
+            k = _key(p)
+            if not k or k in have_keys:
+                continue
+            have_keys.add(k)
+            p["via"] = syn
+            out.append(p)
+    out.sort(key=lambda x: -(x.get("score") or 0))
+    return out
+
+def _highlight_words(query, results):
+    """Words the page should highlight: your search words plus any synonym that matched."""
+    words = [w.lower() for w in _safe_terms(query)]
+    for p in results:
+        if p.get("via"):
+            words += [w.lower() for w in re.findall(r"[A-Za-z0-9\-]+", p["via"])]
+    return [w for w in dict.fromkeys(words) if len(w) > 1]
+
 def _run_search(query, page, user, log=True):
     f = read_filters(request.args.get)
     raw, total = search_sources(query, page, f)
     results = apply_filters_and_sort(merge_dedupe(raw), f, query)
+    strict_count = len(results)
     relaxed = False
     if page == 1 and len(results) < 10:
-        try:
-            keys = {(p.get("doi") or p.get("title") or "").lower() for p in results}
+        keys = {_key(p) for p in results}
+        try:                                                     # 1) same meaning, different word
+            syn = _synonym_matches(query, page, f, keys)[:10]
+            if syn:
+                results = results + syn
+        except Exception:
+            pass
+        try:                                                     # 2) papers with only some of the words
+            keys = {_key(p) for p in results}
             extra = _partial_matches(query, page, f, keys)[:20 - len(results)]
             if extra:
                 results = results + extra
@@ -88,10 +133,18 @@ def _run_search(query, page, user, log=True):
         except Exception:
             pass
     hide_restricted_abstracts(results)
+    suggestion = ""
+    if page == 1 and strict_count < 10:
+        try:
+            suggestion = suggest_query(query, results)
+        except Exception:
+            suggestion = ""
     if log:
         _log_search(user, query, len(results), f, request.args.get("tg", ""))
     return {"results": results, "total": (total or len(results)) if not relaxed else len(results),
             "query": query, "page": page, "relaxed": relaxed,
+            "highlight": _highlight_words(query, results),
+            "did_you_mean": suggestion,
             "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
             "ref_disclaimer": "References auto-generated — verify before academic use"}
 

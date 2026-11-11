@@ -6,6 +6,7 @@ import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from core import (RESULTS_PER_SOURCE, search_arxiv, search_crossref,
                   search_openalex, _safe_terms, hide_restricted_abstracts)
+from searchhelp import synonym_terms, recency_bonus, citation_points
 
 # PubMed and Europe PMC are paused: their abstracts and articles are publisher-copyrighted.
 ALL_SOURCES = ["openalex", "arxiv", "crossref"]
@@ -36,6 +37,7 @@ def read_filters(get):
         "oa_only":   oa is True or str(oa).lower() in ("1", "true"),
         "sort":      sort if sort in ("cited", "recent", "match") else "cited",
         "field":     field if field in ("title", "abstract", "both") else "both",
+        "recent_pref": str(get("recent")).lower() in ("1", "true"),
     }
 
 def merge_dedupe(papers):
@@ -114,9 +116,34 @@ def matches_field(p, terms, field):
     return field == "both" and all(term_in(title, t) for t in terms)
 
 def relevance(p, terms):
-    """How well a paper matches the search words: title hits count double."""
+    """How well a paper matches the search words. A word in the title is worth 3 points, in the
+    abstract 1 point; a synonym counts half. Bonus when every word is in the title, and more
+    when the words appear together as a phrase in the title."""
     title, abstract = p.get("title") or "", p.get("abstract") or ""
-    return sum((2 if term_in(title, t) else 0) + (1 if term_in(abstract, t) else 0) for t in terms)
+    score, in_title = 0.0, 0
+    for t in terms:
+        syn = synonym_terms(t)
+        if term_in(title, t):
+            score += 3; in_title += 1
+        elif any(term_in(title, s) for s in syn):
+            score += 1.5
+        if term_in(abstract, t):
+            score += 1
+        elif any(term_in(abstract, s) for s in syn):
+            score += 0.5
+    if terms and in_title == len(terms):
+        score += 2
+        if len(terms) > 1 and norm(" ".join(terms)) in norm(title):
+            score += 3
+    return score
+
+def rank_score(p, terms, f):
+    """Best-match score = how well it matches + a little credit for citations
+    + (only when 'Prefer newer papers' is on) a bonus for recent years."""
+    s = relevance(p, terms) + citation_points(p.get("citations"))
+    if f.get("recent_pref"):
+        s += recency_bonus(p.get("year"))
+    return s
 
 def apply_filters_and_sort(papers, f, query=""):
     """Safety net: sources that ignore year/OA/field options are filtered here."""
@@ -130,8 +157,11 @@ def apply_filters_and_sort(papers, f, query=""):
         if f["year_to"]   and (y is None or y > f["year_to"]):   continue
         if f["oa_only"] and not p.get("is_oa"):                  continue
         out.append(p)
+    if terms:                                   # every result gets a score the page can sort by
+        for p in out:
+            p["score"] = round(rank_score(p, terms, f), 2)
     if f["sort"] == "match" and terms:
-        out.sort(key=lambda x: (relevance(x, terms), x.get("citations") or 0), reverse=True)
+        out.sort(key=lambda x: (x["score"], x.get("citations") or 0), reverse=True)
     elif f["sort"] == "recent":
         out.sort(key=lambda x: (sort_date(x), x.get("citations") or 0), reverse=True)
     else:
@@ -140,8 +170,11 @@ def apply_filters_and_sort(papers, f, query=""):
 
 def search_sources(query, page, f, per_source=RESULTS_PER_SOURCE, loose=False):
     """Ask every selected source in parallel. Returns (raw_papers, openalex_total)."""
+    pool_sort = f["sort"]
+    if pool_sort == "match":              # the sources can only pre-sort by citations or date,
+        pool_sort = "recent" if f.get("recent_pref") else "cited"   # so we collect that pool and re-rank it ourselves
     kw = dict(year_from=f["year_from"], year_to=f["year_to"], oa_only=f["oa_only"],
-              sort=f["sort"], field=f["field"], loose=loose)
+              sort=pool_sort, field=f["field"], loose=loose)
     fns = {"openalex": search_openalex, "arxiv": search_arxiv, "crossref": search_crossref}
     raw, total = [], 0
     with ThreadPoolExecutor(max_workers=5) as ex:
