@@ -1010,7 +1010,8 @@ document.addEventListener('DOMContentLoaded', () => { const r = document.getElem
 // Highlight the words you searched for (and any synonym that matched)
 function hlt(text) {
   const s = String(text || '');
-  const terms = (hlTerms || []).map(t => String(t).toLowerCase()).filter(t => t.length > 1);
+  const STOP = ['the','and','of','on','in','at','to','for','from','by','with','vs','versus','a','an','or','as','is','are','via'];
+  const terms = (hlTerms || []).map(t => String(t).toLowerCase()).filter(t => t.length > 1 && !STOP.includes(t));
   if (!terms.length) return esc(s);
   return s.split(/([A-Za-z0-9\u00C0-\u024F]+)/).map((chunk, i) => {
     if (i % 2 === 0) return esc(chunk);

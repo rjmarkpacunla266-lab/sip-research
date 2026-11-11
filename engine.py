@@ -6,7 +6,7 @@ import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from core import (RESULTS_PER_SOURCE, search_arxiv, search_crossref,
                   search_openalex, _safe_terms, hide_restricted_abstracts)
-from searchhelp import synonym_terms, recency_bonus, citation_points
+from searchhelp import synonym_terms, recency_bonus, citation_points, content_terms
 
 # PubMed and Europe PMC are paused: their abstracts and articles are publisher-copyrighted.
 ALL_SOURCES = ["openalex", "arxiv", "crossref"]
@@ -119,6 +119,7 @@ def relevance(p, terms):
     """How well a paper matches the search words. A word in the title is worth 3 points, in the
     abstract 1 point; a synonym counts half. Bonus when every word is in the title, and more
     when the words appear together as a phrase in the title."""
+    terms = content_terms(terms)                 # ignore "the", "of", "vs", ...
     title, abstract = p.get("title") or "", p.get("abstract") or ""
     score, in_title = 0.0, 0
     for t in terms:

@@ -49,6 +49,17 @@ def synonym_terms(term):
     """Other words/phrases that mean about the same as `term` (most useful first)."""
     return sorted(_SYN.get(_stem(term), []), key=lambda s: (" " in s, len(s)))
 
+# Little words that should not be highlighted, counted as "missing", or used to rank papers.
+STOPWORDS = set("""a an and or nor but of on in at to for from by with without within about as is are was were be been
+being this that these those its it their his her than then into onto over under between among via vs versus
+using use used the their there which who whom whose what when where why how do does did can could should would
+may might will shall not no""".split())
+
+def content_terms(terms):
+    """The meaningful words of a search (drops 'the', 'of', 'vs', ...). If nothing is left, keep them all."""
+    keep = [t for t in terms if t.lower() not in STOPWORDS]
+    return keep or list(terms)
+
 # ── "Did you mean" ──────────────────────────────────────────────────────────
 VOCAB = set("""
 abstract academic accuracy achievement activity adolescent adolescents agriculture algorithm analysis anxiety

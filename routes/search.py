@@ -9,7 +9,7 @@ from core import (login_required, get_user, OPENALEX_URL, format_paper, reconstr
                   sb_post, sb_get, sb_patch, sb_try, _all_citations)
 from engine import (ALL_SOURCES, SOURCE_LABELS, to_int as _to_int, read_filters, merge_dedupe,
                     apply_filters_and_sort, search_sources, term_in)
-from searchhelp import synonym_terms, suggest_query
+from searchhelp import synonym_terms, suggest_query, content_terms
 from core import _safe_terms, hide_restricted_abstracts
 from bs4 import BeautifulSoup as BS
 
@@ -56,7 +56,7 @@ def _hit(p, term, field):
 def _partial_matches(query, page, f, have_keys):
     """Google-style fallback: papers that contain SOME of the words, each tagged with
     the words it is missing. Rule-based only."""
-    terms = _safe_terms(query)
+    terms = content_terms(_safe_terms(query))       # little words (the, of, vs) are never 'missing'
     if len(terms) < 2:
         return []
     f2 = dict(f); f2["field"] = "both"      # let the filters pass; we check the field ourselves
@@ -104,7 +104,7 @@ def _synonym_matches(query, page, f, have_keys):
 
 def _highlight_words(query, results):
     """Words the page should highlight: your search words plus any synonym that matched."""
-    words = [w.lower() for w in _safe_terms(query)]
+    words = [w.lower() for w in content_terms(_safe_terms(query))]
     for p in results:
         if p.get("via"):
             words += [w.lower() for w in re.findall(r"[A-Za-z0-9\-]+", p["via"])]
