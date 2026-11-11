@@ -60,6 +60,72 @@ def content_terms(terms):
     keep = [t for t in terms if t.lower() not in STOPWORDS]
     return keep or list(terms)
 
+# Generic research words (study, effect, analysis, significant ...). They still count when a paper has them,
+# but they are worth less, are not required to match, and are not highlighted.
+WEAK_WORDS = set("""
+study studies analysis analyses effect effects impact impacts role roles
+factor factors method methods approach approaches case cases review reviews
+evaluation evaluations assessment assessments examination examinations investigation investigations relationship relationships
+correlation correlations association associations comparison comparisons process processes strategy strategies
+technique techniques practice practices principle principles concept concepts perspective perspectives
+aspect aspects issue issues challenge challenges problem problems pattern patterns
+trend trends level levels type types form forms variable variables
+component components outcome outcomes result results survey surveys experiment experiments
+sample samples sampling questionnaire questionnaires interview interviews observation observations measurement
+measurements instrument instruments procedure procedures methodology quantitative qualitative descriptive correlational
+experimental exploratory comparative analytical empirical theoretical statistical systematic randomized longitudinal
+cross-sectional retrospective prospective observational mixed-method mixed-methods respondent respondents participant participants
+indicator indicators validation reliability validity criteria meta-analysis investigate investigates investigated
+examining examine examines examined evaluate evaluates evaluated evaluating determine determines
+determined determining assess assesses assessed assessing analyze analyzes analyzed analyzing
+explore explores explored exploring identify identifies identified identifying describe describes
+described describing compare compares compared comparing measure measures measured measuring
+estimate estimates estimated estimating reviewed reviewing discuss discusses discussed discussing
+present presents presented presenting propose proposes proposed proposing suggest suggests
+suggested suggesting indicate indicates indicated indicating demonstrate demonstrates demonstrated demonstrating
+reveal reveals revealed revealing show shows showed shown found find
+finds report reports reported reporting conclude concludes concluded concluding observe
+observes observed observing focus focuses focused focusing aim aims aimed
+aiming provide provides provided providing highlight highlights highlighted highlighting consider
+considers considered considering significant significantly different differently various varied new
+novel effective effectively important importantly high highly low relatively recent
+recently current currently general generally specific specifically potential potentially major
+mainly primary primarily secondary overall particularly especially commonly widely frequently
+often mostly largely increasingly substantial substantially considerable considerably relevant similar
+similarly comparable appropriate appropriately possible possibly necessary necessarily essential consistent
+consistently diverse multiple several numerous limited moderately meaningful simple basic
+broad individual particular initial final previous further additional alternative existing
+available practical preliminary successful unsuccessful reliable valid abstract background objective
+objectives methodologies conclusion conclusions introduction purpose purposes keyword keywords finding
+findings discussion discussions scope summary summaries overview overviews context rationale
+significance contribution contributions implication implications limitation limitations recommendation recommendations hypothesis
+hypotheses research interpretation interpretations evidence question questions statement statements future
+acknowledgment acknowledgments reference references using based among between towards through
+during regarding within across via versus according alongside beyond despite
+including excluding involving following concerning related relating associated together rather
+instead therefore however moreover furthermore consequently accordingly additionally alternatively respectively
+approximately nearly almost also thus hence thereby wherein whereby whereas
+whether although while unless since because irrespective regardless notwithstanding subsequent
+prior followed derived obtained collected conducted performed applied utilized employed
+""".split())
+
+def _is_weak(w):
+    w = (w or "").lower()
+    return w in WEAK_WORDS or _stem(w) in WEAK_WORDS
+
+def strong_terms(terms):
+    """The words that say what the search is about. If a search is made only of generic
+    words, those are used instead so it still works."""
+    terms = list(terms)
+    s = [t for t in terms if t.lower() not in STOPWORDS and not _is_weak(t)]
+    return s or content_terms(terms)
+
+def search_query(query):
+    """The words that must match: little words and generic words are dropped."""
+    terms = [re.sub(r"[^\w\-]", "", t) for t in re.split(r"\s+", (query or "").strip())]
+    terms = [t for t in terms if t]
+    return " ".join(strong_terms(terms)) if terms else (query or "")
+
 # ── "Did you mean" ──────────────────────────────────────────────────────────
 VOCAB = set("""
 abstract academic accuracy achievement activity adolescent adolescents agriculture algorithm analysis anxiety

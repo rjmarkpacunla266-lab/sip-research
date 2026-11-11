@@ -6,7 +6,7 @@ import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from core import (RESULTS_PER_SOURCE, search_arxiv, search_crossref,
                   search_openalex, _safe_terms, hide_restricted_abstracts)
-from searchhelp import synonym_terms, recency_bonus, citation_points, content_terms
+from searchhelp import synonym_terms, recency_bonus, citation_points, content_terms, strong_terms
 
 # PubMed and Europe PMC are paused: their abstracts and articles are publisher-copyrighted.
 ALL_SOURCES = ["openalex", "arxiv", "crossref"]
@@ -116,25 +116,29 @@ def matches_field(p, terms, field):
     return field == "both" and all(term_in(title, t) for t in terms)
 
 def relevance(p, terms):
-    """How well a paper matches the search words. A word in the title is worth 3 points, in the
-    abstract 1 point; a synonym counts half. Bonus when every word is in the title, and more
-    when the words appear together as a phrase in the title."""
+    """How well a paper matches the search words. Words that say what the search is about
+    (tomato, chlorophyll) are worth 3 points in the title and 1 in the abstract. Generic research
+    words (study, effect, analysis) are worth much less. A synonym counts half. Bonus when every
+    main word is in the title, and more when they appear together as a phrase."""
     terms = content_terms(terms)                 # ignore "the", "of", "vs", ...
+    strong = strong_terms(terms)
     title, abstract = p.get("title") or "", p.get("abstract") or ""
     score, in_title = 0.0, 0
     for t in terms:
+        weak = t not in strong
         syn = synonym_terms(t)
         if term_in(title, t):
-            score += 3; in_title += 1
+            score += 1 if weak else 3
+            in_title += 0 if weak else 1
         elif any(term_in(title, s) for s in syn):
-            score += 1.5
+            score += 0.5 if weak else 1.5
         if term_in(abstract, t):
-            score += 1
+            score += 0.3 if weak else 1
         elif any(term_in(abstract, s) for s in syn):
-            score += 0.5
-    if terms and in_title == len(terms):
+            score += 0.15 if weak else 0.5
+    if strong and in_title == len(strong):
         score += 2
-        if len(terms) > 1 and norm(" ".join(terms)) in norm(title):
+        if len(strong) > 1 and norm(" ".join(strong)) in norm(title):
             score += 3
     return score
 

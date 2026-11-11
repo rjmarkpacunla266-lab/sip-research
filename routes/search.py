@@ -8,8 +8,8 @@ from flask import Blueprint, render_template, request, session, jsonify
 from core import (login_required, get_user, OPENALEX_URL, format_paper, reconstruct_abstract,
                   sb_post, sb_get, sb_patch, sb_try, _all_citations)
 from engine import (ALL_SOURCES, SOURCE_LABELS, to_int as _to_int, read_filters, merge_dedupe,
-                    apply_filters_and_sort, search_sources, term_in)
-from searchhelp import synonym_terms, suggest_query, content_terms
+                    apply_filters_and_sort, search_sources, term_in, rank_score)
+from searchhelp import synonym_terms, suggest_query, content_terms, strong_terms, search_query
 from core import _safe_terms, hide_restricted_abstracts
 from bs4 import BeautifulSoup as BS
 
@@ -56,7 +56,7 @@ def _hit(p, term, field):
 def _partial_matches(query, page, f, have_keys):
     """Google-style fallback: papers that contain SOME of the words, each tagged with
     the words it is missing. Rule-based only."""
-    terms = content_terms(_safe_terms(query))       # little words (the, of, vs) are never 'missing'
+    terms = strong_terms(_safe_terms(query))        # little and generic words (the, of, effect) are never 'missing'
     if len(terms) < 2:
         return []
     f2 = dict(f); f2["field"] = "both"      # let the filters pass; we check the field ourselves
@@ -104,29 +104,41 @@ def _synonym_matches(query, page, f, have_keys):
 
 def _highlight_words(query, results):
     """Words the page should highlight: your search words plus any synonym that matched."""
-    words = [w.lower() for w in content_terms(_safe_terms(query))]
+    words = [w.lower() for w in strong_terms(_safe_terms(query))]      # generic words are not highlighted
     for p in results:
         if p.get("via"):
             words += [w.lower() for w in re.findall(r"[A-Za-z0-9\-]+", p["via"])]
     return [w for w in dict.fromkeys(words) if len(w) > 1]
 
+def _rank(results, query, f, resort=True):
+    """Score every paper against ALL the words you typed (generic words count a little), then
+    order by that score when 'Best match' is selected."""
+    terms = _safe_terms(query)
+    if terms:
+        for p in results:
+            p["score"] = round(rank_score(p, terms, f), 2)
+        if resort and f["sort"] == "match":
+            results.sort(key=lambda x: (x["score"], x.get("citations") or 0), reverse=True)
+    return results
+
 def _run_search(query, page, user, log=True):
     f = read_filters(request.args.get)
-    raw, total = search_sources(query, page, f)
-    results = apply_filters_and_sort(merge_dedupe(raw), f, query)
+    sq = search_query(query)          # words that must match: little words (the, of, vs) and generic words (effect, study) are not required
+    raw, total = search_sources(sq, page, f)
+    results = _rank(apply_filters_and_sort(merge_dedupe(raw), f, sq), query, f)
     strict_count = len(results)
     relaxed = False
     if page == 1 and len(results) < 10:
         keys = {_key(p) for p in results}
         try:                                                     # 1) same meaning, different word
-            syn = _synonym_matches(query, page, f, keys)[:10]
+            syn = _rank(_synonym_matches(sq, page, f, keys), query, f)[:10]
             if syn:
                 results = results + syn
         except Exception:
             pass
         try:                                                     # 2) papers with only some of the words
             keys = {_key(p) for p in results}
-            extra = _partial_matches(query, page, f, keys)[:20 - len(results)]
+            extra = _rank(_partial_matches(sq, page, f, keys), query, f, resort=False)[:20 - len(results)]
             if extra:
                 results = results + extra
                 relaxed = True
