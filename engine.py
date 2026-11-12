@@ -36,7 +36,7 @@ def read_filters(get):
         "year_to":   yt,
         "oa_only":   oa is True or str(oa).lower() in ("1", "true"),
         "sort":      sort if sort in ("cited", "recent", "match") else "cited",
-        "field":     field if field in ("title", "abstract", "both") else "both",
+        "field":     field if field in ("title", "abstract", "both", "fulltext") else "both",
         "recent_pref": str(get("recent")).lower() in ("1", "true"),
     }
 

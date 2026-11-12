@@ -57,7 +57,7 @@ def _partial_matches(query, page, f, have_keys):
     """Google-style fallback: papers that contain SOME of the words, each tagged with
     the words it is missing. Rule-based only."""
     terms = strong_terms(_safe_terms(query))        # little and generic words (the, of, effect) are never 'missing'
-    if len(terms) < 2:
+    if len(terms) < 2 or f["field"] == "fulltext":     # we cannot check full text ourselves, so no "Missing" labels
         return []
     f2 = dict(f); f2["field"] = "both"      # let the filters pass; we check the field ourselves
     raw, _ = search_sources(query, page, f, loose=True)
@@ -111,6 +111,19 @@ def _highlight_words(query, results):
             words += [w.lower() for w in re.findall(r"[A-Za-z0-9\-]+", p["via"])]
     return [w for w in dict.fromkeys(words) if len(w) > 1]
 
+def _mark_fulltext(results, query, f):
+    """Full-text mode: OpenAlex looked inside the paper for your words. When a paper does not show them
+    in its title or abstract, say so, so nobody wonders why it matched. We never read or store the text."""
+    if f.get("field") != "fulltext":
+        return
+    terms = strong_terms(_safe_terms(query))
+    for p in results:
+        if not (p.get("data_source") or "").lower().startswith("openalex"):
+            continue
+        shown = (p.get("title") or "") + " " + (p.get("abstract") or "")
+        if terms and not all(term_in(shown, t) for t in terms):
+            p["fulltext_hit"] = True
+
 def _rank(results, query, f, resort=True):
     """Score every paper against ALL the words you typed (generic and bracketed words count a
     little; rare words count more), then order by that score when 'Best match' is selected."""
@@ -131,6 +144,7 @@ def _run_search(query, page, user, log=True):
     raw, total = search_sources(sq, page, f)
     results = _rank(apply_filters_and_sort(merge_dedupe(raw), f, sq), query, f)
     strict_count = len(results)
+    _mark_fulltext(results, sq, f)
     relaxed = False
     if page == 1 and len(results) < 10:
         keys = {_key(p) for p in results}

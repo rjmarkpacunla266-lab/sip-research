@@ -561,7 +561,8 @@ def search_openalex(query, page=1, per_page=RESULTS_PER_SOURCE,
     mention the topic somewhere in their full text don't flood the citation sort."""
     terms  = _safe_terms(query)
     strict = " AND ".join(terms) if terms else query
-    fkey   = {"title": "title.search", "abstract": "abstract.search"}.get(field, "title_and_abstract.search")
+    fkey   = {"title": "title.search", "abstract": "abstract.search",
+              "fulltext": "fulltext.search"}.get(field, "title_and_abstract.search")   # fulltext = OpenAlex searches inside the paper
     base = []
     if year_from: base.append(f"from_publication_date:{year_from}-01-01")
     if year_to:   base.append(f"to_publication_date:{year_to}-12-31")

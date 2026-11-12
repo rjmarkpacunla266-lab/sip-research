@@ -622,6 +622,7 @@ mark.hl{background:rgba(255,213,79,.38);color:inherit;border-radius:3px;padding:
     <label>Sort <select id="sSort" onchange="simpleChanged()"><option value="match">Best match</option><option value="cited">Most cited</option><option value="recent">Most recent</option></select></label>
     <label class="s-chk"><input type="checkbox" id="sOA" onchange="simpleChanged()" checked/> <span>Free to read only</span></label>
     <label class="s-chk"><input type="checkbox" id="sRecent" onchange="simpleChanged()"/> <span>Prefer newer papers</span></label>
+    <label class="s-chk"><input type="checkbox" id="sFull" onchange="simpleChanged()"/> <span>Search inside papers (slower)</span></label>
   </div>
   <div class="simple-more simple-only">Need more control? <a href="#" onclick="document.getElementById('modeSwitch').click();return false">Switch to Advanced mode</a></div>
 
@@ -656,6 +657,7 @@ mark.hl{background:rgba(255,213,79,.38);color:inherit;border-radius:3px;padding:
               <option value="both">Title or abstract</option>
               <option value="title">Title only</option>
               <option value="abstract">Abstract only</option>
+              <option value="fulltext">Inside the paper (full text)</option>
             </select></div>
           <div class="fx-field"><label for="yearFrom">From year</label>
             <input type="number" id="yearFrom" class="filter-input" placeholder="Any" min="1800" max="2026" inputmode="numeric" onchange="onSortChange()"/></div>
@@ -814,7 +816,7 @@ function filterQS() {
   const yt = document.getElementById('yearTo').value.trim();
   const sort = document.getElementById('sortBy').value;
   const src = selectedSources();
-  const field = isSimple() ? 'both' : document.getElementById('fieldBy').value;   // Simple mode looks in titles AND abstracts (title words rank higher)
+  const field = isSimple() ? (document.getElementById('sFull').checked ? 'fulltext' : 'both') : document.getElementById('fieldBy').value;   // Simple: titles + abstracts, or inside the paper when ticked
   let qs = '';
   if (yf) qs += `&year_from=${yf}`;
   if (yt) qs += `&year_to=${yt}`;
@@ -892,6 +894,7 @@ function syncSimpleFromFilters() {
   document.getElementById('sSort').value = document.getElementById('sortBy').value || 'match';
   document.getElementById('sOA').checked = oaOnly;
   document.getElementById('sRecent').checked = preferRecent;
+  document.getElementById('sFull').checked = document.getElementById('fieldBy').value === 'fulltext';
 }
 function simpleChanged() {                         // the three simple filters write into the same fields the Advanced panel uses
   document.getElementById('yearFrom').value = document.getElementById('sSince').value;
@@ -899,6 +902,8 @@ function simpleChanged() {                         // the three simple filters w
   document.getElementById('sortBy').value = document.getElementById('sSort').value;
   oaOnly = document.getElementById('sOA').checked;
   preferRecent = document.getElementById('sRecent').checked;
+  const fb = document.getElementById('fieldBy');
+  if (document.getElementById('sFull').checked) fb.value = 'fulltext'; else if (fb.value === 'fulltext') fb.value = 'both';
   if (preferRecent && document.getElementById('sortBy').value === 'cited') { document.getElementById('sortBy').value = 'match'; document.getElementById('sSort').value = 'match'; }
   paintToggles();
   fxSummary();
@@ -1126,7 +1131,7 @@ function applyRerunFromURL() {
   oaOnly = p.get('oa') === '1';
   paintToggles();
   if (['match','cited','recent'].includes(p.get('sort')))        document.getElementById('sortBy').value  = p.get('sort');
-  if (['both','title','abstract'].includes(p.get('field'))) document.getElementById('fieldBy').value = p.get('field');
+  if (['both','title','abstract','fulltext'].includes(p.get('field'))) document.getElementById('fieldBy').value = p.get('field');
   const src = (p.get('src') || '').split(',').filter(Boolean);
   if (src.length) document.querySelectorAll('.src-chip').forEach(c => c.classList.toggle('active', src.includes(c.dataset.src)));
   fxSummary();
@@ -1366,6 +1371,7 @@ function paperCard(item, i, adv) {
       ${snip ? `<div class="pc-snip">${hlt(snip)}</div>` : (item.abstract_hidden ? '<div class="pc-snip" style="font-style:italic">Abstract not shown here. Open the article to read it.</div>' : '')}
       ${item.missing && item.missing.length ? `<div class="pc-missing">Missing: ${item.missing.map(w => `<s>${esc(w)}</s>`).join(' ')}</div>` : ''}
       ${item.via ? `<div class="pc-via">Also matched: ${esc(item.via)}</div>` : ''}
+      ${item.fulltext_hit ? `<div class="pc-via">🔎 Found inside the paper (full text)</div>` : ''}
       ${cites ? `<div class="pc-cites">↗ ${cites.toLocaleString()} citations</div>` : ''}
       <div class="pc-actions">
         <button class="act primary" onclick="openPaperPage(${i},event)">↗ Open article</button>
