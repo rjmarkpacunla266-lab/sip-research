@@ -222,3 +222,91 @@ def recency_bonus(year, now_year=None):
 def citation_points(citations):
     """Gentle credit for citations: 10 cites ≈ 1, 100 ≈ 2, 1000 ≈ 3, 10000 ≈ 4."""
     return math.log10(1 + max(0, citations or 0))
+
+# ── Search operators (Google Scholar style, rule-based) ─────────────────────
+#   "exact phrase"   a OR b   -word   intitle:word   author:Name
+_TOKEN = re.compile(r'(-?)(?:(intitle|author):)?(?:"([^"]+)"|(\S+))')
+
+def _norm_text(s):
+    return " " + re.sub(r"[^a-z0-9]+", " ", (s or "").lower()).strip() + " "
+
+def _words_of(text):
+    return [w for w in re.sub(r"[^\w\-]+", " ", text or "").split() if w]
+
+def parse_operators(query):
+    """Split a search into plain words and operators. Searches without operators come back
+    with active=False and are handled exactly as before."""
+    q = (query or "").strip()
+    plain, phrases, intitle, authors, excludes, groups = [], [], [], [], [], []
+    last_plain, or_pending = None, False
+    for m in _TOKEN.finditer(q):
+        neg, field, quoted, word = bool(m.group(1)), m.group(2), m.group(3), m.group(4)
+        text = ((quoted if quoted is not None else word) or "").strip()
+        if not re.search(r"\w", text):
+            continue
+        if text == "OR" and quoted is None and not neg and not field:
+            or_pending = last_plain is not None
+            continue
+        unit = {"text": " ".join(_words_of(text)), "phrase": quoted is not None}
+        if not unit["text"]:
+            continue
+        if neg:
+            excludes.append(unit); or_pending = False; continue
+        if field == "author":
+            authors.append(unit); or_pending = False; continue
+        if field == "intitle":
+            intitle.append(unit); or_pending = False; continue
+        if or_pending and last_plain is not None:
+            if groups and groups[-1][-1] is last_plain:
+                groups[-1].append(unit)
+            else:
+                if last_plain in plain: plain.remove(last_plain)
+                groups.append([last_plain, unit])
+        else:
+            plain.append(unit)
+        last_plain, or_pending = unit, False
+    for u in plain + intitle:
+        if u["phrase"]:
+            phrases.append(u["text"]) if u in plain else None
+    base_words = [w for u in plain + intitle for w in _words_of(u["text"])]
+    base = " ".join(base_words)
+    if groups:
+        variants = [(base + " " + alt["text"]).strip() for alt in groups[0][:3]]
+    else:
+        variants = [base] if base else []
+    summary = []
+    summary += ['phrase \u201c%s\u201d' % t for t in phrases]
+    summary += ['title has \u201c%s\u201d' % u["text"] for u in intitle]
+    summary += ['author %s' % u["text"] for u in authors]
+    summary += ['one of: ' + " / ".join(u["text"] for u in g) for g in groups]
+    summary += ['without %s' % u["text"] for u in excludes]
+    return {"active": bool(phrases or intitle or authors or excludes or groups),
+            "variants": variants, "phrases": phrases, "intitle": intitle, "authors": authors,
+            "excludes": excludes, "groups": groups, "summary": summary}
+
+def _has(text_n, unit_text):
+    t = _norm_text(unit_text).strip()
+    return (not t) or (" " + t) in text_n          # whole words / phrase; "fertilizer" also finds "fertilizers"
+
+def apply_operators(papers, ops):
+    """Keep only papers that obey the operators. Needs the real abstract, so run it before abstracts are hidden."""
+    out = []
+    for p in papers:
+        title_n = _norm_text(p.get("title"))
+        text_n = title_n + _norm_text(p.get("abstract")).lstrip()
+        if any(not _has(text_n, ph) for ph in ops["phrases"]):
+            continue
+        if any(not _has(title_n, u["text"]) for u in ops["intitle"]):
+            continue
+        if any(_has(text_n, u["text"]) for u in ops["excludes"]):
+            continue
+        if any(not any(_has(text_n, alt["text"]) for alt in g) for g in ops["groups"]):
+            continue
+        if ops["authors"]:
+            names = p.get("authors") or []
+            names = [names] if isinstance(names, str) else names
+            names_n = [_norm_text(a if isinstance(a, str) else (a or {}).get("name", "")) for a in names]
+            if any(not any(all(_has(nm, t) for t in u["text"].split()) for nm in names_n) for u in ops["authors"]):
+                continue
+        out.append(p)
+    return out

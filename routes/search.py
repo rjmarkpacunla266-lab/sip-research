@@ -8,8 +8,8 @@ from flask import Blueprint, render_template, request, session, jsonify
 from core import (login_required, get_user, OPENALEX_URL, format_paper, reconstruct_abstract,
                   sb_post, sb_get, sb_patch, sb_try, _all_citations)
 from engine import (ALL_SOURCES, SOURCE_LABELS, to_int as _to_int, read_filters, merge_dedupe,
-                    apply_filters_and_sort, search_sources, term_in, rank_score, term_weights)
-from searchhelp import synonym_terms, suggest_query, content_terms, strong_terms, search_query, query_parts
+                    apply_filters_and_sort, search_sources, term_in, rank_score, term_weights, sort_date)
+from searchhelp import synonym_terms, suggest_query, content_terms, strong_terms, search_query, query_parts, parse_operators, apply_operators
 from core import _safe_terms, hide_restricted_abstracts
 from bs4 import BeautifulSoup as BS
 
@@ -138,7 +138,7 @@ def _rank(results, query, f, resort=True):
             results.sort(key=lambda x: (x["score"], x.get("citations") or 0), reverse=True)
     return results
 
-def _run_search(query, page, user, log=True):
+def _run_search_plain(query, page, user, log=True, post=None):
     f = read_filters(request.args.get)
     sq = search_query(query)          # words that must match: little words (the, of, vs) and generic words (effect, study) are not required
     raw, total = search_sources(sq, page, f)
@@ -162,6 +162,8 @@ def _run_search(query, page, user, log=True):
                 relaxed = True
         except Exception:
             pass
+    if post:                              # operators ("phrase", -word, author:) are checked before abstracts are hidden
+        results = post(results)
     hide_restricted_abstracts(results)
     suggestion = ""
     if page == 1 and strict_count < 10:
@@ -179,6 +181,42 @@ def _run_search(query, page, user, log=True):
             "ref_disclaimer": "References auto-generated — verify before academic use"}
 
 # ─── /api/search ─────────────────────────────────────────────────────
+def _run_search(query, page, user, log=True):
+    """Search with Google-Scholar-style operators: "exact phrase", a OR b, -word, intitle:word, author:Name.
+    A search without operators goes straight to the normal search."""
+    ops = parse_operators(query)
+    if not ops["active"]:
+        return _run_search_plain(query, page, user, log)
+    f = read_filters(request.args.get)
+    base = {"query": query, "page": page, "relaxed": False, "highlight": [], "did_you_mean": "",
+            "operators": ops["summary"], "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
+            "ref_disclaimer": "References auto-generated — verify before academic use"}
+    if not ops["variants"]:
+        base.update({"results": [], "total": 0,
+                     "operators_note": "Add at least one topic word. author: and -word only narrow a search."})
+        return base
+    merged, seen, hl, relaxed = [], set(), [], False
+    for v in ops["variants"]:                                    # OR: one search per alternative (max 3)
+        r = _run_search_plain(v, page, user, log=False, post=lambda rs: apply_operators(rs, ops))
+        relaxed = relaxed or r["relaxed"]
+        hl += [w for w in r["highlight"] if w not in hl]
+        for p in r["results"]:
+            k = _key(p)
+            if k and k in seen:
+                continue
+            seen.add(k); merged.append(p)
+    full = [p for p in merged if not p.get("missing")]
+    part = [p for p in merged if p.get("missing")]
+    if f["sort"] == "recent":   full.sort(key=lambda x: (sort_date(x), x.get("citations") or 0), reverse=True)
+    elif f["sort"] == "cited":  full.sort(key=lambda x: x.get("citations") or 0, reverse=True)
+    else:                       full.sort(key=lambda x: (x.get("score") or 0, x.get("citations") or 0), reverse=True)
+    part.sort(key=lambda x: len(x["missing"]))
+    results = full + part
+    if log:
+        _log_search(user, query, len(results), f, request.args.get("tg", ""))
+    base.update({"results": results, "total": len(results), "relaxed": relaxed, "highlight": hl})
+    return base
+
 @search_bp.route("/api/search")
 @login_required
 def search():

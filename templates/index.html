@@ -600,6 +600,7 @@ mark.hl{background:rgba(255,213,79,.38);color:inherit;border-radius:3px;padding:
     </button>
   </div>
   <div class="hint adv-only">Type your search and press Enter. Papers that contain every word come first; ones missing a word are shown after, marked “Missing”.</div>
+  <div class="hint adv-only">Tips: <b>"exact phrase"</b> · <b>a OR b</b> · <b>-word</b> to leave a word out · <b>author:Name</b> · <b>intitle:word</b></div>
   <div class="tour adv-only" id="tourBubble" hidden>
     <span aria-hidden="true">💡</span>
     <div><b>New to Advanced mode?</b><br/><button type="button" class="s-link" onclick="openTour()">Take a quick tour</button></div>
@@ -799,6 +800,8 @@ let oaOnly         = true;    // Open access only starts ON (turn it off in the 
 let preferRecent   = false;
 let hlTerms        = [];
 let lastSuggest    = '';
+let lastOps        = [];
+let lastNote       = '';
 let rawResults     = [];   // everything the server returned (unfiltered view source)
 let lastYf = null, lastYt = null, lastSources = [];
 function selectedSources() {
@@ -1029,6 +1032,8 @@ function hlt(text) {
 function showDym() {
   const box = document.getElementById('dym'); if (!box) return;
   let h = '';
+  if (lastOps.length) h += '<div class="dym-row">Using: ' + lastOps.map(esc).join(' · ') + '</div>';
+  if (lastNote) h += '<div class="dym-row">' + esc(lastNote) + '</div>';
   if (lastSuggest) h += `<div class="dym-row">Did you mean <a href="#" onclick="useSuggestion(event)"><b>${esc(lastSuggest)}</b></a>?</div>`;
   if (oaOnly && rawResults.length < 8) h += '<div class="dym-row">Showing open-access papers only. <a href="#" onclick="toggleOA();return false">Show all papers</a></div>';
   box.innerHTML = h;
@@ -1112,7 +1117,7 @@ function restoreLastSearch() {
     totalResults   = data.total || 0;
     currentQuery   = query;
     lastYf = yf; lastYt = yt; lastSources = data.sources_used || [];
-    hlTerms = data.highlight || []; lastSuggest = data.did_you_mean || '';
+    hlTerms = data.highlight || []; lastSuggest = data.did_you_mean || ''; lastOps = data.operators || []; lastNote = data.operators_note || '';
     renderResults(data);
     showDym();
     toast('📋 Results restored');
@@ -1211,7 +1216,7 @@ async function doSearch(page = 1) {
     lastYf = yf; lastYt = yt; lastSources = data.sources_used || [];
     displayedCount = 0;
     currentResults = rawResults.slice();
-    hlTerms = data.highlight || []; lastSuggest = data.did_you_mean || '';
+    hlTerms = data.highlight || []; lastSuggest = data.did_you_mean || ''; lastOps = data.operators || []; lastNote = data.operators_note || '';
     showDym();
 
     if (!currentResults.length) {
