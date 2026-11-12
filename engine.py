@@ -162,10 +162,24 @@ def relevance(p, terms, weights=None, optional=()):
             score += 3
     return score
 
+def _coverage(p, terms, optional=()):
+    """0..1 = share of the main search words found in the title or abstract (a synonym counts).
+    Citation credit is multiplied by this squared, so a famous paper that only matches one
+    word of a long search no longer beats papers that match most of them."""
+    strong = [t for t in strong_terms(content_terms(terms)) if t not in optional]
+    if not strong:
+        return 1.0
+    text_t, text_a = p.get("title") or "", p.get("abstract") or ""
+    got = 0
+    for t in strong:
+        if term_in(text_t, t) or term_in(text_a, t) or any(term_in(text_t, s) or term_in(text_a, s) for s in synonym_terms(t)):
+            got += 1
+    return got / len(strong)
+
 def rank_score(p, terms, f, weights=None, optional=()):
     """Best-match score = how well it matches + a little credit for citations
     + (only when 'Prefer newer papers' is on) a bonus for recent years."""
-    s = relevance(p, terms, weights, optional) + citation_points(p.get("citations"))
+    s = relevance(p, terms, weights, optional) + citation_points(p.get("citations")) * _coverage(p, terms, optional) ** 2
     if f.get("recent_pref"):
         s += recency_bonus(p.get("year"))
     return s
