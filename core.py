@@ -574,9 +574,11 @@ def search_openalex(query, page=1, per_page=RESULTS_PER_SOURCE,
     ]
     if loose:                        # any-word relevance search (used by Source Tracer)
         attempts = [{"search": query, "filter": ",".join(base)}]
+    elif field == "fulltext":        # inside-the-paper search: let OpenAlex rank by relevance (title > abstract > full text),
+        attempts = [{"search": query, "filter": ",".join(base)}]   # not by citations, or off-topic famous papers rise to the top
     for extra in attempts:
         params = {"per-page": per_page, "page": page, "sort": sort_by}
-        if loose:
+        if loose or field == "fulltext":
             params.pop("sort")       # let OpenAlex rank by relevance
         params.update({k: v for k, v in extra.items() if v})
         try:
