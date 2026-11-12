@@ -115,37 +115,57 @@ def matches_field(p, terms, field):
         return True                    # PubMed matched in its own index; it sends no abstract
     return field == "both" and all(term_in(title, t) for t in terms)
 
-def relevance(p, terms):
+def term_weights(papers, terms):
+    """Rare words matter more. A word found in almost every result tells you little about the topic
+    (weight 0.6); a word found in only a few results tells you a lot (weight up to 1.6)."""
+    n = len(papers)
+    if n < 5:
+        return {}
+    out = {}
+    for t in terms:
+        df = sum(1 for p in papers if term_in(p.get("title") or "", t) or term_in(p.get("abstract") or "", t))
+        out[t] = 0.6 + (1 - df / n)
+    return out
+
+def relevance(p, terms, weights=None, optional=()):
     """How well a paper matches the search words. Words that say what the search is about
-    (tomato, chlorophyll) are worth 3 points in the title and 1 in the abstract. Generic research
-    words (study, effect, analysis) are worth much less. A synonym counts half. Bonus when every
-    main word is in the title, and more when they appear together as a phrase."""
+    (tomato, chlorophyll) are worth 3 points in the title and 1 in the abstract, times a rarity
+    weight. Generic research words (study, effect) and (bracketed) words are worth much less.
+    A synonym counts half. Words that appear next to each other, like "chlorophyll content",
+    earn a phrase bonus, and so does having every main word in the title."""
     terms = content_terms(terms)                 # ignore "the", "of", "vs", ...
-    strong = strong_terms(terms)
+    strong = [t for t in strong_terms(terms) if t not in optional]
+    weights = weights or {}
     title, abstract = p.get("title") or "", p.get("abstract") or ""
     score, in_title = 0.0, 0
     for t in terms:
         weak = t not in strong
+        w = 1 if weak else weights.get(t, 1)
         syn = synonym_terms(t)
         if term_in(title, t):
-            score += 1 if weak else 3
+            score += (1 if weak else 3) * w
             in_title += 0 if weak else 1
         elif any(term_in(title, s) for s in syn):
-            score += 0.5 if weak else 1.5
+            score += (0.5 if weak else 1.5) * w
         if term_in(abstract, t):
-            score += 0.3 if weak else 1
+            score += (0.3 if weak else 1) * w
         elif any(term_in(abstract, s) for s in syn):
-            score += 0.15 if weak else 0.5
+            score += (0.15 if weak else 0.5) * w
+    nt, na = norm(title), norm(abstract)
+    for a, b in zip(terms, terms[1:]):           # neighbouring words found together
+        pair = norm(a + " " + b)
+        if pair in nt:   score += 1.5
+        elif pair in na: score += 0.5
     if strong and in_title == len(strong):
         score += 2
-        if len(strong) > 1 and norm(" ".join(strong)) in norm(title):
+        if len(strong) > 1 and norm(" ".join(strong)) in nt:
             score += 3
     return score
 
-def rank_score(p, terms, f):
+def rank_score(p, terms, f, weights=None, optional=()):
     """Best-match score = how well it matches + a little credit for citations
     + (only when 'Prefer newer papers' is on) a bonus for recent years."""
-    s = relevance(p, terms) + citation_points(p.get("citations"))
+    s = relevance(p, terms, weights, optional) + citation_points(p.get("citations"))
     if f.get("recent_pref"):
         s += recency_bonus(p.get("year"))
     return s

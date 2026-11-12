@@ -814,7 +814,7 @@ function filterQS() {
   const yt = document.getElementById('yearTo').value.trim();
   const sort = document.getElementById('sortBy').value;
   const src = selectedSources();
-  const field = isSimple() ? 'title' : document.getElementById('fieldBy').value;   // Simple mode always matches titles only
+  const field = isSimple() ? 'both' : document.getElementById('fieldBy').value;   // Simple mode looks in titles AND abstracts (title words rank higher)
   let qs = '';
   if (yf) qs += `&year_from=${yf}`;
   if (yt) qs += `&year_to=${yt}`;

@@ -30,6 +30,19 @@ SYNONYM_GROUPS = [
     ["mathematics", "math", "maths"],
     ["cheating", "academic dishonesty"],
     ["typhoon", "tropical cyclone"],
+    # common name <-> scientific name (Google Scholar treats these as the same thing)
+    ["tomato", "solanum lycopersicum"],
+    ["rice", "oryza sativa"],
+    ["corn", "maize", "zea mays"],
+    ["banana", "musa"],
+    ["coconut", "cocos nucifera"],
+    ["mango", "mangifera indica"],
+    ["eggplant", "solanum melongena", "brinjal"],
+    ["moringa", "moringa oleifera"],
+    ["peanut", "groundnut", "arachis hypogaea"],
+    ["cassava", "manihot esculenta"],
+    ["potato", "solanum tuberosum"],
+    ["sugarcane", "saccharum officinarum"],
 ]
 
 def _stem(w):
@@ -120,11 +133,23 @@ def strong_terms(terms):
     s = [t for t in terms if t.lower() not in STOPWORDS and not _is_weak(t)]
     return s or content_terms(terms)
 
+def query_parts(query):
+    """Split a search into its words. Words inside (brackets) are OPTIONAL: they still help
+    ranking and are highlighted, but a paper does not have to contain them."""
+    q = query or ""
+    inside = re.findall(r"\(([^)]*)\)", q)
+    main = re.sub(r"\([^)]*\)", " ", q)
+    clean = lambda text: [t for t in (re.sub(r"[^\w\-]", "", x) for x in text.split()) if t]
+    main_terms, opt_terms = clean(main), clean(" ".join(inside))
+    if not main_terms:                      # nothing outside the brackets: then they are needed after all
+        return {"all": opt_terms, "optional": []}
+    return {"all": main_terms + opt_terms, "optional": [t for t in opt_terms if t not in main_terms]}
+
 def search_query(query):
-    """The words that must match: little words and generic words are dropped."""
-    terms = [re.sub(r"[^\w\-]", "", t) for t in re.split(r"\s+", (query or "").strip())]
-    terms = [t for t in terms if t]
-    return " ".join(strong_terms(terms)) if terms else (query or "")
+    """The words that must match: little words, generic words and (bracketed words) are dropped."""
+    parts = query_parts(query)
+    required = [t for t in parts["all"] if t not in parts["optional"]]
+    return " ".join(strong_terms(required)) if required else (query or "")
 
 # ── "Did you mean" ──────────────────────────────────────────────────────────
 VOCAB = set("""

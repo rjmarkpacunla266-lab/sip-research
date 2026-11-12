@@ -8,8 +8,8 @@ from flask import Blueprint, render_template, request, session, jsonify
 from core import (login_required, get_user, OPENALEX_URL, format_paper, reconstruct_abstract,
                   sb_post, sb_get, sb_patch, sb_try, _all_citations)
 from engine import (ALL_SOURCES, SOURCE_LABELS, to_int as _to_int, read_filters, merge_dedupe,
-                    apply_filters_and_sort, search_sources, term_in, rank_score)
-from searchhelp import synonym_terms, suggest_query, content_terms, strong_terms, search_query
+                    apply_filters_and_sort, search_sources, term_in, rank_score, term_weights)
+from searchhelp import synonym_terms, suggest_query, content_terms, strong_terms, search_query, query_parts
 from core import _safe_terms, hide_restricted_abstracts
 from bs4 import BeautifulSoup as BS
 
@@ -71,7 +71,8 @@ def _partial_matches(query, page, f, have_keys):
             continue
         p["missing"] = miss
         out.append(p)
-    out.sort(key=lambda x: (len(x["missing"]), -(x.get("citations") or 0)))
+    w = term_weights(out, terms)             # missing a rare word costs more than missing a common one
+    out.sort(key=lambda x: (sum(w.get(t, 1) for t in x["missing"]), -(x.get("citations") or 0)))
     return out
 
 def _key(p):
@@ -111,12 +112,15 @@ def _highlight_words(query, results):
     return [w for w in dict.fromkeys(words) if len(w) > 1]
 
 def _rank(results, query, f, resort=True):
-    """Score every paper against ALL the words you typed (generic words count a little), then
-    order by that score when 'Best match' is selected."""
-    terms = _safe_terms(query)
+    """Score every paper against ALL the words you typed (generic and bracketed words count a
+    little; rare words count more), then order by that score when 'Best match' is selected."""
+    parts = query_parts(query)
+    terms, optional = parts["all"], parts["optional"]
     if terms:
+        main = [t for t in strong_terms(terms) if t not in optional]
+        weights = term_weights(results, main)
         for p in results:
-            p["score"] = round(rank_score(p, terms, f), 2)
+            p["score"] = round(rank_score(p, terms, f, weights, optional), 2)
         if resort and f["sort"] == "match":
             results.sort(key=lambda x: (x["score"], x.get("citations") or 0), reverse=True)
     return results
