@@ -28,6 +28,7 @@ APP_URL             = os.getenv("APP_URL", "http://localhost:8080")
 SUPABASE_URL        = os.getenv("SUPABASE_URL")
 SUPABASE_KEY        = os.getenv("SUPABASE_SECRET_KEY")
 OPENALEX_URL        = "https://api.openalex.org/works"
+OPENALEX_API_KEY    = os.getenv("OPENALEX_API_KEY", "")     # free key from OpenAlex: raises the daily free allowance
 
 def get_int_env(name, default):
     try:
@@ -581,6 +582,8 @@ def search_openalex(query, page=1, per_page=RESULTS_PER_SOURCE,
         if loose or field == "fulltext":
             params.pop("sort")       # let OpenAlex rank by relevance
         params.update({k: v for k, v in extra.items() if v})
+        if OPENALEX_API_KEY:
+            params["api_key"] = OPENALEX_API_KEY
         try:
             resp = requests.get(OPENALEX_URL, params=params, timeout=15)
             data = resp.json()
