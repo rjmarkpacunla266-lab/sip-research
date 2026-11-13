@@ -348,6 +348,7 @@ def _add_smart(results, query, f, sq):
     for p in sem[:15]:
         if _key(p) not in have:
             p["via"] = "similar meaning (OpenAlex AI search)"
+            p["smart_only"] = True
             p["score"] = round((p.get("score") or 0) + 3 * (1 - order[_key(p)] / max(1, len(sem))), 2)
             p["smart"] = True
             extra.append(p)

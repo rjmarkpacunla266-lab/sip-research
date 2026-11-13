@@ -442,6 +442,7 @@ body.simple .toolbar{margin-top:16px}
 .pc-title:hover{text-decoration:underline}
 .pc-badges{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
 .oa-b{font-size:.74rem;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--green-bg);border:0;color:var(--green);white-space:nowrap}
+.sm-b{font-size:.74rem;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--surf2);border:1px solid var(--border);color:var(--accent,#2f5bea);white-space:nowrap}
 .pw-b{font-size:.74rem;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--surf2);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
 .src-b{font-size:.72rem;font-weight:600;padding:2px 9px}
 .pc-meta{margin-top:4px;font-size:.84rem;color:var(--muted)}
@@ -1376,6 +1377,11 @@ function showNextTen() {
 
 // ── Build Card HTML ────────────────────────────
 const DOC_IC = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>';
+function smartBadgeHtml(item) {
+  if (!item.smart) return '';
+  return item.smart_only ? '<span class="sm-b" title="Found only by smart search, by meaning">✨ Smart pick</span>'
+                         : '<span class="sm-b" title="Moved up by smart search">✨ Smart boost</span>';
+}
 function oaBadgeHtml(item) {
   return item.is_oa ? '<span class="oa-b">Open access</span>' : '<span class="pw-b">Not open access</span>';
 }
@@ -1393,7 +1399,7 @@ function paperCard(item, i, adv) {
     <div class="pc-main">
       <div class="pc-top">
         <a class="pc-title" href="#" onclick="openPaperPage(${i},event);return false" rel="noopener">${hlt(stripTags(item.title || 'Untitled'))}</a>
-        <span class="pc-badges">${oaBadgeHtml(item)}${adv ? sourceBadge(item.data_source) : ''}</span>
+        <span class="pc-badges">${oaBadgeHtml(item)}${smartBadgeHtml(item)}${adv ? sourceBadge(item.data_source) : ''}</span>
       </div>
       <div class="pc-meta">${meta}</div>
       ${snip ? `<div class="pc-snip">${hlt(snip)}</div>` : (item.abstract_hidden ? '<div class="pc-snip" style="font-style:italic">Abstract not shown here. Open the article to read it.</div>' : '')}
