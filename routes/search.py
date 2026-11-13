@@ -263,11 +263,11 @@ def _run_search_plain(query, page, user, log=True, post=None):
 # OFF unless SMART_SEARCH=1 is set (only on the private service). It only finds and orders REAL
 # papers from OpenAlex; it never writes text. It stops by itself after SMART_DAILY_LIMIT searches
 # a day (default 300) to protect the free allowance, and any error falls back to the normal rules.
-SMART_ON = os.environ.get("SMART_SEARCH", "") == "1"
+SMART_ON = os.environ.get("SMART_SEARCH", "1") == "1"
 try:
-    SMART_DAILY_LIMIT = int(os.environ.get("SMART_DAILY_LIMIT", "300"))
+    SMART_DAILY_LIMIT = int(os.environ.get("SMART_DAILY_LIMIT", "80"))
 except ValueError:
-    SMART_DAILY_LIMIT = 300
+    SMART_DAILY_LIMIT = 80
 _smart_day = {"day": None, "n": 0}
 
 def _semantic_matches(query, f):
