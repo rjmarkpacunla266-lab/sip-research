@@ -624,6 +624,7 @@ mark.hl{background:rgba(255,213,79,.38);color:inherit;border-radius:3px;padding:
     <label class="s-chk"><input type="checkbox" id="sOA" onchange="simpleChanged()" checked/> <span>Free to read only</span></label>
     <label class="s-chk"><input type="checkbox" id="sRecent" onchange="simpleChanged()"/> <span>Prefer newer papers</span></label>
     <label class="s-chk"><input type="checkbox" id="sFull" onchange="simpleChanged()"/> <span>Search inside papers (slower)</span></label>
+    <label class="s-chk"><input type="checkbox" id="sSmart" onchange="simpleChanged()"/> <span>Smart search (finds papers by meaning)</span></label>
   </div>
   <div class="simple-more simple-only">Need more control? <a href="#" onclick="document.getElementById('modeSwitch').click();return false">Switch to Advanced mode</a></div>
 
@@ -676,6 +677,9 @@ mark.hl{background:rgba(255,213,79,.38);color:inherit;border-radius:3px;padding:
         </div>
         <div class="fx-oa" id="recentToggle" onclick="toggleRecent()" role="switch" aria-checked="false" tabindex="0" title="Prefer newer papers">
           <span>🆕 Prefer newer papers<small>Gives recent years a boost in Best match</small></span><span class="sw"></span>
+        </div>
+        <div class="fx-oa" id="smartToggle" onclick="toggleSmart()" role="switch" aria-checked="false" tabindex="0" title="Smart search">
+          <span>✨ Smart search<small>Also finds papers by meaning, not only by words</small></span><span class="sw"></span>
         </div>
         <div class="fx-foot">
           <button type="button" class="fx-reset" onclick="resetFilters()">↺ Reset filters</button>
@@ -798,6 +802,8 @@ let bookmarkMap    = {};  // paperId → bookmark UUID
 let citeCopiedCount = 0;
 let oaOnly         = true;    // Open access only starts ON (turn it off in the filters)
 let preferRecent   = false;
+let smartOn        = false;
+let lastSmart = '', lastSmartHits = 0;
 let hlTerms        = [];
 let lastSuggest    = '';
 let lastOps        = [];
@@ -825,6 +831,7 @@ function filterQS() {
   if (yt) qs += `&year_to=${yt}`;
   if (oaOnly) qs += '&oa=1';
   if (preferRecent) qs += '&recent=1';
+  if (smartOn) qs += '&smart=1';
   if (sort) qs += `&sort=${sort}`;
   if (field && field !== 'both') qs += `&field=${field}`;
   if (src.length) qs += `&sources=${src.join(',')}`;
@@ -897,6 +904,7 @@ function syncSimpleFromFilters() {
   document.getElementById('sSort').value = document.getElementById('sortBy').value || 'match';
   document.getElementById('sOA').checked = oaOnly;
   document.getElementById('sRecent').checked = preferRecent;
+  document.getElementById('sSmart').checked = smartOn;
   document.getElementById('sFull').checked = document.getElementById('fieldBy').value === 'fulltext';
 }
 function simpleChanged() {                         // the three simple filters write into the same fields the Advanced panel uses
@@ -905,6 +913,7 @@ function simpleChanged() {                         // the three simple filters w
   document.getElementById('sortBy').value = document.getElementById('sSort').value;
   oaOnly = document.getElementById('sOA').checked;
   preferRecent = document.getElementById('sRecent').checked;
+  smartOn = document.getElementById('sSmart').checked;
   const fb = document.getElementById('fieldBy');
   if (document.getElementById('sFull').checked) fb.value = 'fulltext'; else if (fb.value === 'fulltext') fb.value = 'both';
   if (preferRecent && document.getElementById('sortBy').value === 'cited') { document.getElementById('sortBy').value = 'match'; document.getElementById('sSort').value = 'match'; }
@@ -990,13 +999,14 @@ function dismissTutorial() {
 
 // ── OA Toggle ─────────────────────────────────
 function paintToggles() {                          // keep every switch / checkbox showing the same state
-  [['oaToggle', oaOnly], ['recentToggle', preferRecent]].forEach(([id, on]) => {
+  [['oaToggle', oaOnly], ['recentToggle', preferRecent], ['smartToggle', smartOn]].forEach(([id, on]) => {
     const el = document.getElementById(id);
     if (el) { el.classList.toggle('active', on); el.setAttribute('aria-checked', String(on)); }
   });
   const a = document.getElementById('sOA'), b = document.getElementById('sRecent');
   if (a) a.checked = oaOnly;
   if (b) b.checked = preferRecent;
+  const sm = document.getElementById('sSmart'); if (sm) sm.checked = smartOn;
 }
 function toggleOA() {
   oaOnly = !oaOnly;
@@ -1013,6 +1023,13 @@ function toggleRecent() {
   toast(preferRecent ? '🆕 Preferring newer papers' : 'Newer-paper boost OFF');
   if (currentQuery) doSearch(); else applyView();
 }
+function toggleSmart() {
+  smartOn = !smartOn;
+  paintToggles(); fxSummary();
+  toast(smartOn ? '✨ Smart search ON' : 'Smart search OFF');
+  if (currentQuery) doSearch(); else applyView();
+}
+document.addEventListener('DOMContentLoaded', () => { const s = document.getElementById('smartToggle'); if (s) s.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleSmart(); } }); });
 document.addEventListener('DOMContentLoaded', () => { const r = document.getElementById('recentToggle'); if (r) r.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleRecent(); } }); });
 
 // Highlight the words you searched for (and any synonym that matched)
@@ -1034,6 +1051,11 @@ function showDym() {
   let h = '';
   if (lastOps.length) h += '<div class="dym-row">Using: ' + lastOps.map(esc).join(' · ') + '</div>';
   if (lastNote) h += '<div class="dym-row">' + esc(lastNote) + '</div>';
+  if (smartOn) {
+    const sm = {unavailable: 'Smart search is not available right now, so these are normal results.', limit: 'Smart search reached its free limit for today, so these are normal results.', error: 'Smart search could not be reached, so these are normal results.', fulltext: 'Smart search does not work together with Search inside papers.', none: 'Smart search found nothing extra for this search.'};
+    const msg = sm[lastSmart] || (lastSmart === 'ok' ? (lastSmartHits ? 'Smart search helped rank ' + lastSmartHits + ' papers (marked Also matched: similar meaning, when found by meaning only).' : 'Smart search found the same papers as the normal search.') : '');
+    if (msg) h += '<div class="dym-row">✨ ' + esc(msg) + '</div>';
+  }
   if (lastSuggest) h += `<div class="dym-row">Did you mean <a href="#" onclick="useSuggestion(event)"><b>${esc(lastSuggest)}</b></a>?</div>`;
   if (oaOnly && rawResults.length < 8) h += '<div class="dym-row">Showing open-access papers only. <a href="#" onclick="toggleOA();return false">Show all papers</a></div>';
   box.innerHTML = h;
@@ -1059,6 +1081,7 @@ function fxSummary() {
   if (on < 3) parts.push(on + ' source' + (on === 1 ? '' : 's'));
   if (document.getElementById('sortBy').value === 'recent') parts.push('Most recent');
   if (preferRecent) parts.push('Prefer newer');
+  if (smartOn) parts.push('Smart search');
   const f = document.getElementById('fieldBy').value;
   if (f === 'title') parts.push('Title only'); else if (f === 'abstract') parts.push('Abstract only');
   document.getElementById('fxCount').textContent = parts.length;
@@ -1071,7 +1094,7 @@ function resetFilters() {
   document.getElementById('sortBy').value = 'match';
   document.getElementById('fieldBy').value = 'both';
   document.querySelectorAll('.src-chip').forEach(c => c.classList.add('active'));
-  oaOnly = true; preferRecent = false;               // the defaults
+  oaOnly = true; preferRecent = false; smartOn = false;               // the defaults
   paintToggles();
   fxSummary();
   toast('Filters reset');
@@ -1117,7 +1140,7 @@ function restoreLastSearch() {
     totalResults   = data.total || 0;
     currentQuery   = query;
     lastYf = yf; lastYt = yt; lastSources = data.sources_used || [];
-    hlTerms = data.highlight || []; lastSuggest = data.did_you_mean || ''; lastOps = data.operators || []; lastNote = data.operators_note || '';
+    hlTerms = data.highlight || []; lastSuggest = data.did_you_mean || ''; lastOps = data.operators || []; lastNote = data.operators_note || ''; if ((data.page || 1) === 1) { lastSmart = data.smart_state || ''; lastSmartHits = data.smart_hits || 0; }
     renderResults(data);
     showDym();
     toast('📋 Results restored');
@@ -1216,7 +1239,7 @@ async function doSearch(page = 1) {
     lastYf = yf; lastYt = yt; lastSources = data.sources_used || [];
     displayedCount = 0;
     currentResults = rawResults.slice();
-    hlTerms = data.highlight || []; lastSuggest = data.did_you_mean || ''; lastOps = data.operators || []; lastNote = data.operators_note || '';
+    hlTerms = data.highlight || []; lastSuggest = data.did_you_mean || ''; lastOps = data.operators || []; lastNote = data.operators_note || ''; if ((data.page || 1) === 1) { lastSmart = data.smart_state || ''; lastSmartHits = data.smart_hits || 0; }
     showDym();
 
     if (!currentResults.length) {

@@ -38,6 +38,7 @@ def read_filters(get):
         "sort":      sort if sort in ("cited", "recent", "match") else "cited",
         "field":     field if field in ("title", "abstract", "both", "fulltext") else "both",
         "recent_pref": str(get("recent")).lower() in ("1", "true"),
+        "smart":     str(get("smart")).lower() in ("1", "true"),
     }
 
 def merge_dedupe(papers):

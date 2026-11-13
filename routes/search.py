@@ -1,11 +1,12 @@
 """routes/search.py — Search, load-more, paper reader, related, history"""
+import os
 import re
 import requests
 import urllib.parse
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Blueprint, render_template, request, session, jsonify
-from core import (login_required, get_user, OPENALEX_URL, format_paper, reconstruct_abstract,
+from core import (login_required, get_user, OPENALEX_URL, OPENALEX_API_KEY, format_paper, reconstruct_abstract,
                   sb_post, sb_get, sb_patch, sb_try, _all_citations)
 from engine import (ALL_SOURCES, SOURCE_LABELS, to_int as _to_int, read_filters, merge_dedupe,
                     apply_filters_and_sort, search_sources, term_in, rank_score, term_weights, sort_date)
@@ -138,13 +139,15 @@ def _rank(results, query, f, resort=True):
             results.sort(key=lambda x: (x["score"], x.get("citations") or 0), reverse=True)
     return results
 
-def _run_search_plain(query, page, user, log=True, post=None):
+def _run_search_local(query, page, user, log=True, post=None):
     f = read_filters(request.args.get)
     sq = search_query(query)          # words that must match: little words (the, of, vs) and generic words (effect, study) are not required
     raw, total = search_sources(sq, page, f)
     results = _rank(apply_filters_and_sort(merge_dedupe(raw), f, sq), query, f)
     strict_count = len(results)
     _mark_fulltext(results, sq, f)
+    if page == 1 and f.get("smart"):
+        results = _add_smart(results, query, f, sq)
     relaxed = False
     if page == 1 and len(results) < 10:
         keys = {_key(p) for p in results}
@@ -177,6 +180,8 @@ def _run_search_plain(query, page, user, log=True, post=None):
             "query": query, "page": page, "relaxed": relaxed,
             "highlight": _highlight_words(query, results),
             "did_you_mean": suggestion,
+            "smart_hits": sum(1 for p in results if p.get("smart")),
+            "smart_state": f.get("smart_state", ""),
             "sources_used": [SOURCE_LABELS[s] for s in f["sources"]],
             "ref_disclaimer": "References auto-generated — verify before academic use"}
 
@@ -196,9 +201,12 @@ def _run_search(query, page, user, log=True):
                      "operators_note": "Add at least one topic word. author: and -word only narrow a search."})
         return base
     merged, seen, hl, relaxed = [], set(), [], False
+    smart_state, smart_hits = "", 0
     for v in ops["variants"]:                                    # OR: one search per alternative (max 3)
         r = _run_search_plain(v, page, user, log=False, post=lambda rs: apply_operators(rs, ops))
         relaxed = relaxed or r["relaxed"]
+        smart_state = r.get("smart_state") or smart_state
+        smart_hits += r.get("smart_hits") or 0
         hl += [w for w in r["highlight"] if w not in hl]
         for p in r["results"]:
             k = _key(p)
@@ -214,8 +222,160 @@ def _run_search(query, page, user, log=True):
     results = full + part
     if log:
         _log_search(user, query, len(results), f, request.args.get("tg", ""))
-    base.update({"results": results, "total": len(results), "relaxed": relaxed, "highlight": hl})
+    base.update({"results": results, "total": len(results), "relaxed": relaxed, "highlight": hl,
+                 "smart_state": smart_state, "smart_hits": smart_hits})
     return base
+
+# ─── Optional private search service ────────────────────────────────
+# If SEARCH_API_URL and SEARCH_API_KEY are set, plain searches are done by your second (private)
+# website. If they are not set, or it does not answer in time, the search runs here as before.
+SEARCH_API_URL = os.environ.get("SEARCH_API_URL", "").rstrip("/")
+SEARCH_API_KEY = os.environ.get("SEARCH_API_KEY", "")
+
+def _run_search_remote(query, page):
+    args = {k: v for k, v in request.args.items() if k not in ("tg",)}
+    args["q"], args["page"] = query, page
+    r = requests.get(SEARCH_API_URL + "/v1/search", params=args, timeout=25,
+                     headers={"X-Api-Key": SEARCH_API_KEY})
+    data = r.json() if r.ok else None
+    return data if isinstance(data, dict) and isinstance(data.get("results"), list) else None
+
+def _run_search_plain(query, page, user, log=True, post=None):
+    data, why = None, "private service not set up"
+    if SEARCH_API_URL and SEARCH_API_KEY and post is None:
+        why = "private service did not give a usable answer (wrong key, asleep, or error)"
+        try:
+            data = _run_search_remote(query, page)
+        except Exception:
+            data = None
+    elif post is not None:
+        why = "search with operators runs on this site"
+    if data is None:
+        out = _run_search_local(query, page, user, log, post)
+        out["engine"] = "this site (" + why + ")"
+        return out
+    data["engine"] = "private service"
+    if log:
+        _log_search(user, query, len(data["results"]), read_filters(request.args.get), request.args.get("tg", ""))
+    return data
+
+# ─── Optional "smart" search: OpenAlex's own semantic (meaning-based) search ─────────────
+# OFF unless SMART_SEARCH=1 is set (only on the private service). It only finds and orders REAL
+# papers from OpenAlex; it never writes text. It stops by itself after SMART_DAILY_LIMIT searches
+# a day (default 300) to protect the free allowance, and any error falls back to the normal rules.
+SMART_ON = os.environ.get("SMART_SEARCH", "") == "1"
+try:
+    SMART_DAILY_LIMIT = int(os.environ.get("SMART_DAILY_LIMIT", "300"))
+except ValueError:
+    SMART_DAILY_LIMIT = 300
+_smart_day = {"day": None, "n": 0}
+
+def _semantic_matches(query, f):
+    """Up to 50 papers whose meaning is closest to the search, in OpenAlex's order. [] if off/failed."""
+    if not f.get("smart"):                      # the Smart search switch on the page
+        return []
+    if not SMART_ON:
+        f["smart_state"] = "unavailable"; return []
+    if f.get("field") == "fulltext":
+        f["smart_state"] = "fulltext"; return []
+    today = datetime.now().date().isoformat()
+    if _smart_day["day"] != today:
+        _smart_day["day"], _smart_day["n"] = today, 0
+    if _smart_day["n"] >= SMART_DAILY_LIMIT:
+        f["smart_state"] = "limit"; return []
+    _smart_day["n"] += 1
+    base = []
+    if f["year_from"]: base.append("from_publication_date:%s-01-01" % f["year_from"])
+    if f["year_to"]:   base.append("to_publication_date:%s-12-31" % f["year_to"])
+    if f["oa_only"]:   base.append("is_oa:true")
+    params = {"search.semantic": query[:2000], "per-page": 50}
+    if base:
+        params["filter"] = ",".join(base)
+    if OPENALEX_API_KEY:
+        params["api_key"] = OPENALEX_API_KEY
+    try:
+        resp = requests.get(OPENALEX_URL, params=params, timeout=15)
+        if not resp.ok:
+            f["smart_state"] = "error"; return []
+        out = [format_paper(p) for p in resp.json().get("results", [])]
+        f["smart_state"] = "ok" if out else "none"
+        return out
+    except Exception:
+        f["smart_state"] = "error"; return []
+
+def _smart_diag(query):
+    """What would happen if smart search ran now? Shows the real answer from OpenAlex. No secrets."""
+    out = {"smart_search_switch_on": SMART_ON, "openalex_key_set": bool(OPENALEX_API_KEY),
+           "searches_today": _smart_day["n"], "daily_limit": SMART_DAILY_LIMIT}
+    params = {"search.semantic": query[:2000], "per-page": 5}
+    if OPENALEX_API_KEY:
+        params["api_key"] = OPENALEX_API_KEY
+    try:
+        resp = requests.get(OPENALEX_URL, params=params, timeout=15)
+        out["openalex_http_status"] = resp.status_code
+        try:
+            body = resp.json()
+        except Exception:
+            body = {}
+        if resp.ok:
+            out["papers_returned"] = len(body.get("results", []))
+            out["first_titles"] = [(p.get("title") or p.get("display_name") or "")[:80] for p in body.get("results", [])[:3]]
+        else:
+            out["openalex_message"] = str(body.get("message") or body.get("error") or resp.text)[:300]
+    except Exception as e:
+        out["error"] = type(e).__name__ + ": " + str(e)[:150]
+    return out
+
+def _add_smart(results, query, f, sq):
+    """Papers the rules AND the meaning search both found get a bonus; a few papers only the meaning
+    search found are added, marked 'similar meaning'. Returns the new list."""
+    sem = _semantic_matches(query, f)
+    if not sem:
+        return results
+    f2 = dict(f); f2["field"] = "both"
+    sem = apply_filters_and_sort(merge_dedupe(sem), f2, sq)      # keeps the filters (years, open access)
+    order = {}
+    raw_rank = 0
+    for p in sem:
+        order[_key(p)] = raw_rank; raw_rank += 1
+    have = {_key(p) for p in results}
+    for p in results:
+        i = order.get(_key(p))
+        if i is not None:
+            p["score"] = round((p.get("score") or 0) + 3 * (1 - i / max(1, len(sem))), 2)
+            p["smart"] = True
+    extra = []
+    for p in sem[:15]:
+        if _key(p) not in have:
+            p["via"] = "similar meaning (OpenAlex AI search)"
+            p["score"] = round((p.get("score") or 0) + 3 * (1 - order[_key(p)] / max(1, len(sem))), 2)
+            p["smart"] = True
+            extra.append(p)
+    results = results + extra
+    if f["sort"] == "match":
+        results.sort(key=lambda x: (x.get("score") or 0, x.get("citations") or 0), reverse=True)
+    return results
+
+@search_bp.route("/api/smart-status")
+@login_required
+def smart_status():
+    """Open /api/smart-status in your browser while logged in (guest is fine) to see why smart search is or is not working."""
+    q = request.args.get("q", "tomato fertilizer growth")[:200]
+    out = {"private_service_set": bool(SEARCH_API_URL and SEARCH_API_KEY)}
+    if SEARCH_API_URL and SEARCH_API_KEY:
+        try:
+            r = requests.get(SEARCH_API_URL + "/v1/smart-check", params={"q": q}, timeout=45,
+                             headers={"X-Api-Key": SEARCH_API_KEY})
+            out["service_http_status"] = r.status_code
+            try:
+                out["service"] = r.json()
+            except Exception:
+                out["service"] = r.text[:200]
+        except Exception as e:
+            out["service_error"] = type(e).__name__
+    else:
+        out["this_site"] = _smart_diag(q)
+    return jsonify(out)
 
 @search_bp.route("/api/search")
 @login_required
@@ -279,6 +439,8 @@ def delete_history_items():
 # ─── /api/related ────────────────────────────────────────────────────
 def _openalex_related(query):
     params = {"search": query, "per-page": 20, "page": 1, "sort": "cited_by_count:desc"}
+    if OPENALEX_API_KEY:
+        params["api_key"] = OPENALEX_API_KEY
     try:
         resp = requests.get(OPENALEX_URL, params=params, timeout=15)
         return [format_paper(p) for p in resp.json().get("results", [])]
