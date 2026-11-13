@@ -176,7 +176,7 @@ def _run_search_local(query, page, user, log=True, post=None):
             suggestion = ""
     if log:
         _log_search(user, query, len(results), f, request.args.get("tg", ""))
-    return {"results": results, "total": (total or len(results)) if not relaxed else len(results),
+    return {"results": results, "total": max(total or 0, len(results)) if not relaxed else len(results),
             "query": query, "page": page, "relaxed": relaxed,
             "highlight": _highlight_words(query, results),
             "did_you_mean": suggestion,
