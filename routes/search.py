@@ -2,6 +2,7 @@
 import os
 import re
 import requests
+import smartrank
 import urllib.parse
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -165,6 +166,7 @@ def _run_search_local(query, page, user, log=True, post=None):
             pass
     if page == 1 and f.get("smart"):
         results = _add_smart(results, query, f, sq)
+        results = _ai_rerank(results, query, f)
     if post:                              # operators ("phrase", -word, author:) are checked before abstracts are hidden
         results = post(results)
     hide_restricted_abstracts(results)
@@ -324,6 +326,7 @@ def _smart_diag(query):
             out["openalex_message"] = str(body.get("message") or body.get("error") or resp.text)[:300]
     except Exception as e:
         out["error"] = type(e).__name__ + ": " + str(e)[:150]
+    out["ai"] = smartrank.diag()
     return out
 
 def _add_smart(results, query, f, sq):
@@ -353,6 +356,30 @@ def _add_smart(results, query, f, sq):
             p["smart"] = True
             extra.append(p)
     results = results + extra
+    if f["sort"] == "match":
+        results.sort(key=lambda x: (x.get("score") or 0, x.get("citations") or 0), reverse=True)
+    return results
+
+def _ai_rerank(results, query, f):
+    """Optional outside-AI ranking (see smartrank.py). It only re-orders real papers and never writes text.
+    Off unless the AI settings are set and the person ticked Smart search."""
+    if not f.get("smart") or f.get("field") == "fulltext" or not smartrank.available():
+        return results
+    pool = results[:smartrank.pool_size()]
+    sims = smartrank.similarities(query, pool)
+    if not sims:
+        if f.get("smart_state") in (None, "", "unavailable", "none"):
+            f["smart_state"] = "error"
+        return results
+    lo, hi = min(sims), max(sims)
+    f["smart_state"] = "ok"
+    if hi - lo < 1e-6:
+        return results
+    for p, s in zip(pool, sims):
+        share = (s - lo) / (hi - lo)
+        p["score"] = round((p.get("score") or 0) + 3 * share, 2)
+        if share >= 0.5:
+            p["smart"] = True                    # shows the Smart boost badge
     if f["sort"] == "match":
         results.sort(key=lambda x: (x.get("score") or 0, x.get("citations") or 0), reverse=True)
     return results
