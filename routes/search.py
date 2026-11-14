@@ -146,8 +146,6 @@ def _run_search_local(query, page, user, log=True, post=None):
     results = _rank(apply_filters_and_sort(merge_dedupe(raw), f, sq), query, f)
     strict_count = len(results)
     _mark_fulltext(results, sq, f)
-    if page == 1 and f.get("smart"):
-        results = _add_smart(results, query, f, sq)
     relaxed = False
     if page == 1 and len(results) < 10:
         keys = {_key(p) for p in results}
@@ -165,6 +163,8 @@ def _run_search_local(query, page, user, log=True, post=None):
                 relaxed = True
         except Exception:
             pass
+    if page == 1 and f.get("smart"):
+        results = _add_smart(results, query, f, sq)
     if post:                              # operators ("phrase", -word, author:) are checked before abstracts are hidden
         results = post(results)
     hide_restricted_abstracts(results)
