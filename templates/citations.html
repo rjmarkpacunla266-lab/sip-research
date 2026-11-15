@@ -235,6 +235,7 @@ header.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:
           <option value="old">Year, oldest first</option>
           <option value="given">As saved</option>
         </select></div>
+      <div class="fg"><label>Authors</label><select id="authorsMode"><option value="auto">Automatic (follows the style)</option><option value="all">Show all authors</option><option value="etal">Shorten with et al.</option></select></div>
     </div>
     <div class="fg" style="margin-top:14px"><label>Style</label>
       <div class="seg" id="styles">
@@ -470,7 +471,7 @@ async function loadPapers(key){
   if (papers.length) {
     try {
       const r = await api('/api/citations/bulk', {method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({papers: papers.map(x => ({authors: x.p.authors, year: x.p.year, title: x.p.title, journal: x.p.journal, volume: x.p.volume, issue: x.p.issue, pages: x.p.pages, doi: x.p.doi, oa_url: x.p.oa_url}))})});
+        body: JSON.stringify({authors_mode: citeMode(), papers: papers.map(x => ({authors: x.p.authors, year: x.p.year, title: x.p.title, journal: x.p.journal, volume: x.p.volume, issue: x.p.issue, pages: x.p.pages, doi: x.p.doi, oa_url: x.p.oa_url}))})});
       const list = r.ok && Array.isArray(r.data.citations) ? r.data.citations : [];
       papers.forEach((x, i) => { x.cite = list[i] && list[i].apa ? list[i] : null; });
       usedFallback = !list.length || papers.some(x => !x.cite);
@@ -484,6 +485,10 @@ async function chooseSource(key){
   history.replaceState(null, '', key === 'saved' ? location.pathname : '#' + encodeURIComponent(key));
 }
 $('source').addEventListener('change', () => chooseSource($('source').value));
+const CITE_MODE_KEY = 'sturch_cite_authors';
+function citeMode(){ try { const v = localStorage.getItem(CITE_MODE_KEY); return (v === 'all' || v === 'etal') ? v : 'auto'; } catch(e) { return 'auto'; } }
+$('authorsMode').value = citeMode();
+$('authorsMode').addEventListener('change', () => { try { localStorage.setItem(CITE_MODE_KEY, $('authorsMode').value); } catch(e) {} chooseSource($('source').value); });
 
 window.addEventListener('load', async () => {
   try {

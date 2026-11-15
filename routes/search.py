@@ -14,6 +14,7 @@ from engine import (ALL_SOURCES, SOURCE_LABELS, to_int as _to_int, read_filters,
 from searchhelp import synonym_terms, suggest_query, content_terms, strong_terms, search_query, query_parts, parse_operators, apply_operators
 from core import _safe_terms, hide_restricted_abstracts
 from bs4 import BeautifulSoup as BS
+import citeauthors
 
 search_bp = Blueprint("search", __name__)
 
@@ -497,10 +498,11 @@ def get_citations():
     data = request.get_json(silent=True) or {}
     if not isinstance(data, dict) or not data.get("title"):
         return jsonify({"error": "Title is required"}), 400
-    return jsonify(_all_citations(
+    return jsonify(citeauthors.apply(_all_citations(
         data.get("authors"), data.get("year"), str(data.get("title"))[:600],
         str(data.get("journal") or "")[:300], data.get("volume"), data.get("issue"),
-        data.get("pages"), data.get("doi"), str(data.get("oa_url") or "")[:500]))
+        data.get("pages"), data.get("doi"), str(data.get("oa_url") or "")[:500]),
+        data.get("authors"), data.get("authors_mode")))
 
 # ─── /api/citations/bulk ─────────────────────────────────────────────
 @search_bp.route("/api/citations/bulk", methods=["POST"])
@@ -508,6 +510,7 @@ def get_citations():
 def citations_bulk():
     data   = request.get_json(silent=True) or {}
     papers = data.get("papers")
+    mode   = data.get("authors_mode")
     if not isinstance(papers, list) or not papers:
         return jsonify({"error": "papers list required"}), 400
     out = []
@@ -516,10 +519,10 @@ def citations_bulk():
             if not isinstance(p, dict):
                 raise ValueError("bad paper")
             authors = [str(a)[:120] for a in (p.get("authors") or []) if a][:30] if isinstance(p.get("authors"), list) else []
-            out.append(_all_citations(authors, str(p.get("year") or "n.d."), str(p.get("title") or ""),
+            out.append(citeauthors.apply(_all_citations(authors, str(p.get("year") or "n.d."), str(p.get("title") or ""),
                                       str(p.get("journal") or ""), str(p.get("volume") or ""),
                                       str(p.get("issue") or ""), str(p.get("pages") or ""),
-                                      str(p.get("doi") or ""), str(p.get("oa_url") or "")[:500]))
+                                      str(p.get("doi") or ""), str(p.get("oa_url") or "")[:500]), authors, mode))
         except Exception:
             out.append({})        # the page falls back to its own formatting for this one
     return jsonify({"citations": out})
