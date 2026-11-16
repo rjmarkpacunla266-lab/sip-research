@@ -378,6 +378,19 @@ function computeOrder(){
   else idx.sort((a, b) => papers[b].saved - papers[a].saved);
   return idx;
 }
+function refFlags(it){
+  const c = it.cite || {}, f = [];
+  if (c.ref_label) f.push('📄 ' + c.ref_label + (c.ref_guided ? ' · APA 7 guide' : ' · format not checked yet'));
+  (c.ref_notes || []).forEach(n => f.push(n));
+  return f;
+}
+function refHtml(i){ const c = papers[i].cite; return (style === 'apa' && c && c.apa_html) ? c.apa_html : esc(refText(i)); }
+async function copyRichApa(ids){
+  if (style !== 'apa' || !window.ClipboardItem || !navigator.clipboard.write) return false;
+  const hs = ids.map(i => papers[i].cite && papers[i].cite.apa_html); if (hs.some(h => !h)) return false;
+  const html = hs.map(h => '<p style="margin-left:.5in;text-indent:-.5in">' + h + '</p>').join('');
+  try { await navigator.clipboard.write([new ClipboardItem({'text/html': new Blob([html], {type: 'text/html'}), 'text/plain': new Blob([ids.map(refText).join('\n\n')], {type: 'text/plain'})})]); return true; } catch(e) { return false; }
+}
 function flagsFor(p){
   const f = [];
   if (!(p.authors || []).length) f.push('no authors');
@@ -397,10 +410,10 @@ function render(){
   }
   $('stick').classList.remove('hidden');
   $('list').innerHTML = order.map(i => {
-    const fl = flagsFor(papers[i].p);
+    const fl = flagsFor(papers[i].p).concat(refFlags(papers[i]));
     return `<div class="item ${off.has(i) ? 'off' : ''}"><input type="checkbox" data-i="${i}" ${off.has(i) ? '' : 'checked'}/>
-      <div class="body"><div class="ref">${esc(refText(i))}</div>
-      ${fl.length ? `<div class="flags">${fl.map(x => `<span class="flag">⚠ ${esc(x)}</span>`).join('')}</div>` : ''}
+      <div class="body"><div class="ref">${refHtml(i)}</div>
+      ${fl.length ? `<div class="flags">${fl.map(x => `<span class="flag">${x.startsWith('📄') ? '' : '⚠ '}${esc(x)}</span>`).join('')}</div>` : ''}
       <div class="acts"><button class="btn xs" data-copy="${i}">📋 Copy</button></div></div></div>`;
   }).join('');
   updateCount();
@@ -441,7 +454,7 @@ async function copyText(text){
   try { await navigator.clipboard.writeText(text); return true; } catch(e) {}
   try { const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch(e) { return false; }
 }
-function copyBib(){ const t = chosenText(); if (!t) return; copyText(t).then(ok => toast(ok ? `📋 Copied ${papers.length - off.size} reference${papers.length - off.size === 1 ? '' : 's'}` : '⚠️ Could not copy')); }
+function copyBib(){ const t = chosenText(); if (!t) return; copyRichApa(order.filter(i => !off.has(i))).then(done => done || copyText(t)).then(ok => toast(ok ? `📋 Copied ${papers.length - off.size} reference${papers.length - off.size === 1 ? '' : 's'}` : '⚠️ Could not copy')); }
 function download(){
   const t = chosenText(); if (!t) return;
   const bib = style === 'bibtex';
@@ -471,7 +484,7 @@ async function loadPapers(key){
   if (papers.length) {
     try {
       const r = await api('/api/citations/bulk', {method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({authors_mode: citeMode(), papers: papers.map(x => ({authors: x.p.authors, year: x.p.year, title: x.p.title, journal: x.p.journal, volume: x.p.volume, issue: x.p.issue, pages: x.p.pages, doi: x.p.doi, oa_url: x.p.oa_url}))})});
+        body: JSON.stringify({authors_mode: citeMode(), papers: papers.map(x => ({authors: x.p.authors, year: x.p.year, title: x.p.title, journal: x.p.journal, volume: x.p.volume, issue: x.p.issue, pages: x.p.pages, doi: x.p.doi, oa_url: x.p.oa_url, type: x.p.type, publisher: x.p.publisher, editors: x.p.editors, edition: x.p.edition, data_source: x.p.data_source}))})});
       const list = r.ok && Array.isArray(r.data.citations) ? r.data.citations : [];
       papers.forEach((x, i) => { x.cite = list[i] && list[i].apa ? list[i] : null; });
       usedFallback = !list.length || papers.some(x => !x.cite);

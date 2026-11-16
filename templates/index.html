@@ -445,6 +445,7 @@ body.simple .toolbar{margin-top:16px}
 .sm-b{font-size:.74rem;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--surf2);border:1px solid var(--border);color:var(--accent,#2f5bea);white-space:nowrap}
 .pw-b{font-size:.74rem;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--surf2);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
 .src-b{font-size:.72rem;font-weight:600;padding:2px 9px}
+.reftype{font-weight:600}
 .pc-meta{margin-top:4px;font-size:.84rem;color:var(--muted)}
 .pc-meta .journal{font-style:normal}
 .pc-snip{margin-top:8px;font-size:.9rem;line-height:1.55;color:var(--text);opacity:.9;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
@@ -1392,7 +1393,7 @@ function paperCard(item, i, adv) {
   const ab = String(item.abstract || '').trim();
   const snip = ab.length > 260 ? ab.slice(0, 260).replace(/\s+\S*$/, '') + '…' : ab;
   const isBookmark = !!bookmarkMap[getPaperId(item)];
-  const meta = [authors, item.journal ? `<span class="journal">${esc(item.journal)}</span>` : '', item.year || '?'].filter(Boolean).join(' · ');
+  const meta = [authors, item.journal ? `<span class="journal">${esc(item.journal)}</span>` : '', item.year || '?', item.ref_label ? `<span class="reftype" title="${esc('Detected from the record' + (item.link_kind === 'pdf' ? ' · opens as a PDF' : item.link_kind === 'html' ? ' · opens as a web page' : ''))}">${esc(item.ref_label)}</span>` : ''].filter(Boolean).join(' · ');
   const concepts = (item.concepts || []).slice(0, 4).map(c => `<span class="chip">${esc(c)}</span>`).join('');
   return `<div class="card pc${adv ? ' adv-card' : ''}" id="card-${n}" data-open="false">
     <div class="pc-ic" aria-hidden="true">${DOC_IC}</div>
@@ -1591,8 +1592,8 @@ function copyAPA(idx, e) {
 function copyAPAText(text) {
   navigator.clipboard.writeText(text.replace(/\\'/g,"'")).then(() => toast('📋 APA copied'));
 }
-function copyAllAPA() {
-  const refs = [...new Set(currentResults.map(i=>i.apa_reference||'').filter(Boolean))];
+async function copyAllAPA() {
+  const refs = await _allApaRefs();
   navigator.clipboard.writeText(refs.join('\n\n')).then(() => {
     citeCopiedCount += refs.length;
     document.getElementById('citeCounter').textContent = `📋 ${citeCopiedCount} copied`;
@@ -1603,6 +1604,37 @@ function copyAllAPA() {
 
 // ── Citation Picker ────────────────────────────────────
 let _modalCiteCache = {};
+function citeMode() { try { const v = localStorage.getItem('sturch_cite_authors'); return (v === 'all' || v === 'etal') ? v : 'auto'; } catch(e) { return 'auto'; } }
+let _curCiteStyle = 'apa';
+function paintCite(box, style) {
+  const d = _modalCiteCache || {};
+  const useHtml = style === 'apa' && d.apa_html;
+  if (useHtml) box.innerHTML = d.apa_html; else box.textContent = d[style] || 'Not available';
+  box.dataset.html = useHtml ? d.apa_html : '';
+  const info = document.getElementById('citeInfo');
+  if (info) {
+    let h = '';
+    if (d.ref_label) h += '<b>' + esc(d.ref_label) + '</b>' + (d.link_kind === 'pdf' ? ' · opens as a PDF' : d.link_kind === 'html' ? ' · opens as a web page' : '') + (d.ref_guided ? ' · APA follows the APA 7 guide' : ' · APA not checked against a guide yet');
+    (d.ref_notes || []).forEach(n => { h += '<div>• ' + esc(n) + '</div>'; });
+    info.innerHTML = h;
+  }
+}
+function citeModeChanged(idx) {
+  const v = document.getElementById('citeAuthors').value;
+  try { localStorage.setItem('sturch_cite_authors', v); } catch(e) {}
+  _modalCiteCache = {};
+  loadCiteStyle(_curCiteStyle, idx, document.getElementById('cb-' + _curCiteStyle));
+}
+async function _allApaRefs() {
+  let refs = [...new Set(currentResults.map(i => i.apa_reference || '').filter(Boolean))];
+  try {
+    const r = await fetch('/api/citations/bulk', {method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({authors_mode: citeMode(), papers: currentResults.map(i => ({authors: i.authors, year: i.year, title: i.title, journal: i.journal, volume: i.volume, issue: i.issue, pages: i.pages, doi: i.doi, oa_url: i.oa_url, type: i.type, publisher: i.publisher, editors: i.editors, edition: i.edition, data_source: i.data_source}))})});
+    const d = await r.json();
+    if (d && Array.isArray(d.citations)) { const x = [...new Set(d.citations.map(c => (c && c.apa) || '').filter(Boolean))]; if (x.length) refs = x; }
+  } catch(e) {}
+  return refs;
+}
 async function showCitationPicker(idx, cardNum, e) {
   if (e) e.stopPropagation();
   const item = currentResults[idx];
@@ -1618,9 +1650,12 @@ async function showCitationPicker(idx, cardNum, e) {
       <button class="btn sm" id="cb-chicago" onclick="loadCiteStyle('chicago',${idx},this)">Chicago</button>
       <button class="btn sm" id="cb-harvard" onclick="loadCiteStyle('harvard',${idx},this)">Harvard</button>
     </div>
-    <div id="citeResult" style="background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;font-size:.8rem;font-style:italic;color:var(--muted);line-height:1.6;min-height:60px">${esc(item.apa_reference||'Not available')}</div>
+    <div id="citeInfo" style="font-size:.75rem;color:var(--muted);line-height:1.5;margin:0 0 8px"></div>
+    <div style="margin:0 0 10px;display:flex;gap:8px;align-items:center"><label for="citeAuthors" style="font-size:.78rem;font-weight:700">Authors</label><select id="citeAuthors" onchange="citeModeChanged(${idx})" style="flex:1;min-height:38px;border:1px solid var(--border);border-radius:8px;background:var(--surf);color:var(--text);font:inherit;font-size:.82rem;padding:0 8px"><option value="auto" ${citeMode()==='auto'?'selected':''}>Automatic (follows the style)</option><option value="all" ${citeMode()==='all'?'selected':''}>Show all authors</option><option value="etal" ${citeMode()==='etal'?'selected':''}>Shorten with et al.</option></select></div>
+    <div id="citeResult" style="background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;font-size:.8rem;font-style:normal;color:var(--muted);line-height:1.6;min-height:60px">${esc(item.apa_reference||'Not available')}</div>
     <button class="btn sm" style="margin-top:10px;width:100%;justify-content:center" onclick="copyModalCite()">📋 Copy</button>`;
   document.getElementById('modalOverlay').classList.remove('hidden');
+  loadCiteStyle('apa', idx, document.getElementById('cb-apa'));
 }
 
 async function loadCiteStyle(style, idx, btn) {
@@ -1629,19 +1664,26 @@ async function loadCiteStyle(style, idx, btn) {
   document.querySelectorAll('#citeStyleBtns .btn').forEach(b => { b.style.borderColor=''; b.style.color=''; });
   if (btn) { btn.style.borderColor='var(--accent)'; btn.style.color='var(--accent)'; }
   const box = document.getElementById('citeResult');
-  if (_modalCiteCache[style]) { box.textContent=_modalCiteCache[style]; return; }
+  _curCiteStyle = style;
+  if (_modalCiteCache[style]) { paintCite(box, style); return; }
   box.textContent = 'Generating…';
   try {
-    const resp = await fetch('/api/citations', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item)});
+    const resp = await fetch('/api/citations', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({}, item, {authors_mode: citeMode()}))});
     const data = await resp.json();
     _modalCiteCache = data;
-    box.textContent = data[style]||'Not available';
+    paintCite(box, style);
   } catch(e) { box.textContent = item.apa_reference||'Not available'; }
 }
 
 function copyModalCite() {
-  const text = document.getElementById('citeResult')?.textContent||'';
-  navigator.clipboard.writeText(text).then(()=>toast('📋 Citation copied'));
+  const box = document.getElementById('citeResult');
+  const text = (box && box.textContent) || '';
+  const html = (box && box.dataset && box.dataset.html) || '';
+  const plain = () => navigator.clipboard.writeText(text).then(() => toast('📋 Citation copied'));
+  if (html && window.ClipboardItem && navigator.clipboard.write) {
+    navigator.clipboard.write([new ClipboardItem({'text/html': new Blob([html], {type: 'text/html'}), 'text/plain': new Blob([text], {type: 'text/plain'})})])
+      .then(() => toast('📋 Citation copied (italics kept in Word)')).catch(plain);
+  } else { plain(); }
 }
 
 // ── Share from card ────────────────────────────────────

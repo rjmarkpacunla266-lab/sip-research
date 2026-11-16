@@ -68,6 +68,9 @@ def tag_results(results):
         try:
             t, how = detect(p)
             p["ref_type"], p["ref_label"], p["link_kind"] = t, LABELS[t], link_kind(p)
+            built = build_apa(p, t)             # keep the short APA line on the card in step with the guide
+            if built and built.get("text"):
+                p["apa_reference"] = built["text"]
         except Exception:
             pass
     return results
