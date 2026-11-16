@@ -458,6 +458,7 @@ def format_paper(paper):
         "is_oa": oa.get("is_oa", False), "oa_url": oa.get("oa_url", ""),
         "doi": doi, "concepts": concepts, "openalex_id": paper.get("id", ""),
         "volume": volume, "issue": issue, "pages": pages,
+        "type": paper.get("type") or "", "publisher": source.get("host_organization_name") or "",
         "apa_reference": _build_apa(authors, year, title, journal, volume, issue, pages, doi),
         "apa_missing": missing, "data_source": "OpenAlex (openalex.org)",
         "ref_warning": "Auto-generated — verify before academic use",
@@ -680,6 +681,7 @@ def search_arxiv(query, page=1, per_page=RESULTS_PER_SOURCE,
                 "volume": "", "issue": "", "pages": "",
                 "apa_reference": _build_apa(authors, year, title, "arXiv", "", "", "", doi_link or page_link),
                 "apa_missing": ["volume", "issue", "page range"],
+                "type": "preprint",
                 "data_source": "arXiv (arxiv.org)",
                 "ref_warning": "Auto-generated — verify before academic use",
             })
@@ -698,7 +700,7 @@ def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE,
     cr_params = {("query.title" if field == "title" else "query"): query, "rows": per_page, "offset": offset,
                  "sort": "published" if sort == "recent" else "is-referenced-by-count",
                  "order": "desc",
-                 "select": "title,author,published,container-title,DOI,is-referenced-by-count,abstract,URL,license"}
+                 "select": "title,author,published,container-title,DOI,is-referenced-by-count,abstract,URL,license,volume,issue,page,type,publisher,editor,edition-number"}
     if loose:                                   # relevance order
         cr_params.pop("sort", None); cr_params.pop("order", None)
     flt = []
@@ -724,16 +726,22 @@ def search_crossref(query, page=1, per_page=RESULTS_PER_SOURCE,
             journal = " ".join(p.get("container-title") or []) or "Crossref"
             doi     = p.get("DOI", "")
             abstract = clean_abstract(p.get("abstract", "") or "")
-            missing = [l for l, v in [("volume",""),("issue",""),("page range","")] if not v]
+            cr_vol   = clean_text(str(p.get("volume") or ""))
+            cr_issue = clean_text(str(p.get("issue") or ""))
+            cr_pages = _en_dash(clean_text(str(p.get("page") or "")))
+            cr_eds   = [f"{e.get('given','')} {e.get('family','')}".strip() for e in (p.get("editor") or []) if isinstance(e, dict)]
+            missing = [l for l, v in [("volume", cr_vol), ("issue", cr_issue), ("page range", cr_pages)] if not v]
             results.append({
                 "title": title, "date": _fmt_date(pub), "authors": authors, "year": year, "journal": journal,
                 "abstract": abstract, "citations": p.get("is-referenced-by-count", 0) or 0,
                 "is_oa": False, "oa_url": p.get("URL", ""),
                 "doi": f"https://doi.org/{doi}" if doi else "",
                 "concepts": [], "openalex_id": doi,
-                "volume": "", "issue": "", "pages": "",
-                "apa_reference": _build_apa(authors, year, title, journal, "", "", "", doi),
+                "volume": cr_vol, "issue": cr_issue, "pages": cr_pages,
+                "apa_reference": _build_apa(authors, year, title, journal, cr_vol, cr_issue, cr_pages, doi),
                 "apa_missing": missing, "data_source": "Crossref (crossref.org)",
+                "type": p.get("type") or "", "publisher": clean_text(p.get("publisher") or ""), "editors": cr_eds,
+                "edition": clean_text(str(p.get("edition-number") or "")),
                 "ref_warning": "Auto-generated — verify before academic use",
             })
         return results
