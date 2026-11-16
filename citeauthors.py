@@ -84,6 +84,11 @@ def apply(cites, authors, mode):
                 a, b = c._dot(old), c._dot(new)
             if a != b and base.startswith(a):
                 out[style] = b + base[len(a):]
+                if style == "apa" and isinstance(out.get("apa_html"), str):
+                    import html as _hh
+                    ha, hb = _hh.escape(a, quote=False), _hh.escape(b, quote=False)
+                    if out["apa_html"].startswith(ha):
+                        out["apa_html"] = hb + out["apa_html"][len(ha):]
         return out
     except Exception:
         return cites
