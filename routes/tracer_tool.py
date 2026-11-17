@@ -13,6 +13,7 @@ from core import login_required, _safe_terms, OPENALEX_URL, format_paper, hide_r
 from engine import (read_filters, search_papers, apply_filters_and_sort, term_in, relevance,
                     sort_date, SOURCE_LABELS, search_sources, merge_dedupe, to_int)
 import topicfinder
+import toolsmart
 from routes.tools_common import tools_bp, _fail, _pick, _clean_abstract, _pubmed_abstracts, _client_paper, _DOI_OK
 
 
@@ -100,6 +101,7 @@ def _trace_pool(quote, keywords, f):
     def run(job):
         q, per, fl = job
         return search_sources(q, 1, fl, per_source=per, loose=True)[0]
+    _sm = toolsmart.start(quote, f)                        # meaning search, runs at the same time
     ex = ThreadPoolExecutor(max_workers=len(jobs))
     futs = [ex.submit(run, j) for j in jobs]
     done, _pending = wait(futs, timeout=SEARCH_DEADLINE)
@@ -111,6 +113,7 @@ def _trace_pool(quote, keywords, f):
                 batches.append(fu.result())
             except Exception:
                 traceback.print_exc()
+    batches.append(toolsmart.result(_sm))
     rank, allraw = {}, []
     for raw in batches:
         pos = {}
@@ -120,7 +123,8 @@ def _trace_pool(quote, keywords, f):
             rank[k] = rank.get(k, 0.0) + 1.0 / (1 + i)   # 1st result of a source = 1, 2nd = 0.5, 3rd = 0.33 ...
         allraw.extend(raw)
     papers = hide_restricted_abstracts(apply_filters_and_sort(merge_dedupe(allraw), dict(f, sort="cited"), " ".join(keywords)))
-    return papers, {k: min(1.0, v / 1.5) for k, v in rank.items()}
+    ranks = {k: min(1.0, v / 1.5) for k, v in rank.items()}
+    return papers, toolsmart.ai_ranks(papers, quote, ranks, _pkey)
 
 def _title_overlap(title, quote):
     tw = [w for w in _re.findall(r"\b\w{4,}\b", (title or "").lower()) if w not in _STOPWORDS]

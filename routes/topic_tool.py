@@ -13,6 +13,7 @@ from core import login_required, _safe_terms, OPENALEX_URL, format_paper
 from engine import (read_filters, search_papers, apply_filters_and_sort, term_in, relevance,
                     sort_date, SOURCE_LABELS, search_sources, merge_dedupe, to_int)
 import topicfinder
+import toolsmart
 from routes.tools_common import tools_bp, _fail, _pick, _clean_abstract, _pubmed_abstracts, _client_paper, _DOI_OK
 
 
@@ -395,8 +396,10 @@ def topics():
         _cf = _oa_filter(f, " AND ".join(terms))
         count_fut = count_ex.submit(_oa_query, _cf) if "openalex" in f["sources"] else None
         years_fut = count_ex.submit(_oa_years, _cf) if "openalex" in f["sources"] else None
+        _sm = toolsmart.start(full_query, f)                          # meaning search, runs at the same time
         with ThreadPoolExecutor(max_workers=len(jobs)) as ex:
             first = list(ex.map(lambda j: search_papers(j[0], 1, dict(f, sort=j[1]), per_source=25)[0], jobs))
+        first = first + [toolsmart.result(_sm)]
         if count_fut is not None:
             try:
                 size_total = count_fut.result(timeout=8)[0]
@@ -435,6 +438,7 @@ def topics():
                         have.add(k)
                         papers.append(p)
         papers = apply_filters_and_sort(papers, f, full_query)
+        toolsmart.ai_sort(papers, full_query, f)                      # optional AI ranking; does nothing when it is off
         if ptype != "all":
             papers = [p for p in papers if _paper_kind(p) == ptype]
         if balanced:

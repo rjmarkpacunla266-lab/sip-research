@@ -13,6 +13,7 @@ from core import login_required, _safe_terms, OPENALEX_URL, format_paper
 from engine import (read_filters, search_papers, apply_filters_and_sort, term_in, relevance,
                     sort_date, SOURCE_LABELS, search_sources, merge_dedupe, to_int)
 import topicfinder
+import toolsmart
 from routes.tools_common import tools_bp, _fail, _pick, _clean_abstract, _pubmed_abstracts, _client_paper, _DOI_OK
 
 
@@ -512,7 +513,8 @@ def _collect(papers, kw, ttype, kw2, cands, seen, min_score):
 
 def _rank(c):
     """Sentence quality first; citations add a gentle (log-scaled) boost instead of only breaking ties."""
-    return c["score"] + 0.5 * c.get("tboost", 0) + 1.2 * math.log10(1 + (c["paper"].get("citations") or 0))
+    return (c["score"] + 0.5 * c.get("tboost", 0) + 1.2 * math.log10(1 + (c["paper"].get("citations") or 0))
+            + 1.0 * (c["paper"].get("ai_bonus") or 0))
 
 
 def _paper_key(p):
@@ -582,9 +584,12 @@ def answer_finder():
 
         q = _answer_query(keyword, ttype, kw2)
         queries = _answer_queries(keyword, ttype, kw2)
+        _sm = toolsmart.start(query, f)                                           # meaning search, runs at the same time
         with ThreadPoolExecutor(max_workers=len(queries)) as ex:                 # several wordings at once: reviews and overviews
             batches = list(ex.map(lambda qq: search_papers(qq, 1, pool_f, per_source=ANSWER_PER_SOURCE)[0], queries))
+        batches = batches + [toolsmart.result(_sm)]
         papers = _merge_keep_abstract(batches)
+        toolsmart.ai_mark(papers, query)                                          # optional AI ranking; does nothing when it is off
         _pubmed_abstracts(papers)
         all_papers = list(papers)
         cands, seen = [], set()
