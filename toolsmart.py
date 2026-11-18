@@ -123,6 +123,25 @@ def ai_mark(papers, query):
             p["ai_bonus"] = round(n, 3)
 
 
+def ai_judge(cands, query, limit=None):
+    """Answer Finder: the AI only CHECKS how well each found sentence answers the question and moves the better ones up.
+    It never writes or changes a sentence. Each candidate gets 'ai_bonus' between 0 and 1. No-op when the AI is off."""
+    try:
+        import smartrank
+        if not cands or not smartrank.available():
+            return
+        top = sorted(cands, key=lambda c: c.get("score") or 0, reverse=True)[:limit or smartrank.pool_size()]
+        s = smartrank.similarities(query, [{"title": c.get("text") or ""} for c in top])
+        if not s or len(s) != len(top):
+            return
+        lo, hi = min(s), max(s)
+        span = (hi - lo) or 1.0
+        for c, x in zip(top, s):
+            c["ai_bonus"] = round((x - lo) / span, 3)
+    except Exception:
+        return
+
+
 def ai_ranks(papers, query, ranks, keyfn, weight=0.4):
     """Add a bonus to a {paper key: 0..1} rank table. Returns the table (unchanged when the AI is off)."""
     got = _sims(query, papers)

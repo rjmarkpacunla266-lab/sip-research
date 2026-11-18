@@ -514,7 +514,7 @@ def _collect(papers, kw, ttype, kw2, cands, seen, min_score):
 def _rank(c):
     """Sentence quality first; citations add a gentle (log-scaled) boost instead of only breaking ties."""
     return (c["score"] + 0.5 * c.get("tboost", 0) + 1.2 * math.log10(1 + (c["paper"].get("citations") or 0))
-            + 1.0 * (c["paper"].get("ai_bonus") or 0))
+            + 1.0 * (c["ai_bonus"] if c.get("ai_bonus") is not None else (c["paper"].get("ai_bonus") or 0)))
 
 
 def _paper_key(p):
@@ -605,6 +605,7 @@ def answer_finder():
             searched += len(more)
             all_papers += more
 
+        toolsmart.ai_judge(cands, query)                                          # AI only checks the sentences; it writes nothing
         if f["sort"] == "cited":
             cands.sort(key=lambda c: (c["paper"].get("citations") or 0, c["score"]), reverse=True)
         elif f["sort"] == "recent":
