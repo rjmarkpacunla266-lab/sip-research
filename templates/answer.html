@@ -104,6 +104,11 @@ header{display:flex;align-items:center;justify-content:space-between;padding:18p
 .answer-text{font-family:var(--serif);font-size:1rem;line-height:1.75;color:var(--text)}
 .answer-text mark{background:rgba(79,141,232,.18);color:var(--accent);border-radius:2px;padding:0 2px}
 .answer-text .cue{color:var(--gold);border-bottom:1px dotted rgba(232,184,75,.5)}
+.st-b{margin-left:6px;font-size:.66rem;padding:1px 8px;border-radius:20px;border:1px solid var(--border);font-weight:600}
+.st-b.strong{color:var(--green);background:var(--green-bg);border-color:transparent}
+.st-b.partial{color:var(--orange);background:var(--orange-bg);border-color:transparent}
+.st-b.weak{color:var(--muted);background:var(--surf2)}
+.weak-note{margin:0 0 12px;padding:11px 14px;border:1px solid var(--orange);background:var(--orange-bg);color:var(--text);border-radius:12px;font-size:.86rem;line-height:1.5}
 .best-b{margin-left:6px;font-size:.66rem;padding:1px 8px;border-radius:20px;background:rgba(232,184,75,.1);border:1px solid rgba(232,184,75,.28);color:var(--gold)}
 
 /* Sources */
@@ -834,7 +839,7 @@ function renderAnswers(data) {
       </div>` : '';
     return `
     <div class="answer-card${data.best_index === i ? ' best' : ''}" style="animation-delay:${i * 60}ms">
-      <div class="answer-num">Answer ${i + 1} of ${data.answers.length}${data.best_index === i ? ' <span class="best-b">★ Best answer</span>' : ''}</div>
+      <div class="answer-num">Answer ${i + 1} of ${data.answers.length}${data.best_index === i ? ' <span class="best-b">★ Best answer</span>' : ''}${(data.strength || [])[i] ? ' <span class="st-b ' + data.strength[i] + '" title="' + ({strong: 'Matches the topic and the wording of your question', partial: 'Related to your question but may not answer it directly', weak: 'Mentions the topic but may not answer the question'}[data.strength[i]]) + '">' + ({strong: 'Strong match', partial: 'Partial match', weak: 'Weak match'}[data.strength[i]]) + '</span>' : ''}</div>
       <div class="answer-text">${highlight(ans)}</div>
       ${actionsHtml('a', i, ((data.contexts || [])[i]) || {})}
       ${sourceHtml}
@@ -848,6 +853,7 @@ function renderAnswers(data) {
       </div>
       ${readLine(data)}
       ${fUsedLine(data)}
+      ${data.weak_only ? '<div class="weak-note"><b>No strong matching evidence found.</b> These are the closest sentences from real papers. A sentence can be similar to your question without answering it, so open the source before you rely on it.</div>' : ''}
       ${cards}
       <div id="ftBox"></div>
       <div id="moreBox"><div id="moreCards"></div><div id="moreCtl">${moreBoxHtml()}</div></div>

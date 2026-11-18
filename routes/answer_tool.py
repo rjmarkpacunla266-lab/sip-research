@@ -511,6 +511,12 @@ def _collect(papers, kw, ttype, kw2, cands, seen, min_score):
                 seen.add(key)
                 cands.append(c)
 
+def _strength(c):
+    """strong / partial / weak, from the sentence score (the same score that decides which sentences are shown)."""
+    s = c.get("score") or 0
+    return "strong" if s >= BEST_SCORE else ("partial" if s >= BEST_SCORE - 1 else "weak")
+
+
 def _rank(c):
     """Sentence quality first; citations add a gentle (log-scaled) boost instead of only breaking ties."""
     return (c["score"] + 0.5 * c.get("tboost", 0) + 1.2 * math.log10(1 + (c["paper"].get("citations") or 0))
@@ -623,6 +629,8 @@ def answer_finder():
             "loose": ttype == "loose",
             "cues":     _CUES.get(ttype, []),
             "best_index": best,
+            "strength": [_strength(c) for c in top],
+            "weak_only": bool(top) and not any(_strength(c) == "strong" for c in top),
             "best_rank": round(_rank(top[best]), 2) if best is not None else None,
             "searched": searched,
             "seen": [k for k in (_paper_key(p) for p in all_papers) if k][:800],     # papers already read: "keep searching" skips them
