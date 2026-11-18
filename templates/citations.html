@@ -292,9 +292,9 @@ const $ = id => document.getElementById(id);
 const STYLE_NAMES = {apa: 'APA', mla: 'MLA', chicago: 'Chicago', harvard: 'Harvard', bibtex: 'BibTeX'};
 const STYLE_NOTES = {
   apa: 'APA 7th edition, journal-article format.',
-  mla: 'MLA 9th edition, journal-article format.',
-  chicago: 'Chicago author–date style (17th ed.). If your teacher wants notes and bibliography, the year goes elsewhere.',
-  harvard: 'A common Harvard format. Universities differ slightly, so check your own guide.',
+  mla: 'MLA 7th edition, from the school guide (journal articles, books, book chapters). Other source types keep the older format.',
+  chicago: 'Chicago 16th edition, notes-bibliography, from the school guide (journal articles, books, book chapters). This is the bibliography entry. Other source types keep the older format.',
+  harvard: 'Harvard from the school (EUCLID) guide (journal articles, books, book chapters). Other source types keep the older format.',
   bibtex: 'For LaTeX and reference managers such as Zotero.'
 };
 let sources = [];      // [{key, label, count}]  key = 'saved' | 'c:<id>'
@@ -380,14 +380,14 @@ function computeOrder(){
 }
 function refFlags(it){
   const c = it.cite || {}, f = [];
-  if (c.ref_label) f.push('📄 ' + c.ref_label + (c.ref_guided ? ' · APA 7 guide' : ' · format not checked yet'));
-  (c.ref_notes || []).forEach(n => f.push(n));
+  if (c.ref_label) f.push('📄 ' + c.ref_label + ((c.ref_guides || {})[style] ? ' · ' + c.ref_guides[style] : ' · format not checked yet'));
+  ((c.ref_notes_by || {})[style] || c.ref_notes || []).forEach(n => f.push(n));
   return f;
 }
-function refHtml(i){ const c = papers[i].cite; return (style === 'apa' && c && c.apa_html) ? c.apa_html : esc(refText(i)); }
+function refHtml(i){ const c = papers[i].cite, h = c && c[style + '_html']; return h ? h : esc(refText(i)); }
 async function copyRichApa(ids){
-  if (style !== 'apa' || !window.ClipboardItem || !navigator.clipboard.write) return false;
-  const hs = ids.map(i => papers[i].cite && papers[i].cite.apa_html); if (hs.some(h => !h)) return false;
+  if (style === 'bibtex' || !window.ClipboardItem || !navigator.clipboard.write) return false;
+  const hs = ids.map(i => papers[i].cite && papers[i].cite[style + '_html']); if (hs.some(h => !h)) return false;
   const html = hs.map(h => '<p style="margin-left:.5in;text-indent:-.5in">' + h + '</p>').join('');
   try { await navigator.clipboard.write([new ClipboardItem({'text/html': new Blob([html], {type: 'text/html'}), 'text/plain': new Blob([ids.map(refText).join('\n\n')], {type: 'text/plain'})})]); return true; } catch(e) { return false; }
 }

@@ -1608,14 +1608,14 @@ function citeMode() { try { const v = localStorage.getItem('sturch_cite_authors'
 let _curCiteStyle = 'apa';
 function paintCite(box, style) {
   const d = _modalCiteCache || {};
-  const useHtml = style === 'apa' && d.apa_html;
-  if (useHtml) box.innerHTML = d.apa_html; else box.textContent = d[style] || 'Not available';
-  box.dataset.html = useHtml ? d.apa_html : '';
+  const hk = style + '_html', useHtml = !!d[hk];
+  if (useHtml) box.innerHTML = d[hk]; else box.textContent = d[style] || 'Not available';
+  box.dataset.html = useHtml ? d[hk] : '';
   const info = document.getElementById('citeInfo');
   if (info) {
     let h = '';
-    if (d.ref_label) h += '<b>' + esc(d.ref_label) + '</b>' + (d.link_kind === 'pdf' ? ' · opens as a PDF' : d.link_kind === 'html' ? ' · opens as a web page' : '') + (d.ref_guided ? ' · APA follows the APA 7 guide' : ' · APA not checked against a guide yet');
-    (d.ref_notes || []).forEach(n => { h += '<div>• ' + esc(n) + '</div>'; });
+    if (d.ref_label) h += '<b>' + esc(d.ref_label) + '</b>' + (d.link_kind === 'pdf' ? ' · opens as a PDF' : d.link_kind === 'html' ? ' · opens as a web page' : '') + ((d.ref_guides || {})[style] ? ' · follows the ' + d.ref_guides[style] : ' · ' + style.toUpperCase() + ' not checked against a guide yet for this type');
+    ((d.ref_notes_by || {})[style] || d.ref_notes || []).forEach(n => { h += '<div>• ' + esc(n) + '</div>'; });
     info.innerHTML = h;
   }
 }

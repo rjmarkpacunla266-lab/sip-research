@@ -74,6 +74,8 @@ def apply(cites, authors, mode):
         ppl = c._people(authors if isinstance(authors, list) else [])
         out = dict(cites)
         for style in STYLES:
+            if style in (cites.get("ref_done") or ()):
+                continue                                  # built from the school guide with the Authors option already applied
             base = cites.get(style)
             old, new = _auto(style, ppl), _list(style, ppl, mode)
             if not base or old is None or new is None:

@@ -504,7 +504,7 @@ def get_citations():
         data.get("authors"), data.get("year"), str(data.get("title"))[:600],
         str(data.get("journal") or "")[:300], data.get("volume"), data.get("issue"),
         data.get("pages"), data.get("doi"), str(data.get("oa_url") or "")[:500]),
-        data), data.get("authors"), data.get("authors_mode")))
+        data, data.get("authors_mode")), data.get("authors"), data.get("authors_mode")))
 
 # ─── /api/citations/bulk ─────────────────────────────────────────────
 @search_bp.route("/api/citations/bulk", methods=["POST"])
@@ -524,7 +524,7 @@ def citations_bulk():
             out.append(citeauthors.apply(refstyle.enrich(_all_citations(authors, str(p.get("year") or "n.d."), str(p.get("title") or ""),
                                       str(p.get("journal") or ""), str(p.get("volume") or ""),
                                       str(p.get("issue") or ""), str(p.get("pages") or ""),
-                                      str(p.get("doi") or ""), str(p.get("oa_url") or "")[:500]), p), authors, mode))
+                                      str(p.get("doi") or ""), str(p.get("oa_url") or "")[:500]), p, mode), authors, mode))
         except Exception:
             out.append({})        # the page falls back to its own formatting for this one
     return jsonify({"citations": out})
