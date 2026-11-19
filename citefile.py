@@ -17,7 +17,7 @@ MAX_CHARS = 20000
 DOI_RE = re.compile(r"\b(10\.\d{4,9}/[^\s\"<>\]\[{}|\\^`]+)", re.I)
 _BAD_TITLE = re.compile(r"(^microsoft word|^untitled|\.docx?$|\.pdf$|^document\d*$|^slide|^abstract$|^title$)", re.I)
 _NOT_TITLE_LINE = re.compile(r"(journal|university|college|department|faculty|school of|institute|proceedings|issn|isbn|vol\.|doi|http|www\.|@|received|accepted|"
-                             r"copyright|©|all rights reserved|volume|research article|original article|review article|abstract|keywords?)", re.I)
+                             r"copyright|©|all rights reserved|volume|research article|original article|review article|abstract|key ?words?|review paper|research paper|open access|et al\b)", re.I)
 
 
 def kind_of(data, filename=""):
@@ -139,6 +139,8 @@ def _name_ok(n):
 
 def split_names(s):
     s = re.sub(r"\s+", " ", s or "").strip()
+    s = re.sub(r"(?<=[A-Za-z.])\s*[*†‡§]*\s*\d{1,2}(?:\s*,\s*\d{1,2})*\s*[*†‡§]*(?=\s*(?:,|;|&|\band\b|$))", "", s)   # affiliation numbers such as "Hossain *1" or "Sakil 5,6"
+    s = re.sub(r"\s*[*†‡§]+", "", s)
     if not s:
         return []
     parts = [p for p in re.split(r"\s*(?:;|\band\b|&|\n)\s*", s) if p.strip()]
