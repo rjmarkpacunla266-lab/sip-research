@@ -334,7 +334,7 @@ const CITE_MODE_KEY = 'sturch_cite_authors';
 function citeMode(){ try { const v = localStorage.getItem(CITE_MODE_KEY); return (v === 'all' || v === 'etal') ? v : 'auto'; } catch(e) { return 'auto'; } }
 $('authorsMode').value = citeMode();
 const STYLES = [['apa', 'APA'], ['mla', 'MLA'], ['chicago', 'Chicago'], ['harvard', 'Harvard']];
-let lastCites = null, lastFields = null, busy = false;
+let lastCites = null, lastFields = null, busy = false, lastOa = '';
 
 function showErr(m){ $('err').innerHTML = m ? '<div class="errbox">⚠️ ' + esc(m) + '</div>' : ''; }
 function lines(s){ return String(s || '').split(/\n+/).map(x => x.trim()).filter(Boolean); }
@@ -371,7 +371,7 @@ function gather(){
     type: $('f_type').value, journal: $('f_journal').value.trim(), volume: $('f_volume').value.trim(), issue: $('f_issue').value.trim(),
     pages: $('f_pages').value.trim(), doi: $('f_doi').value.trim().replace(/^https?:\/\/(dx\.)?doi\.org\//i, ''),
     publisher: $('f_publisher').value.trim(), edition: $('f_edition').value.trim(), editors: lines($('f_editors').value),
-    data_source: 'Your file (details only)', oa_url: ''};
+    data_source: 'Your file (details only)', oa_url: lastOa};
 }
 
 async function readIt(){
@@ -386,9 +386,10 @@ async function readIt(){
     if (r.status === 401 || r.redirected) { window.location.href = '/login'; return; }
     const d = await r.json().catch(() => ({}));
     if (!r.ok || d.error) { showErr(d.error || 'Reading the file failed. Please try again.'); return; }
-    fill(d.fields || {});
-    $('foundTag').innerHTML = d.found_by === 'doi' ? '<span class="found ok">✓ Found by DOI (Crossref)</span>'
-      : d.found_by === 'title' ? '<span class="found ok">✓ Matched a real record by title (Crossref)</span>'
+    fill(d.fields || {}); lastOa = (d.fields || {}).oa_url || '';
+    const src = (d.sources || []).join(' + ');
+    $('foundTag').innerHTML = d.found_by === 'doi' ? '<span class="found ok">✓ Found by DOI (' + esc(src || 'database') + ')</span>'
+      : d.found_by === 'title' ? '<span class="found ok">✓ Matched a real record by title (' + esc(src || 'database') + ')</span>'
       : '<span class="found guess">Guessed from the file. Please check.</span>';
     $('rnotes').innerHTML = (d.notes || []).map(n => '<li>' + esc(n) + '</li>').join('');
     $('detail').classList.remove('hidden');

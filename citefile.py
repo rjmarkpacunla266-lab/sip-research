@@ -291,43 +291,189 @@ def lookup_title(title, authors, year, get):
     return None
 
 
+# ── OpenAlex and arXiv (the same databases Search Papers uses) ────────────────────────────────────────────────────
+_OA_TYPES = {"article": "journal-article", "review": "journal-article", "book": "book", "book-chapter": "book-chapter",
+             "preprint": "preprint", "dissertation": "thesis", "report": "report", "dataset": "dataset"}
+
+
+def _from_openalex(w):
+    src = ((w.get("primary_location") or {}).get("source") or {})
+    bib = w.get("biblio") or {}
+    fp, lp = str(bib.get("first_page") or ""), str(bib.get("last_page") or "")
+    pages = (fp + "–" + lp) if fp and lp and fp != lp else fp
+    doi = re.sub(r"^https?://(dx\.)?doi\.org/", "", str(w.get("doi") or ""), flags=re.I)
+    au = [((a.get("author") or {}).get("display_name") or "").strip() for a in (w.get("authorships") or []) if isinstance(a, dict)]
+    return {"title": re.sub(r"<[^>]+>", "", str(w.get("title") or "")).strip(), "authors": [a for a in au if a],
+            "year": str(w.get("publication_year") or ""), "journal": src.get("display_name") or "", "volume": str(bib.get("volume") or ""),
+            "issue": str(bib.get("issue") or ""), "pages": pages, "doi": doi, "publisher": src.get("host_organization_name") or "",
+            "edition": "", "editors": [], "type": _OA_TYPES.get(str(w.get("type") or ""), ""),
+            "oa_url": ((w.get("open_access") or {}).get("oa_url") or "")}
+
+
+def _close(a, b):
+    n = lambda s: re.sub(r"\W+", " ", (s or "").lower()).strip()
+    return difflib.SequenceMatcher(None, n(a), n(b)).ratio()
+
+
+def _year_ok(year, rec_year):
+    try:
+        return not year or not rec_year or abs(int(year) - int(rec_year)) <= 1
+    except ValueError:
+        return True
+
+
+def lookup_openalex_doi(doi, get):
+    try:
+        r = get("https://api.openalex.org/works/https://doi.org/" + doi, {})
+        if r.ok:
+            rec = _from_openalex(r.json() or {})
+            return rec if rec.get("title") else None
+    except Exception:
+        pass
+    return None
+
+
+def lookup_openalex_title(title, year, get):
+    if len(title or "") < 15:
+        return None
+    try:
+        r = get("https://api.openalex.org/works", {"search": title[:250], "per-page": 3})
+        if r.ok:
+            for w in (r.json() or {}).get("results", []):
+                rec = _from_openalex(w)
+                if rec["title"] and _close(title, rec["title"]) >= 0.9 and _year_ok(year, rec["year"]):
+                    return rec
+    except Exception:
+        pass
+    return None
+
+
+_ARXIV_ID = re.compile(r"(?i)arxiv\s*:?\s*(\d{4}\.\d{4,5})(?:v\d+)?")
+
+
+def find_arxiv(text):
+    m = _ARXIV_ID.search((text or "")[:6000])
+    return m.group(1) if m else ""
+
+
+def _from_arxiv(xml_text):
+    import xml.etree.ElementTree as ET
+    ns = {"a": "http://www.w3.org/2005/Atom", "x": "http://arxiv.org/schemas/atom"}
+    root = ET.fromstring(xml_text)
+    out = []
+    for e in root.findall("a:entry", ns):
+        title = re.sub(r"\s+", " ", (e.findtext("a:title", "", ns) or "")).strip()
+        if not title or title.lower() == "error":
+            continue
+        aid = re.sub(r"v\d+$", "", (e.findtext("a:id", "", ns) or "").rsplit("/abs/", 1)[-1])
+        out.append({"title": title, "authors": [re.sub(r"\s+", " ", a.findtext("a:name", "", ns) or "").strip() for a in e.findall("a:author", ns)],
+                    "year": (e.findtext("a:published", "", ns) or "")[:4], "journal": "arXiv", "volume": "", "issue": "", "pages": "",
+                    "doi": (e.findtext("x:doi", "", ns) or "").strip(), "publisher": "arXiv", "edition": "", "editors": [], "type": "preprint",
+                    "oa_url": "https://arxiv.org/abs/" + aid if aid else ""})
+    return out
+
+
+def lookup_arxiv(arxiv_id, title, year, get):
+    try:
+        if arxiv_id:
+            r = get("https://export.arxiv.org/api/query", {"id_list": arxiv_id})
+            recs = _from_arxiv(r.text) if r.ok else []
+            return recs[0] if recs else None
+        if len(title or "") >= 15:
+            r = get("https://export.arxiv.org/api/query", {"search_query": 'ti:"' + title[:200].replace('"', "") + '"', "max_results": 3})
+            for rec in (_from_arxiv(r.text) if r.ok else []):
+                if _close(title, rec["title"]) >= 0.9 and _year_ok(year, rec["year"]):
+                    return rec
+    except Exception:
+        pass
+    return None
+
+
+_SRC_NAMES = {"crossref": "Crossref", "openalex": "OpenAlex", "arxiv": "arXiv"}
+
+
+def merge(recs):
+    """recs = [(source, record)] in priority order (Crossref, OpenAlex, arXiv). The first real value for each field wins."""
+    out = {"title": "", "authors": [], "year": "", "journal": "", "volume": "", "issue": "", "pages": "", "doi": "", "publisher": "",
+           "edition": "", "editors": [], "type": "", "oa_url": ""}
+    used = []
+    for src, rec in recs:
+        gave = False
+        for k, v in rec.items():
+            if k in out and v and not out[k]:
+                out[k] = v; gave = True
+        if gave:
+            used.append(src)
+    return out, used
+
+
+def _parallel(jobs):
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=max(1, len(jobs))) as ex:
+        futs = [(name, ex.submit(fn)) for name, fn in jobs]
+        res = []
+        for name, f in futs:
+            try:
+                r = f.result(timeout=20)
+            except Exception:
+                r = None
+            if r:
+                res.append((name, r))
+    return res
+
+
 def analyse(text, meta, get, filename=""):
-    """The whole job: guess, then replace the guess with a real record when one is found. Returns (fields, found_by, notes)."""
+    """The whole job: guess, then replace the guess with real records from Crossref, OpenAlex and arXiv.
+    Returns (fields, found_by, notes, sources)."""
     g = guess(text, meta, filename)
-    notes = []
-    rec, how = None, "guess"
-    if g["doi"]:
-        rec = lookup_doi(g["doi"], get)
-        if rec:
+    notes, recs, how = [], [], "guess"
+    aid = find_arxiv(text)
+    doi = g["doi"]
+    if doi or aid:
+        jobs = []
+        if doi:
+            jobs += [("crossref", lambda: lookup_doi(doi, get)), ("openalex", lambda: lookup_openalex_doi(doi, get))]
+        if aid:
+            jobs.append(("arxiv", lambda: lookup_arxiv(aid, "", g["year"], get)))
+        recs = _parallel(jobs)
+        if recs:
             how = "doi"
-        else:
-            notes.append("A DOI was found in the file but Crossref did not return a record for it.")
-    if not rec and g["title"]:
-        rec = lookup_title(g["title"], g["authors"], g["year"], get)
-        if rec:
+        elif doi:
+            notes.append("A DOI was found in the file but no database returned a record for it.")
+    if not recs and g["title"]:
+        t, y = g["title"], g["year"]
+        recs = _parallel([("crossref", lambda: lookup_title(t, g["authors"], y, get)),
+                          ("openalex", lambda: lookup_openalex_title(t, y, get)),
+                          ("arxiv", lambda: lookup_arxiv("", t, y, get))])
+        if recs:
             how = "title"
-    if rec:
+    if recs:
+        order = {"crossref": 0, "openalex": 1, "arxiv": 2}
+        recs.sort(key=lambda x: order[x[0]])
+        rec, used = merge(recs)
         fields = dict(g); fields.update({k: v for k, v in rec.items() if v})
         if not fields.get("doi"): fields["doi"] = g["doi"]
         filled = []
         if not rec.get("authors"):
             a2 = guess_authors(text, meta, rec.get("title") or g["title"])
-            if a2:
-                fields["authors"] = a2; filled.append("authors")
-            else:
-                fields["authors"] = []
-        for k, label in (("volume", "volume"), ("issue", "issue"), ("pages", "pages")):
-            if not rec.get(k) and g.get(k):
-                filled.append(label)
+            fields["authors"] = a2 or []
+            if a2: filled.append("authors")
         for k in ("volume", "issue", "pages"):
             if rec.get(k):
                 fields[k] = rec[k]
+            elif g.get(k):
+                filled.append(k)
         if filled:
-            notes.append("Crossref did not have the " + ", ".join(filled) + " for this paper, so they were read from the file. Please check them.")
-        return fields, how, notes
+            notes.append("The databases did not have the " + ", ".join(filled) + " for this paper, so they were read from the file. Please check them.")
+        if len(used) > 1:
+            notes.append("Details were combined from " + " and ".join(_SRC_NAMES[u] for u in used) + ".")
+        if used and used[0] != "crossref":
+            notes.append("These details come from " + _SRC_NAMES[used[0]] + ", not Crossref. Check them against the paper.")
+        return fields, how, notes, [_SRC_NAMES[u] for u in used]
     if not g["title"]:
         notes.append("A title could not be found. Type it in.")
     if not g["authors"]:
         notes.append("Authors could not be found. Type them in.")
-    notes.append("No matching record was found, so these details are a guess from the file. Check each one before you use the citation.")
-    return g, "guess", notes
+    notes.append("No matching record was found in Crossref, OpenAlex or arXiv, so these details are a guess from the file. Check each one before you use the citation.")
+    g.setdefault("oa_url", "")
+    return g, "guess", notes, []

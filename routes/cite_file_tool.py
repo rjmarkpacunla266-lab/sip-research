@@ -37,6 +37,13 @@ def _too_many():
 def _get(url, params):
     mail = os.environ.get("CROSSREF_EMAIL", "").strip()
     ua = "Sturch/1.0" + (f" (mailto:{mail})" if mail else "")
+    params = dict(params or {})
+    if "api.openalex.org" in url:
+        key = os.environ.get("OPENALEX_API_KEY", "").strip()
+        if key:
+            params["api_key"] = key
+        if mail:
+            params["mailto"] = mail
     return requests.get(url, params=params, timeout=8, headers={"User-Agent": ua})
 
 
@@ -83,10 +90,10 @@ def cite_file_read():
                 return _no_store(jsonify({"error": "Choose a file or paste some text first."}), 400)
         if not text.strip():
             return _no_store(jsonify({"error": "No text could be read from this file. It may be a scan (a picture of pages). Type the details in instead."}), 422)
-        fields, how, notes = citefile.analyse(text, meta, _get, name)
+        fields, how, notes, sources = citefile.analyse(text, meta, _get, name)
         if kind == "doc":
             notes.insert(0, "Old .doc files give less reliable details. A DOCX or PDF works better.")
-        return _no_store(jsonify({"fields": fields, "found_by": how, "notes": notes, "kind": kind}))
+        return _no_store(jsonify({"fields": fields, "found_by": how, "notes": notes, "kind": kind, "sources": sources}))
     except Exception:
         traceback.print_exc()
         return _no_store(jsonify({"error": "Reading the file failed. Please try again."}), 500)
