@@ -1,5 +1,20 @@
 [
   {
+    "date": "2026-11-19",
+    "tag": "New",
+    "title": "Cite My File",
+    "summary": "Upload a PDF or Word file, or paste text, and get its citation in APA, MLA, Chicago and Harvard.",
+    "points": [
+      "Works with PDF, DOCX and DOC files up to 12 MB.",
+      "Finds the real record by DOI or title (Crossref) when it can, and tells you when it only guessed.",
+      "You can fix any detail before the citations are made.",
+      "Your file is read in memory and then discarded. It is not stored.",
+      "Save adds only the citation details to your saved papers."
+    ],
+    "link": "/cite-file",
+    "link_text": "Open Cite My File"
+  },
+  {
     "date": "2026-11-16",
     "tag": "New",
     "title": "Source types and the APA 7 guide",

@@ -12,7 +12,7 @@ import traceback
 
 from routes.tools_common import tools_bp
 
-TOOL_MODULES = ("routes.answer_tool", "routes.tracer_tool", "routes.topic_tool")
+TOOL_MODULES = ("routes.answer_tool", "routes.tracer_tool", "routes.topic_tool", "routes.cite_file_tool")
 FAILED = []
 
 for _m in TOOL_MODULES:
