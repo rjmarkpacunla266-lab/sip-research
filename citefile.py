@@ -170,6 +170,8 @@ def guess_title(text, meta, filename=""):
             continue
         if len(l.split()) < 3 or sum(c.isdigit() for c in l) > 4:
             continue
+        if len(split_names(l)) >= 2 or re.match(r"(?i)(vol\b|issn|http|review paper|research paper|original|open access)", l):
+            continue
         if len(l) > len(best):
             best, bi = l, i
     if best and bi + 1 < len(lines):
@@ -182,6 +184,13 @@ def guess_title(text, meta, filename=""):
 def guess_authors(text, meta, title=""):
     lines = [re.sub(r"\s+", " ", l).strip() for l in (text or "").split("\n")]
     lines = [l for l in lines if l][:25]
+    joined = []
+    for l in lines:
+        if joined and joined[-1].endswith(",") and not _NOT_TITLE_LINE.search(l):
+            joined[-1] = joined[-1] + " " + l
+        else:
+            joined.append(l)
+    lines = joined
     start = 0
     if title:
         for i, l in enumerate(lines):
@@ -211,10 +220,22 @@ def guess_year(text, meta):
     return (meta or {}).get("year", "")
 
 
+def guess_vip(text):
+    head = (text or "")[:5000]
+    m = re.search(r"(?i)\bvol(?:ume)?\.?\s*(\d{1,4})\s*[,;|]?\s*(?:no\.?|issue|num(?:ber)?\.?)\s*(\d{1,3})\s*[,;|]?\s*(?:pp?\.?|pages?)?\s*(\d{1,5})\s*[-–—]\s*(\d{1,5})", head)
+    if m:
+        return m.group(1), m.group(2), m.group(3) + "–" + m.group(4)
+    m = re.search(r"(?i)\bvol(?:ume)?\.?\s*(\d{1,4})\s*[,;|]?\s*(?:no\.?|issue|num(?:ber)?\.?)\s*(\d{1,3})", head)
+    if m:
+        return m.group(1), m.group(2), ""
+    return "", "", ""
+
+
 def guess(text, meta, filename=""):
     title = guess_title(text, meta, filename)
+    vol, iss, pg = guess_vip(text)
     return {"title": title, "authors": guess_authors(text, meta, title), "year": guess_year(text, meta), "doi": find_doi(text),
-            "journal": "", "volume": "", "issue": "", "pages": "", "publisher": "", "edition": "", "editors": [], "type": ""}
+            "journal": "", "volume": vol, "issue": iss, "pages": pg, "publisher": "", "edition": "", "editors": [], "type": ""}
 
 
 # ── real records from Crossref ────────────────────────────────────────────────────────────────────────────────────
@@ -286,6 +307,21 @@ def analyse(text, meta, get, filename=""):
     if rec:
         fields = dict(g); fields.update({k: v for k, v in rec.items() if v})
         if not fields.get("doi"): fields["doi"] = g["doi"]
+        filled = []
+        if not rec.get("authors"):
+            a2 = guess_authors(text, meta, rec.get("title") or g["title"])
+            if a2:
+                fields["authors"] = a2; filled.append("authors")
+            else:
+                fields["authors"] = []
+        for k, label in (("volume", "volume"), ("issue", "issue"), ("pages", "pages")):
+            if not rec.get(k) and g.get(k):
+                filled.append(label)
+        for k in ("volume", "issue", "pages"):
+            if rec.get(k):
+                fields[k] = rec[k]
+        if filled:
+            notes.append("Crossref did not have the " + ", ".join(filled) + " for this paper, so they were read from the file. Please check them.")
         return fields, how, notes
     if not g["title"]:
         notes.append("A title could not be found. Type it in.")
