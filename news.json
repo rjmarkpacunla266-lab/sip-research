@@ -1,5 +1,19 @@
 [
   {
+    "date": "2026-11-20",
+    "tag": "New",
+    "title": "Poster & Slide Maker",
+    "summary": "Make a research poster, slides or an infographic and download it as PNG, PDF or PowerPoint.",
+    "points": [
+      "Start from a template: research poster, title slide, bullet slide or infographic.",
+      "Move, resize and edit text, shapes and your own images.",
+      "Your design stays in your browser. Nothing is sent to Sturch.",
+      "Photo search is coming soon."
+    ],
+    "link": "/poster-maker",
+    "link_text": "Open Poster & Slide Maker"
+  },
+  {
     "date": "2026-11-19",
     "tag": "New",
     "title": "Cite My File",
