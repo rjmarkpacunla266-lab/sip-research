@@ -233,9 +233,60 @@ def guess_vip(text):
     return "", "", ""
 
 
+_SUGG = re.compile(r"(?is)suggested\s+(?:report\s+|document\s+|book\s+)?citation\s*:\s*(.+?)(?=\n\s*(?:suggested|cover|photo|editors?|acknowledg)|\n\s*\n|\Z)")
+_AUTH_PAT = re.compile(r"([A-Z][\w'’\-]+(?: [A-Z][\w'’\-]+)?),?\s+((?:[A-Z]\.?\s*)+)(?=,|$)")
+
+
+def _full_names(text):
+    """Full names from a line such as 'Editors: Maria Retchie Alaba, Rowell Alarcon and ...' near the top."""
+    lines = [re.sub(r"\s+", " ", l).strip() for l in (text or "")[:5000].split("\n")]
+    for i, l in enumerate(lines):
+        m = re.match(r"(?i)^(?:editors?|authors?|written by|prepared by|by)\s*:?\s*(.*)$", l)
+        if m:
+            chunk = m.group(1) or (lines[i + 1] if i + 1 < len(lines) else "")
+            names = split_names(chunk)
+            if names:
+                return names
+    return []
+
+
+def suggested_citation(text):
+    """Many reports print 'Suggested citation: Surname, A., ... Year. Title. Publisher.' Read it as the most reliable source in the file."""
+    m = None
+    for mm in _SUGG.finditer((text or "")[:6000]):
+        if not re.match(r"(?i)^\s*chapter", mm.group(0).split(":", 1)[0].split("citation")[0][-12:] or ""):
+            if "chapter" in mm.group(0)[:40].lower():
+                continue
+            m = mm
+            break
+    if not m:
+        return None
+    s = re.sub(r"\s+", " ", m.group(1)).strip()
+    y = re.match(r"^(.*?)\.?\s+((?:19|20)\d{2})[a-z]?\.\s+(.+)$", s)
+    if not y:
+        return None
+    auth_raw, year, rest = y.group(1), y.group(2), y.group(3).strip()
+    title, pub = (rest.rsplit(". ", 1) + [""])[:2] if ". " in rest.rstrip(".") else (rest, "")
+    title, pub = title.strip(" ."), pub.strip(" .")
+    cleaned = re.sub(r"\s*(?:,\s*)?(?:\band\b|&)\s+", ", ", auth_raw).strip(" ,.")
+    full = _full_names(text)
+    authors = []
+    for sm in _AUTH_PAT.finditer(cleaned + ","):
+        sur, ini = sm.group(1).strip(), re.sub(r"[^A-Z]", "", sm.group(2))
+        hit = next((f for f in full if f.split()[-1].lower() == sur.split()[-1].lower() and f[:1].upper() == ini[:1]), None)
+        authors.append(hit or (" ".join(c + "." for c in ini) + " " + sur))
+    if not authors or len(title) < 6:
+        return None
+    return {"title": title, "authors": authors, "year": year, "publisher": pub}
+
+
 def guess(text, meta, filename=""):
     title = guess_title(text, meta, filename)
     vol, iss, pg = guess_vip(text)
+    sg = suggested_citation(text)
+    if sg:
+        return {"title": sg["title"], "authors": sg["authors"], "year": sg["year"], "doi": find_doi(text), "journal": "", "volume": vol,
+                "issue": iss, "pages": pg, "publisher": sg["publisher"], "edition": "", "editors": [], "type": "report", "_sugg": True}
     return {"title": title, "authors": guess_authors(text, meta, title), "year": guess_year(text, meta), "doi": find_doi(text),
             "journal": "", "volume": vol, "issue": iss, "pages": pg, "publisher": "", "edition": "", "editors": [], "type": ""}
 
@@ -427,6 +478,8 @@ def analyse(text, meta, get, filename=""):
     Returns (fields, found_by, notes, sources)."""
     g = guess(text, meta, filename)
     notes, recs, how = [], [], "guess"
+    if g.pop("_sugg", False):
+        notes.append("The title, authors, year and publisher were read from the 'Suggested citation' printed in the file. Check them.")
     aid = find_arxiv(text)
     doi = g["doi"]
     if doi or aid:
